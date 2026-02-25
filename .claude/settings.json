@@ -16,6 +16,7 @@
       "Bash(.specify/**)",
       "Bash(git:*)",
       "Bash(git log:*)",
+      "Bash(log:*)",
       "Bash(php:*)",
       "Bash(echo:*)",
       "Bash(find:*)",
