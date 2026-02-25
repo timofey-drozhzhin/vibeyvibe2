@@ -37,7 +37,10 @@ app.use(
 
 // Rate limiting for auth endpoints (10 requests per 60 seconds per IP)
 // Applied before the auth handler to prevent brute force login attacks
-app.use("/api/auth/*", rateLimiter(10, 60_000));
+// Skipped when dev auth bypass is enabled since get-session is called frequently
+if (!(process.env.DEV_AUTH_BYPASS === "true" && process.env.NODE_ENV !== "production")) {
+  app.use("/api/auth/*", rateLimiter(10, 60_000));
+}
 
 // Health check (unauthenticated)
 app.get("/api/health", (c) => {
