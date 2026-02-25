@@ -1,0 +1,31 @@
+ OS generated files
+Thumbs.db
+.DS_Store
+__MACOSX
+
+# Dependencies
+node_modules/
+vendor/
+.pnpm-store/
+
+
+# Common backup files
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+
+# IDEs
+.project
+.idea/
+*.tmproj
+.vscode/
+.aider*
+
+# Secrets
+.env
+
+# Temp folder
+tmp/
+.agents/

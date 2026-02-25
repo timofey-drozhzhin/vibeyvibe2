@@ -1,0 +1,73 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Glob",
+      "Grep",
+      "MultiEdit",
+      "NotebookEdit",
+      "NotebookRead",
+      "Read",
+      "Task",
+      "TodoWrite",
+      "WebFetch",
+      "WebSearch",
+      "Write",
+      "Bash(.specify/**)",
+      "Bash(git:*)",
+      "Bash(git log:*)",
+      "Bash(php:*)",
+      "Bash(echo:*)",
+      "Bash(find:*)",
+      "Bash(wp:*)",
+      "Bash(npm:*)",
+      "Bash(pnpm:*)",
+      "Bash(composer:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(ls:*)",
+      "Bash(sort:*)",
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(grep:*)",
+      "Bash(rm:*)",
+      "Bash(node:*)",
+      "Bash(npx:*)",
+      "Bash(claude mcp:*)",
+      "Bash(curl:*)",
+      "Bash(cut:*)",
+      "Bash(test:*)",
+      "Bash(sed:*)",
+      "Bash(cp:*)",
+      "Bash(which:*)",
+      "Bash(wc:*)",
+      "Bash(htmlq:*)",
+      "Bash(print:*)",
+      "Bash(printf:*)",
+      "Bash(pandoc:*)",
+      "Bash(gh workflow list:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(/workspace/momsdish-check-recipes/scripts/fetch.sh:*)",
+      "Bash(/workspace/momsdish-check-recipes/scripts/generate-queue-md.sh:*)",
+      "Bash(/workspace/find-domain/process-queue.sh:*)",
+      "Bash(/workspace/find-domain/lookup.sh:*)",
+      "mcp__playwright",
+      "mcp__chrome-devtools",
+      "mcp__gemini-cli"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(/workspace/.env)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset:*)"
+    ],
+    "additionalDirectories": [
+      "/workspace"
+    ]
+  }
+}
