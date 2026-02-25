@@ -1,4 +1,4 @@
- OS generated files
+# OS generated files
 Thumbs.db
 .DS_Store
 __MACOSX
@@ -7,7 +7,6 @@ __MACOSX
 node_modules/
 vendor/
 .pnpm-store/
-
 
 # Common backup files
 *.swp
@@ -25,7 +24,25 @@ vendor/
 
 # Secrets
 .env
+.env.local
+.env.production
 
-# Temp folder
+# Temp folder (local dev storage, temp files)
 tmp/
 .agents/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Database (local dev)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Test
+coverage/
+
+# Logs
+*.log

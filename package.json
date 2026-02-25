@@ -1,0 +1,25 @@
+{
+  "name": "vibeyvibe",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "dev:api": "pnpm --filter @vibeyvibe/api run dev",
+    "dev:web": "pnpm --filter @vibeyvibe/web run dev",
+    "build": "pnpm -r run build",
+    "build:api": "pnpm --filter @vibeyvibe/api run build",
+    "build:web": "pnpm --filter @vibeyvibe/web run build",
+    "test": "pnpm -r run test",
+    "test:api": "pnpm --filter @vibeyvibe/api run test",
+    "test:web": "pnpm --filter @vibeyvibe/web run test",
+    "db:push": "pnpm --filter @vibeyvibe/api run db:push",
+    "db:generate": "pnpm --filter @vibeyvibe/api run db:generate",
+    "db:migrate": "pnpm --filter @vibeyvibe/api run db:migrate",
+    "db:studio": "pnpm --filter @vibeyvibe/api run db:studio",
+    "db:seed": "pnpm --filter @vibeyvibe/api run db:seed",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

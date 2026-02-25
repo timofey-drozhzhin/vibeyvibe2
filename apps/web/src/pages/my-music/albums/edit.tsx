@@ -1,0 +1,148 @@
+import { useState, useEffect } from "react";
+import { useForm, useNavigation } from "@refinedev/core";
+import {
+  Card,
+  TextInput,
+  NumberInput,
+  Button,
+  Group,
+  Stack,
+  Title,
+  LoadingOverlay,
+} from "@mantine/core";
+import { IconArrowLeft } from "@tabler/icons-react";
+import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
+
+export const AlbumEdit = () => {
+  const { list, show } = useNavigation();
+  const { onFinish, mutation, query, id, formLoading } = useForm({
+    resource: "my-music/albums",
+    action: "edit",
+    redirect: "show",
+  });
+
+  const record = query?.data?.data;
+
+  const [name, setName] = useState("");
+  const [ean, setEan] = useState("");
+  const [releaseDate, setReleaseDate] = useState("");
+  const [rating, setRating] = useState<number>(0);
+  const [spotifyId, setSpotifyId] = useState("");
+  const [appleMusicId, setAppleMusicId] = useState("");
+  const [youtubeId, setYoutubeId] = useState("");
+  const [archived, setArchived] = useState(false);
+
+  useEffect(() => {
+    if (record) {
+      setName(record.name ?? "");
+      setEan(record.ean ?? "");
+      setReleaseDate(record.releaseDate ?? "");
+      setRating(record.rating ?? 0);
+      setSpotifyId(record.spotifyId ?? "");
+      setAppleMusicId(record.appleMusicId ?? "");
+      setYoutubeId(record.youtubeId ?? "");
+      setArchived(record.archived ?? false);
+    }
+  }, [record]);
+
+  const handleSubmit = () => {
+    onFinish({
+      name,
+      ean: ean || null,
+      releaseDate: releaseDate || null,
+      rating,
+      spotifyId: spotifyId || null,
+      appleMusicId: appleMusicId || null,
+      youtubeId: youtubeId || null,
+      archived,
+    });
+  };
+
+  return (
+    <Stack>
+      <Group>
+        <Button
+          variant="subtle"
+          leftSection={<IconArrowLeft size={16} />}
+          onClick={() => list("my-music/albums")}
+        >
+          Back
+        </Button>
+        <Title order={3}>Edit Album</Title>
+      </Group>
+
+      <Card withBorder p="lg" maw={600} pos="relative">
+        <LoadingOverlay visible={formLoading} />
+        <Stack>
+          <TextInput
+            label="Name"
+            placeholder="Album name"
+            required
+            value={name}
+            onChange={(e) => setName(e.currentTarget.value)}
+          />
+          <TextInput
+            label="EAN"
+            placeholder="13 digits"
+            description="European Article Number (13 digits)"
+            value={ean}
+            onChange={(e) => setEan(e.currentTarget.value)}
+          />
+          <TextInput
+            label="Release Date"
+            placeholder="YYYY-MM-DD"
+            value={releaseDate}
+            onChange={(e) => setReleaseDate(e.currentTarget.value)}
+          />
+          <NumberInput
+            label="Rating"
+            placeholder="0-10"
+            min={0}
+            max={10}
+            step={0.5}
+            value={rating}
+            onChange={(val) => setRating(typeof val === "number" ? val : 0)}
+          />
+          <TextInput
+            label="Spotify ID"
+            placeholder="Spotify album ID"
+            value={spotifyId}
+            onChange={(e) => setSpotifyId(e.currentTarget.value)}
+          />
+          <TextInput
+            label="Apple Music ID"
+            placeholder="Apple Music album ID"
+            value={appleMusicId}
+            onChange={(e) => setAppleMusicId(e.currentTarget.value)}
+          />
+          <TextInput
+            label="YouTube ID"
+            placeholder="YouTube ID"
+            value={youtubeId}
+            onChange={(e) => setYoutubeId(e.currentTarget.value)}
+          />
+
+          <ArchiveToggle value={archived} onChange={setArchived} />
+
+          <Group justify="flex-end" mt="md">
+            <Button
+              variant="subtle"
+              onClick={() =>
+                id ? show("my-music/albums", id) : list("my-music/albums")
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              loading={mutation.isPending}
+              disabled={!name.trim()}
+            >
+              Save Changes
+            </Button>
+          </Group>
+        </Stack>
+      </Card>
+    </Stack>
+  );
+};

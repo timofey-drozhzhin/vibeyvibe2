@@ -1,0 +1,105 @@
+import { useState } from "react";
+import { useForm, useNavigation } from "@refinedev/core";
+import {
+  Card,
+  Group,
+  Stack,
+  Title,
+  TextInput,
+  Textarea,
+  Button,
+} from "@mantine/core";
+import { IconArrowLeft } from "@tabler/icons-react";
+
+export const AnatomyAttributeCreate = () => {
+  const { onFinish, mutation } = useForm({
+    resource: "anatomy/attributes",
+    action: "create",
+    redirect: "list",
+  });
+  const { list } = useNavigation();
+
+  const isSaving = mutation?.isPending;
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [instruction, setInstruction] = useState("");
+  const [examples, setExamples] = useState("");
+
+  const handleSubmit = () => {
+    onFinish({
+      name,
+      description: description || null,
+      instruction: instruction || null,
+      examples: examples || null,
+    });
+  };
+
+  return (
+    <Stack gap="md">
+      <Group>
+        <Button
+          variant="subtle"
+          leftSection={<IconArrowLeft size={16} />}
+          onClick={() => list("anatomy/attributes")}
+        >
+          Back
+        </Button>
+        <Title order={2}>Add Attribute</Title>
+      </Group>
+
+      <Card withBorder style={{ maxWidth: 600 }}>
+        <Stack gap="md">
+          <TextInput
+            label="Name"
+            required
+            value={name}
+            onChange={(e) => setName(e.currentTarget.value)}
+            placeholder="e.g. tempo, mood, vocal_style"
+            description="Must be unique. Used as the attribute key in profiles."
+          />
+
+          <Textarea
+            label="Description"
+            value={description}
+            onChange={(e) => setDescription(e.currentTarget.value)}
+            placeholder="Brief description of what this attribute represents"
+            minRows={2}
+            autosize
+          />
+
+          <Textarea
+            label="Instruction"
+            value={instruction}
+            onChange={(e) => setInstruction(e.currentTarget.value)}
+            placeholder="Detailed instruction for how to determine this attribute's value"
+            minRows={4}
+            autosize
+          />
+
+          <Textarea
+            label="Examples"
+            value={examples}
+            onChange={(e) => setExamples(e.currentTarget.value)}
+            placeholder="Example values for this attribute"
+            minRows={4}
+            autosize
+          />
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" onClick={() => list("anatomy/attributes")}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              loading={isSaving}
+              disabled={!name}
+            >
+              Create
+            </Button>
+          </Group>
+        </Stack>
+      </Card>
+    </Stack>
+  );
+};
