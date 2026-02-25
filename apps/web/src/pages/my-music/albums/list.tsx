@@ -94,7 +94,7 @@ export const AlbumList = () => {
               <SortableHeader field="releaseDate" label="Release Date" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Status</Table.Th>
-              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+              <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -113,7 +113,7 @@ export const AlbumList = () => {
                 <Table.Td>
                   <Avatar size={32} radius="sm" src={album.imagePath ? `/api/storage/${album.imagePath}` : null} />
                 </Table.Td>
-                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("my-music/albums", album.id)}>
+                <Table.Td className="clickable-name" onClick={() => show("my-music/albums", album.id)}>
                   <Text fw={500}>{album.name}</Text>
                 </Table.Td>
                 <Table.Td>

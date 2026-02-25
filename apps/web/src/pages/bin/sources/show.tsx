@@ -1,19 +1,26 @@
-import { useShow, useNavigation } from "@refinedev/core";
+import { useState, useEffect } from "react";
+import { useShow, useNavigation, useUpdate } from "@refinedev/core";
 import {
-  Card,
+  Anchor,
   Group,
   Stack,
-  Title,
   Text,
   Button,
-  Anchor,
-  Badge,
+  Table,
+  Loader,
+  Center,
+  Modal,
+  TextInput,
 } from "@mantine/core";
-import { IconArrowLeft, IconEdit, IconExternalLink } from "@tabler/icons-react";
-import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
+import { useDisclosure } from "@mantine/hooks";
+import { useSearchParams } from "react-router";
+import { IconExternalLink } from "@tabler/icons-react";
+import { ArchiveBadge, ArchiveButton } from "../../../components/shared/archive-toggle.js";
+import { EditableField } from "../../../components/shared/editable-field.js";
+import { ShowPageHeader, SectionCard } from "../../../components/shared/show-page.js";
 
 interface BinSource {
-  id: number;
+  id: string;
   name: string;
   url: string | null;
   archived: boolean;
@@ -22,98 +29,172 @@ interface BinSource {
 }
 
 export const BinSourceShow = () => {
-  const { list, edit } = useNavigation();
+  const { query: showQuery } = useShow<BinSource>({
+    resource: "bin/sources",
+  });
+  const { list } = useNavigation();
+  const { mutateAsync: updateRecord } = useUpdate();
 
-  const { query: showQuery, result } = useShow<BinSource>({ resource: "bin/sources" });
-  const record = result;
-  const isLoading = showQuery?.isLoading;
+  const record = showQuery?.data?.data;
+  const isLoading = showQuery?.isPending;
+
+  // Edit modal
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] =
+    useDisclosure(false);
+
+  useEffect(() => {
+    if (searchParams.get("edit") === "true" && record) {
+      openEditModal();
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, record]);
+
+  // Inline save helper
+  const saveField = async (field: string, value: string) => {
+    await updateRecord({
+      resource: "bin/sources",
+      id: record!.id,
+      values: { [field]: value || null },
+    });
+    showQuery.refetch();
+  };
 
   if (isLoading) {
-    return <Title order={3}>Loading...</Title>;
+    return (
+      <Center py="xl">
+        <Loader />
+      </Center>
+    );
   }
 
   if (!record) {
-    return <Title order={3}>Source not found</Title>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Source not found.
+      </Text>
+    );
   }
 
   return (
-    <>
-      <Group mb="md">
-        <Button
-          variant="subtle"
-          leftSection={<IconArrowLeft size={16} />}
-          onClick={() => list("bin/sources")}
-        >
-          Back to list
-        </Button>
-      </Group>
+    <Stack gap="md">
+      <ShowPageHeader
+        title={record.name}
+        onBack={() => list("bin/sources")}
+        onEdit={openEditModal}
+        badges={<ArchiveBadge archived={record.archived} />}
+      />
 
-      <Group justify="space-between" mb="md">
-        <Title order={3}>{record.name}</Title>
-        <Button
-          variant="light"
-          leftSection={<IconEdit size={16} />}
-          onClick={() => edit("bin/sources", record.id)}
-        >
-          Edit
-        </Button>
-      </Group>
-
-      <Card withBorder maw={600}>
-        <Stack gap="md">
-          <div>
-            <Text size="sm" c="dimmed">
-              Name
-            </Text>
-            <Text fw={500}>{record.name}</Text>
-          </div>
-
-          <div>
-            <Text size="sm" c="dimmed">
-              URL
-            </Text>
-            {record.url ? (
-              <Anchor href={record.url} target="_blank" rel="noopener">
-                {record.url}{" "}
-                <IconExternalLink
-                  size={14}
-                  style={{ verticalAlign: "middle" }}
+      {/* Source Details */}
+      <SectionCard title="Source Details">
+        <Table>
+          <Table.Tbody>
+            <Table.Tr>
+              <Table.Td fw={600} w={180}>URL</Table.Td>
+              <Table.Td>
+                <EditableField
+                  value={record.url}
+                  onSave={(v) => saveField("url", v)}
+                  placeholder="https://..."
+                  emptyText="Click to add"
+                  renderDisplay={(v) => (
+                    <Anchor
+                      href={v}
+                      target="_blank"
+                      size="sm"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {v} <IconExternalLink size={14} style={{ verticalAlign: "middle" }} />
+                    </Anchor>
+                  )}
                 />
-              </Anchor>
-            ) : (
-              <Text c="dimmed">None</Text>
-            )}
-          </div>
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={600}>Created</Table.Td>
+              <Table.Td>{record.createdAt}</Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={600}>Updated</Table.Td>
+              <Table.Td>{record.updatedAt}</Table.Td>
+            </Table.Tr>
+          </Table.Tbody>
+        </Table>
+      </SectionCard>
 
-          <div>
-            <Text size="sm" c="dimmed">
-              Status
-            </Text>
-            <Group gap="xs" mt={4}>
-              <ArchiveBadge archived={record.archived} />
-              {!record.archived && (
-                <Badge variant="light" color="green">
-                  Active
-                </Badge>
-              )}
-            </Group>
-          </div>
+      {/* Edit Modal */}
+      <EditModal
+        opened={editModalOpened}
+        onClose={closeEditModal}
+        record={record}
+        onSaved={() => { closeEditModal(); showQuery.refetch(); }}
+      />
+    </Stack>
+  );
+};
 
-          <div>
-            <Text size="sm" c="dimmed">
-              Created
-            </Text>
-            <Text>{new Date(record.createdAt).toLocaleString()}</Text>
-          </div>
+// Edit Modal - name, archive
+const EditModal = ({
+  opened,
+  onClose,
+  record,
+  onSaved,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  record: BinSource;
+  onSaved: () => void;
+}) => {
+  const [name, setName] = useState(record.name);
+  const { mutateAsync: updateRecord, mutation } = useUpdate();
 
-          <div>
-            <Text size="sm" c="dimmed">
-              Updated
-            </Text>
-            <Text>{new Date(record.updatedAt).toLocaleString()}</Text>
-          </div>
-        </Stack>
-      </Card>
-    </>
+  useEffect(() => {
+    if (opened) {
+      setName(record.name);
+    }
+  }, [opened, record]);
+
+  const handleSubmit = async () => {
+    await updateRecord({
+      resource: "bin/sources",
+      id: record.id,
+      values: { name },
+    });
+    onSaved();
+  };
+
+  return (
+    <Modal opened={opened} onClose={onClose} title="Edit Source">
+      <Stack gap="md">
+        <TextInput
+          label="Name"
+          required
+          value={name}
+          onChange={(e) => setName(e.currentTarget.value)}
+          placeholder="Source name"
+        />
+        <Group justify="space-between" mt="md">
+          <ArchiveButton
+            archived={record.archived}
+            onToggle={async (val) => {
+              await updateRecord({
+                resource: "bin/sources",
+                id: record.id,
+                values: { archived: val },
+              });
+              onSaved();
+            }}
+          />
+          <Group>
+            <Button onClick={handleSubmit} loading={mutation.isPending} disabled={!name.trim()}>
+              Save
+            </Button>
+            <Button variant="subtle" onClick={onClose}>
+              Cancel
+            </Button>
+          </Group>
+        </Group>
+      </Stack>
+    </Modal>
   );
 };

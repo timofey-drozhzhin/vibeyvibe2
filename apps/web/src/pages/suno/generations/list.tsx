@@ -84,7 +84,7 @@ export const SunoGenerationList = () => {
             <Table.Tr>
               <Table.Th>Suno ID</Table.Th>
               <Table.Th>Bin Song</Table.Th>
-              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+              <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -100,7 +100,7 @@ export const SunoGenerationList = () => {
             )}
             {generations.map((generation: any) => (
               <Table.Tr key={generation.id}>
-                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("suno/generations", generation.id)}>
+                <Table.Td className="clickable-name" onClick={() => show("suno/generations", generation.id)}>
                   <Text size="sm" fw={500} ff="monospace">
                     {generation.sunoId || "-"}
                   </Text>

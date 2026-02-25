@@ -16,7 +16,7 @@ export const MediaEmbeds = ({ spotifyId, appleMusicId, youtubeId }: MediaEmbedsP
         <iframe
           src={`https://open.spotify.com/embed/track/${spotifyId}`}
           width={300}
-          height={90}
+          height={80}
           frameBorder={0}
           allow="encrypted-media"
           loading="lazy"

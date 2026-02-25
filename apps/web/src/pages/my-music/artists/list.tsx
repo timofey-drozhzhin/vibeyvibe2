@@ -90,10 +90,10 @@ export const ArtistList = () => {
             <Table.Tr>
               <Table.Th w={50}></Table.Th>
               <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-              <Table.Th>ISNI</Table.Th>
+              <Table.Th>Releases</Table.Th>
               <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Status</Table.Th>
-              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+              <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -112,13 +112,11 @@ export const ArtistList = () => {
                 <Table.Td>
                   <Avatar size={32} radius="sm" src={artist.imagePath ? `/api/storage/${artist.imagePath}` : null} />
                 </Table.Td>
-                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("my-music/artists", artist.id)}>
+                <Table.Td className="clickable-name" onClick={() => show("my-music/artists", artist.id)}>
                   <Text fw={500}>{artist.name}</Text>
                 </Table.Td>
                 <Table.Td>
-                  <Text size="sm" c="dimmed">
-                    {artist.isni || "-"}
-                  </Text>
+                  <Text size="sm" c="dimmed">{artist.songCount || 0}</Text>
                 </Table.Td>
                 <Table.Td>
                   <RatingDisplay value={artist.rating ?? 0} />

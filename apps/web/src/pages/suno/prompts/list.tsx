@@ -134,7 +134,7 @@ export const SunoPromptList = () => {
               <Table.Th>Voice</Table.Th>
               <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Status</Table.Th>
-              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+              <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -150,7 +150,7 @@ export const SunoPromptList = () => {
             )}
             {prompts.map((prompt) => (
               <Table.Tr key={prompt.id}>
-                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("suno/prompts", prompt.id)}>
+                <Table.Td className="clickable-name" onClick={() => show("suno/prompts", prompt.id)}>
                   <Text fw={500} size="sm">{truncate(prompt.style, 40)}</Text>
                 </Table.Td>
                 <Table.Td>

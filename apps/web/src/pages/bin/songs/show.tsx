@@ -1,153 +1,261 @@
-import { useShow, useNavigation } from "@refinedev/core";
+import { useState, useEffect } from "react";
+import { useShow, useNavigation, useUpdate, useList } from "@refinedev/core";
 import {
-  Card,
+  Anchor,
   Group,
   Stack,
-  Title,
   Text,
   Button,
-  Anchor,
-  Badge,
+  Table,
+  Loader,
+  Center,
+  Modal,
+  TextInput,
+  Select,
 } from "@mantine/core";
-import {
-  IconArrowLeft,
-  IconEdit,
-  IconMusic,
-  IconExternalLink,
-} from "@tabler/icons-react";
-import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
+import { useDisclosure } from "@mantine/hooks";
+import { useSearchParams } from "react-router";
+import { IconExternalLink } from "@tabler/icons-react";
+import { ArchiveBadge, ArchiveButton } from "../../../components/shared/archive-toggle.js";
 import { AudioPlayer } from "../../../components/shared/audio-player.js";
+import { EditableField } from "../../../components/shared/editable-field.js";
+import { ShowPageHeader, SectionCard } from "../../../components/shared/show-page.js";
+import { FileUpload } from "../../../components/shared/file-upload.js";
+
+interface BinSource {
+  id: string;
+  name: string;
+}
 
 interface BinSong {
-  id: number;
+  id: string;
   name: string;
-  sourceId: number | null;
+  sourceId: string | null;
   assetPath: string | null;
   sourceUrl: string | null;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
-  source?: { id: number; name: string } | null;
+  source?: { id: string; name: string } | null;
 }
 
 export const BinSongShow = () => {
-  const { list, edit } = useNavigation();
+  const { query: showQuery } = useShow<BinSong>({
+    resource: "bin/songs",
+  });
+  const { list } = useNavigation();
+  const { mutateAsync: updateRecord } = useUpdate();
 
-  const { query: showQuery, result } = useShow<BinSong>({ resource: "bin/songs" });
-  const record = result;
-  const isLoading = showQuery?.isLoading;
+  const record = showQuery?.data?.data;
+  const isLoading = showQuery?.isPending;
+
+  // Edit modal
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] =
+    useDisclosure(false);
+
+  useEffect(() => {
+    if (searchParams.get("edit") === "true" && record) {
+      openEditModal();
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, record]);
+
+  // Inline save helper
+  const saveField = async (field: string, value: string) => {
+    await updateRecord({
+      resource: "bin/songs",
+      id: record!.id,
+      values: { [field]: value || null },
+    });
+    showQuery.refetch();
+  };
 
   if (isLoading) {
-    return <Title order={3}>Loading...</Title>;
+    return (
+      <Center py="xl">
+        <Loader />
+      </Center>
+    );
   }
 
   if (!record) {
-    return <Title order={3}>Song not found</Title>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Song not found.
+      </Text>
+    );
   }
 
   return (
-    <>
-      <Group mb="md">
-        <Button
-          variant="subtle"
-          leftSection={<IconArrowLeft size={16} />}
-          onClick={() => list("bin/songs")}
-        >
-          Back to list
-        </Button>
-      </Group>
+    <Stack gap="md">
+      <ShowPageHeader
+        title={record.name}
+        onBack={() => list("bin/songs")}
+        onEdit={openEditModal}
+        badges={<ArchiveBadge archived={record.archived} />}
+      />
 
-      <Group justify="space-between" mb="md">
-        <Title order={3}>{record.name}</Title>
-        <Button
-          variant="light"
-          leftSection={<IconEdit size={16} />}
-          onClick={() => edit("bin/songs", record.id)}
-        >
-          Edit
-        </Button>
-      </Group>
+      {/* Song Details */}
+      <SectionCard title="Song Details">
+        <Table>
+          <Table.Tbody>
+            <Table.Tr>
+              <Table.Td fw={600} w={180}>Source</Table.Td>
+              <Table.Td>
+                <Text size="sm">
+                  {record.source?.name ?? <Text span c="dimmed" fs="italic">None</Text>}
+                </Text>
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={600}>Source URL</Table.Td>
+              <Table.Td>
+                <EditableField
+                  value={record.sourceUrl}
+                  onSave={(v) => saveField("sourceUrl", v)}
+                  placeholder="https://..."
+                  emptyText="Click to add"
+                  renderDisplay={(v) => (
+                    <Anchor
+                      href={v}
+                      target="_blank"
+                      size="sm"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {v} <IconExternalLink size={14} style={{ verticalAlign: "middle" }} />
+                    </Anchor>
+                  )}
+                />
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={600}>Created</Table.Td>
+              <Table.Td>{record.createdAt}</Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={600}>Updated</Table.Td>
+              <Table.Td>{record.updatedAt}</Table.Td>
+            </Table.Tr>
+          </Table.Tbody>
+        </Table>
+      </SectionCard>
 
-      <Card withBorder maw={600}>
-        <Stack gap="md">
-          <div>
-            <Text size="sm" c="dimmed">
-              Name
-            </Text>
-            <Text fw={500}>{record.name}</Text>
-          </div>
+      {/* Audio Player */}
+      <SectionCard title="Audio">
+        <AudioPlayer path={record.assetPath} />
+      </SectionCard>
 
-          <div>
-            <Text size="sm" c="dimmed">
-              Source
-            </Text>
-            {record.source?.name ? (
-              <Text>{record.source.name}</Text>
-            ) : (
-              <Text c="dimmed">None</Text>
-            )}
-          </div>
+      {/* Edit Modal */}
+      <EditModal
+        opened={editModalOpened}
+        onClose={closeEditModal}
+        record={record}
+        onSaved={() => { closeEditModal(); showQuery.refetch(); }}
+      />
+    </Stack>
+  );
+};
 
-          <div>
-            <Text size="sm" c="dimmed">
-              Asset Path
-            </Text>
-            {record.assetPath ? (
-              <Text>{record.assetPath}</Text>
-            ) : (
-              <Text c="dimmed">None</Text>
-            )}
-          </div>
+// Edit Modal - name, source, asset file, archive
+const EditModal = ({
+  opened,
+  onClose,
+  record,
+  onSaved,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  record: BinSong;
+  onSaved: () => void;
+}) => {
+  const [name, setName] = useState(record.name);
+  const [sourceId, setSourceId] = useState(record.sourceId ?? "");
+  const [assetPath, setAssetPath] = useState(record.assetPath ?? "");
+  const { mutateAsync: updateRecord, mutation } = useUpdate();
 
-          <div>
-            <Text size="sm" c="dimmed" mb="xs">
-              Audio Player
-            </Text>
-            <AudioPlayer path={record.assetPath} />
-          </div>
+  // Fetch sources for the dropdown
+  const { result: sourcesResult } = useList<BinSource>({
+    resource: "bin/sources",
+    pagination: { pageSize: 100 },
+    filters: [{ field: "archived", operator: "eq", value: false }],
+  });
 
-          <div>
-            <Text size="sm" c="dimmed">
-              Source URL
-            </Text>
-            {record.sourceUrl ? (
-              <Anchor href={record.sourceUrl} target="_blank" rel="noopener">
-                {record.sourceUrl} <IconExternalLink size={14} style={{ verticalAlign: "middle" }} />
-              </Anchor>
-            ) : (
-              <Text c="dimmed">None</Text>
-            )}
-          </div>
+  const sourceOptions = (sourcesResult.data ?? []).map((s: BinSource) => ({
+    value: s.id,
+    label: s.name,
+  }));
 
-          <div>
-            <Text size="sm" c="dimmed">
-              Status
-            </Text>
-            <Group gap="xs" mt={4}>
-              <ArchiveBadge archived={record.archived} />
-              {!record.archived && (
-                <Badge variant="light" color="green">
-                  Active
-                </Badge>
-              )}
-            </Group>
-          </div>
+  useEffect(() => {
+    if (opened) {
+      setName(record.name);
+      setSourceId(record.sourceId ?? "");
+      setAssetPath(record.assetPath ?? "");
+    }
+  }, [opened, record]);
 
-          <div>
-            <Text size="sm" c="dimmed">
-              Created
-            </Text>
-            <Text>{new Date(record.createdAt).toLocaleString()}</Text>
-          </div>
+  const handleSubmit = async () => {
+    await updateRecord({
+      resource: "bin/songs",
+      id: record.id,
+      values: {
+        name,
+        sourceId: sourceId || null,
+        assetPath: assetPath || null,
+      },
+    });
+    onSaved();
+  };
 
-          <div>
-            <Text size="sm" c="dimmed">
-              Updated
-            </Text>
-            <Text>{new Date(record.updatedAt).toLocaleString()}</Text>
-          </div>
-        </Stack>
-      </Card>
-    </>
+  return (
+    <Modal opened={opened} onClose={onClose} title="Edit Song">
+      <Stack gap="md">
+        <TextInput
+          label="Name"
+          required
+          value={name}
+          onChange={(e) => setName(e.currentTarget.value)}
+          placeholder="Song name"
+        />
+        <Select
+          label="Source"
+          placeholder="Select a source"
+          data={sourceOptions}
+          value={sourceId || null}
+          onChange={(v) => setSourceId(v ?? "")}
+          clearable
+          searchable
+        />
+        <FileUpload
+          label="Asset File"
+          value={assetPath}
+          onChange={setAssetPath}
+          accept="audio/*"
+          directory="bin"
+          placeholder="Upload audio file"
+        />
+        <Group justify="space-between" mt="md">
+          <ArchiveButton
+            archived={record.archived}
+            onToggle={async (val) => {
+              await updateRecord({
+                resource: "bin/songs",
+                id: record.id,
+                values: { archived: val },
+              });
+              onSaved();
+            }}
+          />
+          <Group>
+            <Button onClick={handleSubmit} loading={mutation.isPending} disabled={!name.trim()}>
+              Save
+            </Button>
+            <Button variant="subtle" onClick={onClose}>
+              Cancel
+            </Button>
+          </Group>
+        </Group>
+      </Stack>
+    </Modal>
   );
 };

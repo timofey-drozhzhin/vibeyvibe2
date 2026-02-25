@@ -1,12 +1,11 @@
-import { useState } from "react";
-import { useShow, useNavigation, useList } from "@refinedev/core";
+import { useState, useEffect } from "react";
+import { useShow, useNavigation, useList, useUpdate } from "@refinedev/core";
 import {
   ActionIcon,
   Anchor,
   Card,
   Group,
   Stack,
-  Title,
   Text,
   Badge,
   Button,
@@ -16,16 +15,21 @@ import {
   Code,
   Modal,
   Tooltip,
+  TextInput,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { useSearchParams } from "react-router";
 import { notifications } from "@mantine/notifications";
-import { IconArrowLeft, IconEdit, IconPlus, IconUnlink } from "@tabler/icons-react";
+import { IconUnlink } from "@tabler/icons-react";
 import { RatingField } from "../../../components/shared/rating-field.js";
-import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
+import { ArchiveBadge, ArchiveButton } from "../../../components/shared/archive-toggle.js";
 import { AssignModal } from "../../../components/shared/assign-modal.js";
 import { ImagePreview } from "../../../components/shared/image-preview.js";
 import { MediaEmbeds } from "../../../components/shared/media-embeds.js";
 import { ProfileEditor } from "../../../components/anatomy/profile-editor.js";
+import { EditableField } from "../../../components/shared/editable-field.js";
+import { ShowPageHeader, SectionCard } from "../../../components/shared/show-page.js";
+import { FileUpload } from "../../../components/shared/file-upload.js";
 
 interface AnatomyArtist {
   id: string;
@@ -62,15 +66,29 @@ interface AnatomySongDetail {
 }
 
 const API_URL = import.meta.env.VITE_API_URL || "";
+const isrcRegex = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/;
 
 export const AnatomySongShow = () => {
   const { query: showQuery } = useShow<AnatomySongDetail>({
     resource: "anatomy/songs",
   });
-  const { edit, list, show } = useNavigation();
+  const { list, show } = useNavigation();
+  const { mutateAsync: updateRecord } = useUpdate();
 
   const record = showQuery?.data?.data;
   const isLoading = showQuery?.isPending;
+
+  // Edit modal
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] =
+    useDisclosure(false);
+
+  useEffect(() => {
+    if (searchParams.get("edit") === "true" && record) {
+      openEditModal();
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, record]);
 
   // Artist assign modal
   const [artistModalOpened, { open: openArtistModal, close: closeArtistModal }] =
@@ -102,7 +120,6 @@ export const AnatomySongShow = () => {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<AnatomyProfile | null>(null);
 
-  // Fetch all profiles for this song
   const {
     query: profilesQuery,
     result: profilesResult,
@@ -118,6 +135,16 @@ export const AnatomySongShow = () => {
   const profiles = profilesResult.data ?? [];
   const profilesLoading = profilesQuery.isLoading;
 
+  // Inline save helper
+  const saveField = async (field: string, value: string) => {
+    await updateRecord({
+      resource: "anatomy/songs",
+      id: record!.id,
+      values: { [field]: value || null },
+    });
+    showQuery.refetch();
+  };
+
   if (isLoading) {
     return (
       <Center py="xl">
@@ -132,16 +159,6 @@ export const AnatomySongShow = () => {
         Song not found.
       </Text>
     );
-  }
-
-  // Parse active profile value
-  let profileData: Record<string, string> | null = null;
-  if (record.activeProfile?.value) {
-    try {
-      profileData = JSON.parse(record.activeProfile.value);
-    } catch {
-      // Invalid JSON, will show raw value
-    }
   }
 
   const handleCreateProfile = () => {
@@ -170,102 +187,125 @@ export const AnatomySongShow = () => {
     }
   };
 
+  const handleRatingChange = async (newRating: number) => {
+    await updateRecord({
+      resource: "anatomy/songs",
+      id: record.id,
+      values: { rating: newRating },
+    });
+    showQuery.refetch();
+  };
+
   return (
     <Stack gap="md">
-      <Group justify="space-between">
-        <Group>
-          <Button
-            variant="subtle"
-            leftSection={<IconArrowLeft size={16} />}
-            onClick={() => list("anatomy/songs")}
-          >
-            Back
-          </Button>
-          <Title order={2}>{record.name}</Title>
-          <ArchiveBadge archived={record.archived} />
-        </Group>
-        <Group>
-          <Button
-            variant="light"
-            leftSection={<IconEdit size={16} />}
-            onClick={() => edit("anatomy/songs", record.id)}
-          >
-            Edit
-          </Button>
-        </Group>
-      </Group>
+      <ShowPageHeader
+        title={record.name}
+        onBack={() => list("anatomy/songs")}
+        onEdit={openEditModal}
+        badges={<ArchiveBadge archived={record.archived} />}
+      />
 
       {/* Two column layout */}
       <Group align="flex-start" gap="lg" wrap="nowrap">
         {/* Left column - main content */}
         <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
           {/* Song details */}
-          <Card withBorder>
-            <Title order={4} mb="md">
-              Song Details
-            </Title>
+          <SectionCard title="Song Details">
             <Table>
               <Table.Tbody>
                 <Table.Tr>
-                  <Table.Td fw={600} w={180}>
-                    ISRC
-                  </Table.Td>
+                  <Table.Td fw={600} w={180}>ISRC</Table.Td>
                   <Table.Td>
-                    <Code>{record.isrc}</Code>
+                    <EditableField
+                      value={record.isrc}
+                      onSave={(v) => saveField("isrc", v)}
+                      placeholder="e.g. USRC11234567"
+                      renderDisplay={(v) => <Code>{v}</Code>}
+                      validate={(v) =>
+                        v && !isrcRegex.test(v) ? "Invalid ISRC format" : null
+                      }
+                    />
                   </Table.Td>
                 </Table.Tr>
                 <Table.Tr>
                   <Table.Td fw={600}>Release Date</Table.Td>
-                  <Table.Td>{record.releaseDate}</Table.Td>
+                  <Table.Td>
+                    <EditableField
+                      value={record.releaseDate}
+                      onSave={(v) => saveField("releaseDate", v)}
+                      placeholder="YYYY-MM-DD"
+                    />
+                  </Table.Td>
                 </Table.Tr>
                 <Table.Tr>
                   <Table.Td fw={600}>Rating</Table.Td>
                   <Table.Td>
-                    <RatingField value={record.rating} readOnly />
+                    <RatingField value={record.rating} onChange={handleRatingChange} />
                   </Table.Td>
                 </Table.Tr>
-                {record.spotifyId && (
-                  <Table.Tr>
-                    <Table.Td fw={600}>Spotify ID</Table.Td>
-                    <Table.Td>
-                      <Anchor
-                        href={`https://open.spotify.com/track/${record.spotifyId}`}
-                        target="_blank"
-                        size="sm"
-                      >
-                        <Code>{record.spotifyId}</Code>
-                      </Anchor>
-                    </Table.Td>
-                  </Table.Tr>
-                )}
-                {record.appleMusicId && (
-                  <Table.Tr>
-                    <Table.Td fw={600}>Apple Music ID</Table.Td>
-                    <Table.Td>
-                      <Anchor
-                        href={`https://music.apple.com/song/${record.appleMusicId}`}
-                        target="_blank"
-                        size="sm"
-                      >
-                        <Code>{record.appleMusicId}</Code>
-                      </Anchor>
-                    </Table.Td>
-                  </Table.Tr>
-                )}
-                {record.youtubeId && (
-                  <Table.Tr>
-                    <Table.Td fw={600}>YouTube ID</Table.Td>
-                    <Table.Td>
-                      <Anchor
-                        href={`https://www.youtube.com/watch?v=${record.youtubeId}`}
-                        target="_blank"
-                        size="sm"
-                      >
-                        <Code>{record.youtubeId}</Code>
-                      </Anchor>
-                    </Table.Td>
-                  </Table.Tr>
-                )}
+                <Table.Tr>
+                  <Table.Td fw={600}>Spotify ID</Table.Td>
+                  <Table.Td>
+                    <EditableField
+                      value={record.spotifyId}
+                      onSave={(v) => saveField("spotifyId", v)}
+                      placeholder="Spotify track ID"
+                      emptyText="Click to add"
+                      renderDisplay={(v) => (
+                        <Anchor
+                          href={`https://open.spotify.com/track/${v}`}
+                          target="_blank"
+                          size="sm"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Code>{v}</Code>
+                        </Anchor>
+                      )}
+                    />
+                  </Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>Apple Music ID</Table.Td>
+                  <Table.Td>
+                    <EditableField
+                      value={record.appleMusicId}
+                      onSave={(v) => saveField("appleMusicId", v)}
+                      placeholder="Apple Music track ID"
+                      emptyText="Click to add"
+                      renderDisplay={(v) => (
+                        <Anchor
+                          href={`https://music.apple.com/song/${v}`}
+                          target="_blank"
+                          size="sm"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Code>{v}</Code>
+                        </Anchor>
+                      )}
+                    />
+                  </Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>YouTube ID</Table.Td>
+                  <Table.Td>
+                    <EditableField
+                      value={record.youtubeId}
+                      onSave={(v) => saveField("youtubeId", v)}
+                      placeholder="YouTube video ID"
+                      emptyText="Click to add"
+                      renderDisplay={(v) => (
+                        <Anchor
+                          href={`https://www.youtube.com/watch?v=${v}`}
+                          target="_blank"
+                          size="sm"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Code>{v}</Code>
+                        </Anchor>
+                      )}
+                    />
+                  </Table.Td>
+                </Table.Tr>
                 <Table.Tr>
                   <Table.Td fw={600}>Created</Table.Td>
                   <Table.Td>{record.createdAt}</Table.Td>
@@ -276,16 +316,10 @@ export const AnatomySongShow = () => {
                 </Table.Tr>
               </Table.Tbody>
             </Table>
-          </Card>
+          </SectionCard>
 
           {/* Artists */}
-          <Card withBorder>
-            <Group justify="space-between" mb="md">
-              <Title order={4}>Artists</Title>
-              <Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={openArtistModal}>
-                Assign Artist
-              </Button>
-            </Group>
+          <SectionCard title="Artists" action={{ label: "Assign Artist", onClick: openArtistModal }}>
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
@@ -306,7 +340,7 @@ export const AnatomySongShow = () => {
                 {record.artists?.map((artist) => (
                   <Table.Tr
                     key={artist.id}
-                    style={{ cursor: "pointer" }}
+                    className="clickable-name"
                     onClick={() => show("anatomy/artists", artist.id)}
                   >
                     <Table.Td><Text fw={500}>{artist.name}</Text></Table.Td>
@@ -323,22 +357,10 @@ export const AnatomySongShow = () => {
                 ))}
               </Table.Tbody>
             </Table>
-          </Card>
+          </SectionCard>
 
           {/* Profiles */}
-          <Card withBorder>
-            <Group justify="space-between" mb="md">
-              <Title order={4}>Profiles</Title>
-              <Button
-                variant="light"
-                leftSection={<IconPlus size={16} />}
-                size="sm"
-                onClick={handleCreateProfile}
-              >
-                Create Profile
-              </Button>
-            </Group>
-
+          <SectionCard title="Profiles" action={{ label: "Create Profile", onClick: handleCreateProfile }}>
             {profilesLoading ? (
               <Center py="md">
                 <Loader size="sm" />
@@ -379,7 +401,6 @@ export const AnatomySongShow = () => {
                           <Button
                             variant="subtle"
                             size="xs"
-                            leftSection={<IconEdit size={14} />}
                             onClick={() => handleEditProfile(profile)}
                           >
                             Edit
@@ -410,7 +431,7 @@ export const AnatomySongShow = () => {
                 })}
               </Stack>
             )}
-          </Card>
+          </SectionCard>
         </Stack>
 
         {/* Right column - media panel */}
@@ -427,6 +448,14 @@ export const AnatomySongShow = () => {
           </Stack>
         )}
       </Group>
+
+      {/* Edit Modal */}
+      <EditModal
+        opened={editModalOpened}
+        onClose={closeEditModal}
+        record={record}
+        onSaved={() => { closeEditModal(); showQuery.refetch(); }}
+      />
 
       {/* Profile Editor Modal */}
       <Modal
@@ -468,5 +497,82 @@ export const AnatomySongShow = () => {
         />
       )}
     </Stack>
+  );
+};
+
+// Edit Modal - name, image, archive
+const EditModal = ({
+  opened,
+  onClose,
+  record,
+  onSaved,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  record: AnatomySongDetail;
+  onSaved: () => void;
+}) => {
+  const [name, setName] = useState(record.name);
+  const [imagePath, setImagePath] = useState(record.imagePath ?? "");
+  const { mutateAsync: updateRecord, mutation } = useUpdate();
+
+  useEffect(() => {
+    if (opened) {
+      setName(record.name);
+      setImagePath(record.imagePath ?? "");
+    }
+  }, [opened, record]);
+
+  const handleSubmit = async () => {
+    await updateRecord({
+      resource: "anatomy/songs",
+      id: record.id,
+      values: { name, imagePath: imagePath || null },
+    });
+    onSaved();
+  };
+
+  return (
+    <Modal opened={opened} onClose={onClose} title="Edit Song">
+      <Stack gap="md">
+        <TextInput
+          label="Name"
+          required
+          value={name}
+          onChange={(e) => setName(e.currentTarget.value)}
+          placeholder="Song name"
+        />
+        <FileUpload
+          label="Image"
+          value={imagePath}
+          onChange={setImagePath}
+          accept="image/*"
+          directory="songs"
+          placeholder="Upload song image"
+        />
+        {imagePath && <ImagePreview path={imagePath} alt={name} size={80} />}
+        <Group justify="space-between" mt="md">
+          <ArchiveButton
+            archived={record.archived}
+            onToggle={async (val) => {
+              await updateRecord({
+                resource: "anatomy/songs",
+                id: record.id,
+                values: { archived: val },
+              });
+              onSaved();
+            }}
+          />
+          <Group>
+            <Button onClick={handleSubmit} loading={mutation.isPending} disabled={!name.trim()}>
+              Save
+            </Button>
+            <Button variant="subtle" onClick={onClose}>
+              Cancel
+            </Button>
+          </Group>
+        </Group>
+      </Stack>
+    </Modal>
   );
 };

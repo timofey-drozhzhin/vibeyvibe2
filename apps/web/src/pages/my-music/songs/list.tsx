@@ -90,11 +90,11 @@ export const SongList = () => {
             <Table.Tr>
               <Table.Th w={50}></Table.Th>
               <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-              <Table.Th>ISRC</Table.Th>
+              <Table.Th>Artists</Table.Th>
               <SortableHeader field="releaseDate" label="Release Date" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Status</Table.Th>
-              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+              <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -113,13 +113,29 @@ export const SongList = () => {
                 <Table.Td>
                   <Avatar size={32} radius="sm" src={song.imagePath ? `/api/storage/${song.imagePath}` : null} />
                 </Table.Td>
-                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("my-music/songs", song.id)}>
+                <Table.Td className="clickable-name" onClick={() => show("my-music/songs", song.id)}>
                   <Text fw={500}>{song.name}</Text>
                 </Table.Td>
                 <Table.Td>
-                  <Text size="sm" c="dimmed">
-                    {song.isrc || "-"}
-                  </Text>
+                  {song.artists?.length > 0 ? (
+                    <Group gap={0} wrap="wrap">
+                      {song.artists.map((a: any, i: number) => (
+                        <span key={a.id}>
+                          <Text
+                            component="span"
+                            size="sm"
+                            className="clickable-name"
+                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); show("my-music/artists", a.id); }}
+                          >
+                            {a.name}
+                          </Text>
+                          {i < song.artists.length - 1 && <Text component="span" size="sm" c="dimmed">,&nbsp;</Text>}
+                        </span>
+                      ))}
+                    </Group>
+                  ) : (
+                    <Text size="sm" c="dimmed">-</Text>
+                  )}
                 </Table.Td>
                 <Table.Td>
                   <Text size="sm">{song.releaseDate || "-"}</Text>

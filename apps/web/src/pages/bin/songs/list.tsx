@@ -131,7 +131,7 @@ export const BinSongList = () => {
               <Table.Th>Source</Table.Th>
               <Table.Th>Asset</Table.Th>
               <Table.Th>Status</Table.Th>
-              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+              <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th style={{ width: 100 }}>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -155,7 +155,7 @@ export const BinSongList = () => {
             ) : (
               records.map((song: BinSong) => (
                 <Table.Tr key={song.id}>
-                  <Table.Td style={{ cursor: "pointer" }} onClick={() => show("bin/songs", song.id)}>
+                  <Table.Td className="clickable-name" onClick={() => show("bin/songs", song.id)}>
                     <Text fw={500}>{song.name}</Text>
                   </Table.Td>
                   <Table.Td>

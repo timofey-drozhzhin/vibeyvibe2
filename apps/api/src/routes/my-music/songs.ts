@@ -76,8 +76,38 @@ myMusicSongsRoutes.get(
         .where(where),
     ]);
 
+    // Fetch artists for all songs in one batch
+    const songIds = data.map((s) => s.id);
+    let artistMap: Record<string, { id: string; name: string }[]> = {};
+    if (songIds.length > 0) {
+      const songArtistRows = await db
+        .select({
+          songId: mySongArtists.songId,
+          artistId: myArtists.id,
+          artistName: myArtists.name,
+        })
+        .from(mySongArtists)
+        .innerJoin(myArtists, eq(mySongArtists.artistId, myArtists.id))
+        .where(
+          sql`${mySongArtists.songId} IN (${sql.join(
+            songIds.map((id) => sql`${id}`),
+            sql`, `
+          )})`
+        );
+
+      for (const row of songArtistRows) {
+        if (!artistMap[row.songId]) artistMap[row.songId] = [];
+        artistMap[row.songId].push({ id: row.artistId, name: row.artistName });
+      }
+    }
+
+    const enrichedData = data.map((song) => ({
+      ...song,
+      artists: artistMap[song.id] || [],
+    }));
+
     return c.json({
-      data,
+      data: enrichedData,
       total: totalResult[0].count,
       page,
       pageSize,

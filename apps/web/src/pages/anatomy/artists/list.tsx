@@ -12,7 +12,7 @@ import {
   Card,
   Loader,
   Center,
-  Code,
+
 } from "@mantine/core";
 import { IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
@@ -106,21 +106,21 @@ export const AnatomyArtistList = () => {
             <Table.Thead>
               <Table.Tr>
                 <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-                <Table.Th>ISNI</Table.Th>
+                <Table.Th>Releases</Table.Th>
                 <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
                 <Table.Th>Status</Table.Th>
-                <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+                <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
                 <Table.Th>Actions</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {records.map((artist) => (
                 <Table.Tr key={artist.id}>
-                  <Table.Td style={{ cursor: "pointer" }} onClick={() => show("anatomy/artists", artist.id)}>
+                  <Table.Td className="clickable-name" onClick={() => show("anatomy/artists", artist.id)}>
                     <Text fw={500}>{artist.name}</Text>
                   </Table.Td>
                   <Table.Td>
-                    <Code>{artist.isni}</Code>
+                    <Text size="sm" c="dimmed">{(artist as any).songCount || 0}</Text>
                   </Table.Td>
                   <Table.Td>
                     <RatingDisplay value={artist.rating} />

@@ -74,6 +74,10 @@ export const importUrlSchema = z.object({
   url: z.string().url("Must be a valid URL"),
 });
 
+export const assignArtistSchema = z.object({
+  artistId: z.string().min(1),
+});
+
 export const smartSearchSchema = z.object({
   q: z.string().min(1),
   page: z.coerce.number().int().positive().default(1),

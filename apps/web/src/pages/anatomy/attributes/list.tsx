@@ -144,14 +144,14 @@ export const AnatomyAttributeList = () => {
                 <SortableHeader field="category" label="Category" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
                 <Table.Th>Description</Table.Th>
                 <Table.Th>Status</Table.Th>
-                <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+                <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
                 <Table.Th>Actions</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {records.map((attr) => (
                 <Table.Tr key={attr.id}>
-                  <Table.Td style={{ cursor: "pointer" }} onClick={() => show("anatomy/attributes", attr.id)}>
+                  <Table.Td className="clickable-name" onClick={() => show("anatomy/attributes", attr.id)}>
                     <Text fw={500}>{attr.name}</Text>
                   </Table.Td>
                   <Table.Td>

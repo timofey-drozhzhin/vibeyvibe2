@@ -14,6 +14,7 @@ import {
   createAnatomySongSchema,
   updateAnatomySongSchema,
   createProfileSchema,
+  assignArtistSchema,
 } from "../../validators/anatomy.js";
 
 const isrcRegex = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/;
@@ -158,8 +159,38 @@ anatomySongsRoutes.get(
         .where(whereClause),
     ]);
 
+    // Fetch artists for all songs in one batch
+    const songIds = data.map((s) => s.id);
+    let artistMap: Record<string, { id: string; name: string }[]> = {};
+    if (songIds.length > 0) {
+      const songArtistRows = await db
+        .select({
+          songId: anatomySongArtists.songId,
+          artistId: anatomyArtists.id,
+          artistName: anatomyArtists.name,
+        })
+        .from(anatomySongArtists)
+        .innerJoin(anatomyArtists, eq(anatomySongArtists.artistId, anatomyArtists.id))
+        .where(
+          sql`${anatomySongArtists.songId} IN (${sql.join(
+            songIds.map((id) => sql`${id}`),
+            sql`, `
+          )})`
+        );
+
+      for (const row of songArtistRows) {
+        if (!artistMap[row.songId]) artistMap[row.songId] = [];
+        artistMap[row.songId].push({ id: row.artistId, name: row.artistName });
+      }
+    }
+
+    const enrichedData = data.map((song) => ({
+      ...song,
+      artists: artistMap[song.id] || [],
+    }));
+
     return c.json({
-      data,
+      data: enrichedData,
       total: countResult[0].count,
       page,
       pageSize,
@@ -339,3 +370,90 @@ anatomySongsRoutes.post(
     return c.json({ data: profile[0] }, 201);
   }
 );
+
+// POST /:id/artists - Assign artist to song
+anatomySongsRoutes.post(
+  "/:id/artists",
+  zValidator("json", assignArtistSchema),
+  async (c) => {
+    const songId = c.req.param("id");
+    const { artistId } = c.req.valid("json");
+    const db = getDb();
+
+    const song = await db
+      .select()
+      .from(anatomySongs)
+      .where(eq(anatomySongs.id, songId))
+      .limit(1);
+
+    if (song.length === 0) {
+      return c.json({ error: "Song not found" }, 404);
+    }
+
+    const artist = await db
+      .select()
+      .from(anatomyArtists)
+      .where(eq(anatomyArtists.id, artistId))
+      .limit(1);
+
+    if (artist.length === 0) {
+      return c.json({ error: "Artist not found" }, 404);
+    }
+
+    const existing = await db
+      .select()
+      .from(anatomySongArtists)
+      .where(
+        and(
+          eq(anatomySongArtists.songId, songId),
+          eq(anatomySongArtists.artistId, artistId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      return c.json({ error: "Artist already assigned" }, 409);
+    }
+
+    const id = nanoid();
+    const assignment = await db
+      .insert(anatomySongArtists)
+      .values({ id, songId, artistId })
+      .returning();
+
+    return c.json({ data: assignment[0] }, 201);
+  }
+);
+
+// PUT /:id/artists/:artistId - Remove artist assignment
+anatomySongsRoutes.put("/:id/artists/:artistId", async (c) => {
+  const songId = c.req.param("id");
+  const artistId = c.req.param("artistId");
+  const db = getDb();
+
+  const existing = await db
+    .select()
+    .from(anatomySongArtists)
+    .where(
+      and(
+        eq(anatomySongArtists.songId, songId),
+        eq(anatomySongArtists.artistId, artistId)
+      )
+    )
+    .limit(1);
+
+  if (existing.length === 0) {
+    return c.json({ error: "Song-artist assignment not found" }, 404);
+  }
+
+  await db
+    .delete(anatomySongArtists)
+    .where(
+      and(
+        eq(anatomySongArtists.songId, songId),
+        eq(anatomySongArtists.artistId, artistId)
+      )
+    );
+
+  return c.json({ message: "Artist assignment removed" });
+});

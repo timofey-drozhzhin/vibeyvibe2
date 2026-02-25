@@ -24,7 +24,7 @@ export const PlatformLinks = ({ spotifyId, appleMusicId, youtubeId, size = 16 }:
       )}
       {appleMusicId && (
         <Tooltip label="Open on Apple Music">
-          <ActionIcon variant="subtle" color="pink" size="sm"
+          <ActionIcon variant="subtle" color="gray" size="sm"
             onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`https://music.apple.com/us/song/${appleMusicId}`, '_blank'); }}>
             <IconBrandApple size={size} />
           </ActionIcon>

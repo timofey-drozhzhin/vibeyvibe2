@@ -1,0 +1,20 @@
+.clickable-name {
+  cursor: pointer;
+}
+
+.clickable-name:hover {
+  text-decoration: underline;
+}
+
+.editable-field {
+  cursor: pointer;
+}
+
+.editable-field .edit-icon {
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.editable-field:hover .edit-icon {
+  opacity: 1;
+}

@@ -100,7 +100,7 @@ export const BinSourceList = () => {
               <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>URL</Table.Th>
               <Table.Th>Status</Table.Th>
-              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+              <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th style={{ width: 100 }}>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -124,7 +124,7 @@ export const BinSourceList = () => {
             ) : (
               records.map((source) => (
                 <Table.Tr key={source.id}>
-                  <Table.Td style={{ cursor: "pointer" }} onClick={() => show("bin/sources", source.id)}>
+                  <Table.Td className="clickable-name" onClick={() => show("bin/sources", source.id)}>
                     <Text fw={500}>{source.name}</Text>
                   </Table.Td>
                   <Table.Td>

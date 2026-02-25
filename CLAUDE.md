@@ -66,7 +66,7 @@ All database tables are prefixed by their section:
 - Auth tables (user, session, account, verification) are managed by Better Auth and have no prefix.
 
 ### Temporary Files
-All temporary files go in `./tmp/` (gitignored). Local dev storage lives at `./tmp/storage/`. MCP Playwright outputs (screenshots, PDFs) go in `./tmp/playwright/`.
+All temporary files go in `./tmp/` (gitignored). Local dev storage lives at `./tmp/storage/`. MCP Playwright outputs (screenshots, PDFs) go in `./tmp/mcp-playwright/screenshots`.
 
 ### Documentation
 Always document structural changes in CLAUDE.md files. Keep these files up to date when adding new routes, schemas, pages, or changing conventions.
@@ -243,9 +243,34 @@ Songs can be assigned to artists and albums through junction tables:
 - `POST /api/my-music/songs/:id/albums` -- Assign album (`{ albumId }`)
 - `PUT /api/my-music/songs/:id/albums/:albumId` -- Remove album assignment
 
+### Anatomy
+- `POST /api/anatomy/songs/:id/artists` -- Assign artist (`{ artistId }`)
+- `PUT /api/anatomy/songs/:id/artists/:artistId` -- Remove artist assignment
+
 ### Suno Studio
 - `POST /api/suno/collections/:id/prompts` -- Assign prompt (`{ promptId }`)
 - `PUT /api/suno/collections/:id/prompts/:promptId` -- Manage prompt assignment
+
+## Show Page Standards
+
+All show pages use shared layout components that enforce consistent styling:
+
+### Layout Components
+- **`ShowPageHeader`**: Page title (`Title order={2}`), back button (`variant="subtle"`), edit button (`variant="light"`), badge slot for `ArchiveBadge`
+- **`SectionCard`**: Card section with title (`Title order={4}`) and optional action button (`size="xs" variant="light"` with `IconPlus size={14}`)
+
+### Inline Editing
+- Use `EditableField` for simple text metadata fields (ISRC, dates, platform IDs, URLs). Click-to-edit with hover edit icon.
+- Use `RatingField` with `onChange` for interactive inline ratings (no `readOnly` prop on show pages).
+- Platform ID fields always render even when null — show "Click to add" placeholder text.
+- Complex fields (file uploads, textareas, select dropdowns) go in the edit modal instead.
+
+### Edit Modal Pattern
+- Edit modals live inside the show page component (not on a separate route).
+- Modal contains identity fields: Name, Image/Audio upload, Archive toggle.
+- `?edit=true` URL query param auto-opens the modal (for redirect compatibility from old edit routes).
+- Edit route files (`edit.tsx`) are redirect wrappers that navigate to `../show/:id?edit=true`.
+- Exception: `anatomy/attributes/edit.tsx` remains a full edit page (attributes have no show page).
 
 ## Shared UI Components
 
@@ -263,6 +288,9 @@ Located in `apps/web/src/components/shared/`:
 | `ArchiveButton` | `archive-toggle.tsx` | Red "Archive" / green "Restore" button with confirmation Modal. Also exports `ArchiveBadge` (green "Active" / red "Archived" badge). |
 | `PlatformLinks` | `platform-links.tsx` | Spotify/Apple Music/YouTube icon buttons that open external URLs. Used in table Actions columns. |
 | `MediaEmbeds` | `media-embeds.tsx` | Spotify (300x90), Apple Music (300x140), YouTube (300x169) iframe embeds in a 300px Stack. Used on song show pages. |
+| `EditableField` | `editable-field.tsx` | Click-to-edit inline field with hover edit icon. Supports custom renderDisplay, validation, and async save. |
+| `ShowPageHeader` | `show-page.tsx` | Show page header with back button, Title order={2}, edit button, and badge slot. Enforces consistent styling. |
+| `SectionCard` | `show-page.tsx` | Card section with Title order={4} header and optional action button (size="xs" variant="light"). |
 
 ### Anatomy Components
 
@@ -279,6 +307,6 @@ Located in `apps/api/src/validators/`:
 | File | Schemas |
 |------|---------|
 | `my-music.ts` | `createSongSchema`, `updateSongSchema`, `createArtistSchema`, `updateArtistSchema`, `createAlbumSchema`, `updateAlbumSchema`, `assignArtistSchema`, `assignAlbumSchema`, `listQuerySchema` |
-| `anatomy.ts` | `createAnatomySongSchema`, `updateAnatomySongSchema`, `createAnatomyArtistSchema`, `updateAnatomyArtistSchema`, `createAttributeSchema`, `updateAttributeSchema`, `createProfileSchema`, `updateProfileSchema`, `importUrlSchema`, `smartSearchSchema` |
+| `anatomy.ts` | `createAnatomySongSchema`, `updateAnatomySongSchema`, `createAnatomyArtistSchema`, `updateAnatomyArtistSchema`, `createAttributeSchema`, `updateAttributeSchema`, `createProfileSchema`, `updateProfileSchema`, `importUrlSchema`, `assignArtistSchema`, `smartSearchSchema` |
 | `bin.ts` | `createBinSongSchema`, `updateBinSongSchema`, `createBinSourceSchema`, `updateBinSourceSchema`, `importYoutubeSchema` |
 | `suno.ts` | `createPromptSchema`, `updatePromptSchema`, `createCollectionSchema`, `updateCollectionSchema`, `assignPromptSchema`, `createGenerationSchema`, `assignGenerationPromptSchema` |

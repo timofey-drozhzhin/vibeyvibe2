@@ -96,7 +96,7 @@ export const SunoCollectionList = () => {
             <Table.Tr>
               <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Description</Table.Th>
-              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+              <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -112,7 +112,7 @@ export const SunoCollectionList = () => {
             )}
             {collections.map((collection: any) => (
               <Table.Tr key={collection.id}>
-                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("suno/collections", collection.id)}>
+                <Table.Td className="clickable-name" onClick={() => show("suno/collections", collection.id)}>
                   <Text size="sm" fw={500}>
                     {collection.name}
                   </Text>

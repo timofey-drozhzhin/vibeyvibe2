@@ -65,8 +65,36 @@ myMusicArtistsRoutes.get(
         .where(where),
     ]);
 
+    // Batch fetch song counts for all artists
+    const artistIds = data.map((a) => a.id);
+    let songCountMap: Record<string, number> = {};
+    if (artistIds.length > 0) {
+      const counts = await db
+        .select({
+          artistId: mySongArtists.artistId,
+          count: sql<number>`count(*)`,
+        })
+        .from(mySongArtists)
+        .where(
+          sql`${mySongArtists.artistId} IN (${sql.join(
+            artistIds.map((id) => sql`${id}`),
+            sql`, `
+          )})`
+        )
+        .groupBy(mySongArtists.artistId);
+
+      for (const row of counts) {
+        songCountMap[row.artistId] = row.count;
+      }
+    }
+
+    const enrichedData = data.map((artist) => ({
+      ...artist,
+      songCount: songCountMap[artist.id] || 0,
+    }));
+
     return c.json({
-      data,
+      data: enrichedData,
       total: totalResult[0].count,
       page,
       pageSize,

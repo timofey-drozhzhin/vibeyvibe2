@@ -37,7 +37,7 @@ add_playwright_mcp() {
 
     # Add MCP Client configuration
     echo 'Configuring Playwright MCP for Claude...'
-    claude mcp add playwright --scope user -- npx -y @playwright/mcp@latest --browser chromium --ignore-https-errors --no-sandbox --output-dir=/workspace/temp/mcp-playwright --caps=install,tabs,pdf
+    claude mcp add playwright --scope user -- npx -y @playwright/mcp@latest --browser chromium --ignore-https-errors --no-sandbox --output-dir=/workspace/tmp/mcp-playwright --caps=install,tabs,pdf
 }
 
 add_chrome_devtools_mcp() {
