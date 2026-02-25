@@ -13,9 +13,11 @@ import {
   Button,
   Loader,
   Center,
+  Avatar,
 } from "@mantine/core";
 import { IconEye, IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
+import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
 
@@ -34,22 +36,29 @@ interface AnatomySong {
   updatedAt: string;
 }
 
-type SortField = "releaseDate" | "rating";
-
 export const AnatomySongList = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [archiveFilter, setArchiveFilter] = useState("active");
-  const [sortField, setSortField] = useState<SortField>("releaseDate");
+  const [sortField, setSortField] = useState("releaseDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { show, edit, create } = useNavigation();
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
 
   const archivedValue =
     archiveFilter === "active" ? false : archiveFilter === "archived" ? true : undefined;
 
   const { query: listQuery, result } = useList<AnatomySong>({
     resource: "anatomy/songs",
-    pagination: { currentPage: page, pageSize: 10 },
+    pagination: { currentPage: page, pageSize: 20 },
     filters: [
       { field: "search", operator: "contains", value: search || undefined },
       ...(archivedValue !== undefined
@@ -61,19 +70,7 @@ export const AnatomySongList = () => {
 
   const records = result.data ?? [];
   const total = result.total ?? 0;
-  const pageCount = Math.ceil(total / 10);
-
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortOrder("desc");
-    }
-  };
-
-  const sortIndicator = (field: SortField) =>
-    sortField === field ? (sortOrder === "asc" ? " \u2191" : " \u2193") : "";
+  const pageCount = Math.ceil(total / 20);
 
   return (
     <>
@@ -113,27 +110,22 @@ export const AnatomySongList = () => {
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Name</Table.Th>
+                <Table.Th w={50}></Table.Th>
+                <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
                 <Table.Th>ISRC</Table.Th>
-                <Table.Th
-                  style={{ cursor: "pointer" }}
-                  onClick={() => toggleSort("releaseDate")}
-                >
-                  Release Date{sortIndicator("releaseDate")}
-                </Table.Th>
-                <Table.Th
-                  style={{ cursor: "pointer" }}
-                  onClick={() => toggleSort("rating")}
-                >
-                  Rating{sortIndicator("rating")}
-                </Table.Th>
+                <SortableHeader field="releaseDate" label="Release Date" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+                <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
                 <Table.Th>Status</Table.Th>
+                <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
                 <Table.Th>Actions</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {records.map((song) => (
                 <Table.Tr key={song.id}>
+                  <Table.Td>
+                    <Avatar size={32} radius="sm" src={song.imagePath ? `/api/storage/${song.imagePath}` : null} />
+                  </Table.Td>
                   <Table.Td>
                     <Text fw={500}>{song.name}</Text>
                   </Table.Td>
@@ -158,6 +150,13 @@ export const AnatomySongList = () => {
                         Active
                       </Badge>
                     )}
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c="dimmed">
+                      {song.createdAt
+                        ? new Date(song.createdAt).toLocaleDateString()
+                        : "-"}
+                    </Text>
                   </Table.Td>
                   <Table.Td>
                     <Group gap="xs">

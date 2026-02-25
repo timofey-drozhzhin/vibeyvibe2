@@ -11,6 +11,7 @@ import {
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { RatingField } from "../../../components/shared/rating-field.js";
+import { FileUpload } from "../../../components/shared/file-upload.js";
 
 export const AnatomySongCreate = () => {
   const { onFinish, mutation } = useForm({
@@ -94,11 +95,13 @@ export const AnatomySongCreate = () => {
             <RatingField value={rating} onChange={setRating} />
           </div>
 
-          <TextInput
-            label="Image Path"
+          <FileUpload
+            label="Image"
             value={imagePath}
-            onChange={(e) => setImagePath(e.currentTarget.value)}
-            placeholder="Path to image"
+            onChange={setImagePath}
+            accept="image/*"
+            directory="songs"
+            placeholder="Upload song image"
           />
 
           <TextInput

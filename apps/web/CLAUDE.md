@@ -1,6 +1,6 @@
 # vibeyvibe Web Frontend
 
-Refine v4 (headless) + Mantine UI v8 single-page application for the vibeyvibe music management system.
+Refine v5 (headless) + Mantine UI v8 single-page application for the vibeyvibe music management system.
 
 ## Overview
 
@@ -20,7 +20,8 @@ src/
 │   ├── layout/
 │   │   ├── index.tsx     # Layout wrapper: ThemedLayoutV2 with custom Sider
 │   │   └── sidebar.tsx   # Navigation sidebar: collapsible section groups with NavLink items
-│   └── shared/           # Reusable components shared across pages
+│   ├── shared/           # Reusable components shared across pages
+│   └── anatomy/          # Anatomy-specific components (ProfileEditor)
 ├── pages/
 │   ├── login.tsx         # Login page: email/password form + optional Google OAuth button
 │   ├── dashboard.tsx     # Dashboard page: section overview cards with icons
@@ -31,7 +32,8 @@ src/
 │   ├── anatomy/          # Anatomy resource pages
 │   │   ├── songs/        # list.tsx, create.tsx, edit.tsx, show.tsx
 │   │   ├── artists/      # list.tsx, create.tsx, edit.tsx, show.tsx
-│   │   └── attributes/   # list.tsx, create.tsx, edit.tsx, show.tsx
+│   │   ├── attributes/   # list.tsx, create.tsx, edit.tsx, show.tsx
+│   │   └── import.tsx    # Spotify import page (preview + confirm flow)
 │   ├── bin/              # Bin resource pages
 │   │   ├── songs/        # list.tsx, create.tsx, edit.tsx, show.tsx
 │   │   └── sources/      # list.tsx, create.tsx, edit.tsx, show.tsx
@@ -76,6 +78,7 @@ Routing is handled by React Router v7 via the `@refinedev/react-router` integrat
 | `/anatomy/attributes/create`      | Create         | Add attribute                  |
 | `/anatomy/attributes/:id`         | Show           | Attribute detail               |
 | `/anatomy/attributes/:id/edit`    | Edit           | Edit attribute                 |
+| `/anatomy/import`                 | Import         | Import songs from Spotify URLs |
 | `/bin/songs`                      | List           | Bin songs list                 |
 | `/bin/songs/create`               | Create         | Add bin song                   |
 | `/bin/songs/:id`                  | Show           | Bin song detail                |
@@ -140,7 +143,7 @@ Use Refine's data hooks for all CRUD operations:
 - `useLogin` / `useLogout` -- Auth actions
 
 ### Mantine Components
-Use Mantine v7 components for all UI:
+Use Mantine v8 components for all UI:
 - Layout: `Box`, `Group`, `Stack`, `SimpleGrid`, `Center`
 - Data display: `Card`, `Text`, `Title`, `Badge`
 - Forms: `TextInput`, `PasswordInput`, `NumberInput`, `Select`, `Textarea`
@@ -195,6 +198,7 @@ pages/{section}/{resource}/
 
 ### List Pages
 - Use `useTable` hook for server-side data fetching
+- Default `pageSize: 20` on all list pages
 - Include search input for text filtering
 - Include archive status toggle/filter
 - Paginate with Refine's built-in pagination

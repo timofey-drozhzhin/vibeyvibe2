@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useList, useNavigation } from "@refinedev/core";
+import { useList, useNavigation, type CrudFilter } from "@refinedev/core";
 import {
   Table,
   Group,
@@ -12,26 +12,70 @@ import {
   LoadingOverlay,
 } from "@mantine/core";
 import { IconEye } from "@tabler/icons-react";
+import { ListToolbar } from "../../../components/shared/list-toolbar.js";
+import { SortableHeader } from "../../../components/shared/sortable-header.js";
 
 export const SunoGenerationList = () => {
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [archiveFilter, setArchiveFilter] = useState("active");
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { show } = useNavigation();
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const archivedValue =
+    archiveFilter === "archived"
+      ? true
+      : archiveFilter === "active"
+        ? false
+        : undefined;
+
+  const filters: CrudFilter[] = [];
+  if (search) {
+    filters.push({ field: "search", operator: "contains", value: search });
+  }
+  if (archivedValue !== undefined) {
+    filters.push({ field: "archived", operator: "eq", value: archivedValue });
+  }
 
   const { query: listQuery, result } = useList({
     resource: "suno/generations",
-    pagination: { currentPage: page, pageSize: 10 },
-    sorters: [{ field: "createdAt", order: "desc" }],
+    pagination: { currentPage: page, pageSize: 20 },
+    filters,
+    sorters: [{ field: sortField, order: sortOrder }],
   });
 
   const generations = result.data ?? [];
   const total = result.total ?? 0;
-  const pageCount = Math.ceil(total / 10);
+  const pageCount = Math.ceil(total / 20);
 
   return (
     <Stack>
       <Group justify="space-between">
         <Title order={3}>Generations</Title>
       </Group>
+
+      <ListToolbar
+        search={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        archiveFilter={archiveFilter}
+        onArchiveFilterChange={(value) => {
+          setArchiveFilter(value);
+          setPage(1);
+        }}
+      />
 
       <div style={{ position: "relative", minHeight: 200 }}>
         <LoadingOverlay visible={listQuery.isPending} />
@@ -40,7 +84,7 @@ export const SunoGenerationList = () => {
             <Table.Tr>
               <Table.Th>Suno ID</Table.Th>
               <Table.Th>Bin Song</Table.Th>
-              <Table.Th>Created</Table.Th>
+              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>

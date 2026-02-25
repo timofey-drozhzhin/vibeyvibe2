@@ -21,6 +21,7 @@ const listQuerySchema = z.object({
   sort: z.string().optional(),
   order: z.enum(["asc", "desc"]).default("desc"),
   search: z.string().optional(),
+  archived: z.coerce.boolean().optional(),
 });
 
 export const sunoCollectionsRoutes = new Hono();
@@ -30,13 +31,17 @@ sunoCollectionsRoutes.get(
   "/",
   zValidator("query", listQuerySchema),
   async (c) => {
-    const { page, pageSize, sort, order, search } = c.req.valid("query");
+    const { page, pageSize, sort, order, search, archived } = c.req.valid("query");
     const db = getDb();
 
     const conditions = [];
 
     if (search) {
       conditions.push(like(sunoCollections.name, `%${search}%`));
+    }
+
+    if (archived !== undefined) {
+      conditions.push(eq(sunoCollections.archived, archived));
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;

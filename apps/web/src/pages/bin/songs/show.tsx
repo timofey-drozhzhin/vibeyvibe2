@@ -16,6 +16,7 @@ import {
   IconExternalLink,
 } from "@tabler/icons-react";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
+import { AudioPlayer } from "../../../components/shared/audio-player.js";
 
 interface BinSong {
   id: number;
@@ -98,16 +99,12 @@ export const BinSongShow = () => {
             )}
           </div>
 
-          {record.assetPath && (
-            <div>
-              <Text size="sm" c="dimmed" mb="xs">
-                Audio Player
-              </Text>
-              <audio controls src={record.assetPath} style={{ width: "100%" }}>
-                Your browser does not support the audio element.
-              </audio>
-            </div>
-          )}
+          <div>
+            <Text size="sm" c="dimmed" mb="xs">
+              Audio Player
+            </Text>
+            <AudioPlayer path={record.assetPath} />
+          </div>
 
           <div>
             <Text size="sm" c="dimmed">

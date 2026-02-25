@@ -9,8 +9,21 @@ export class LocalStorageClient implements StorageClient {
     this.basePath = resolve(basePath);
   }
 
+  /**
+   * Resolve a storage path to an absolute filesystem path, ensuring it
+   * stays within the configured base directory. Throws if the resolved
+   * path escapes the base (e.g. via ".." segments).
+   */
+  private safePath(path: string): string {
+    const fullPath = resolve(join(this.basePath, path));
+    if (!fullPath.startsWith(this.basePath)) {
+      throw new Error("Path traversal detected: path escapes storage directory");
+    }
+    return fullPath;
+  }
+
   async upload(path: string, data: Buffer | ArrayBuffer | ReadableStream, contentType: string): Promise<void> {
-    const fullPath = join(this.basePath, path);
+    const fullPath = this.safePath(path);
     await mkdir(dirname(fullPath), { recursive: true });
 
     let buffer: Buffer;
@@ -34,7 +47,7 @@ export class LocalStorageClient implements StorageClient {
   }
 
   async download(path: string): Promise<ArrayBuffer> {
-    const fullPath = join(this.basePath, path);
+    const fullPath = this.safePath(path);
     const buffer = await readFile(fullPath);
     return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
   }
@@ -44,7 +57,7 @@ export class LocalStorageClient implements StorageClient {
   }
 
   async exists(path: string): Promise<boolean> {
-    const fullPath = join(this.basePath, path);
+    const fullPath = this.safePath(path);
     try {
       await access(fullPath);
       return true;

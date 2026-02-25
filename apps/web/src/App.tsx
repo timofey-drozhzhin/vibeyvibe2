@@ -81,6 +81,7 @@ import { AnatomyArtistShow } from "./pages/anatomy/artists/show.js";
 import { AnatomyAttributeList } from "./pages/anatomy/attributes/list.js";
 import { AnatomyAttributeCreate } from "./pages/anatomy/attributes/create.js";
 import { AnatomyAttributeEdit } from "./pages/anatomy/attributes/edit.js";
+import { AnatomyImport } from "./pages/anatomy/import.js";
 
 // -- Bin pages imported above --
 
@@ -296,6 +297,7 @@ export const App = () => {
               <Route path="create" element={<AnatomyAttributeCreate />} />
               <Route path="edit/:id" element={<AnatomyAttributeEdit />} />
             </Route>
+            <Route path="import" element={<AnatomyImport />} />
           </Route>
 
           {/* Bin */}

@@ -7,7 +7,7 @@ A personal music management platform for cataloging music collections, analyzing
 Monorepo managed with pnpm workspaces. Two apps live under `apps/`:
 
 - **apps/api** -- Hono v4 REST API backend (deploys to Bunny Edge Scripting)
-- **apps/web** -- Refine v4 (headless) + Mantine UI v8 single-page application (deploys to Bunny CDN)
+- **apps/web** -- Refine v5 (headless) + Mantine UI v8 single-page application (deploys to Bunny CDN)
 
 The API serves all data through a `/api` prefix. The web app proxies `/api` requests to the backend during development via Vite's dev server proxy.
 
@@ -22,7 +22,8 @@ The API serves all data through a `/api` prefix. The web app proxies `/api` requ
 │   └── e2e/              # End-to-end test specs
 │       └── specs/        # Test spec files
 ├── tmp/                  # Temporary files, local dev storage (gitignored)
-│   └── storage/          # Local file storage for dev (mimics Bunny CDN)
+│   ├── storage/          # Local file storage for dev (mimics Bunny CDN)
+│   └── playwright/       # MCP Playwright screenshots, PDFs, and exports
 ├── .devcontainer/        # Dev container configuration (Debian + Node)
 ├── .claude/              # Claude Code settings
 ├── package.json          # Root workspace scripts
@@ -37,7 +38,7 @@ The API serves all data through a `/api` prefix. The web app proxies `/api` requ
 | Layer         | Technology                                      |
 |---------------|------------------------------------------------|
 | API Framework | Hono v4                                        |
-| Frontend      | Refine v4 (headless) + Mantine UI v8 + React 19 |
+| Frontend      | Refine v5 (headless) + Mantine UI v8 + React 19 |
 | Database ORM  | Drizzle ORM (SQLite / libSQL)                  |
 | Auth          | Better Auth (email/password + Google OAuth)     |
 | Validation    | Zod (shared validation schemas)                |
@@ -65,7 +66,7 @@ All database tables are prefixed by their section:
 - Auth tables (user, session, account, verification) are managed by Better Auth and have no prefix.
 
 ### Temporary Files
-All temporary files go in `./tmp/` (gitignored). Local dev storage lives at `./tmp/storage/`.
+All temporary files go in `./tmp/` (gitignored). Local dev storage lives at `./tmp/storage/`. MCP Playwright outputs (screenshots, PDFs) go in `./tmp/playwright/`.
 
 ### Documentation
 Always document structural changes in CLAUDE.md files. Keep these files up to date when adding new routes, schemas, pages, or changing conventions.
@@ -126,11 +127,20 @@ pnpm typecheck        # TypeScript type checking
 
 ## Database
 
-- **Development**: Local SQLite file (`file:./local.db` relative to the API package). Created automatically on first `db:push`.
+- **Development**: Local SQLite file at `tmp/local.db` (relative to workspace root, gitignored). Created automatically on first `db:push`.
 - **Production**: Bunny libSQL remote database. Set `DATABASE_URL` to the libSQL connection string and provide `DATABASE_AUTH_TOKEN`.
 - ORM: Drizzle ORM with the libSQL driver.
 - All tables use `text` primary keys with nanoid-generated IDs.
 - All tables include `createdAt` and `updatedAt` timestamp columns.
+
+### Seeding
+
+- `pnpm db:seed` -- Seeds the database with sample data (runs `apps/api/src/db/seed.ts`).
+- `apps/api/src/db/seed-attributes.ts` -- Standalone script to seed the `anatomy_attributes` table with a comprehensive set of 60+ analysis attributes grouped by category. Run directly via `tsx apps/api/src/db/seed-attributes.ts` from the API directory.
+
+### Notable Schema Details
+
+- **anatomy_attributes** includes a `category` column (text, nullable) for grouping attributes (e.g., "genre", "structure", "composition", "rhythm", "instrumentation", "vocals", "lyrics", "production", "mood", "energy", "signature").
 
 ## Storage
 
@@ -157,3 +167,113 @@ Collection point for song discoveries and sources. Track where songs come from a
 
 ### Suno Studio
 AI music generation workflow. Craft text prompts (lyrics + style), organize them into collections, and track generation results from Suno. Links to anatomy profiles for reference and bin songs for output.
+
+## Security
+
+### Rate Limiting
+Auth endpoints (`/api/auth/*`) are protected by an in-memory rate limiter: 10 requests per 60 seconds per IP address. The middleware (`apps/api/src/middleware/rate-limit.ts`) tracks requests by IP (using `X-Forwarded-For` or `X-Real-IP` headers) and returns HTTP 429 with `Retry-After` header when the limit is exceeded. Expired entries are cleaned up periodically to prevent memory leaks.
+
+### Secure Headers
+All responses include secure headers via Hono's `secureHeaders()` middleware.
+
+## Spotify Import Service
+
+The Spotify metadata extraction service (`apps/api/src/services/spotify/index.ts`) uses the `spotify-url-info` library to scrape public Spotify embed pages and extract track metadata without requiring Spotify API credentials. Type declarations for the library are in `apps/api/src/types/spotify-url-info.d.ts`.
+
+### Public API
+- `fetchSpotifyData(url)` -- Fetches metadata for a Spotify URL (track, album, or playlist). Returns a `SpotifyImportResult` with an array of normalized `SpotifyTrack` objects containing name, artists, album, releaseDate, ISRC, imageUrl, and spotifyId.
+- `detectSpotifyType(url)` -- Detects whether a URL points to a track, album, playlist, or is unknown.
+
+### Import Flow
+1. User enters a Spotify URL on the Import page (`/anatomy/import`)
+2. `POST /api/anatomy/import` validates the URL and calls `fetchSpotifyData` to return a preview of extracted tracks
+3. User reviews and selects tracks to import
+4. `POST /api/anatomy/import/confirm` creates `anatomy_songs` and `anatomy_artists` records from the selected tracks, with duplicate detection by Spotify ID and ISRC
+
+## File Upload Routes
+
+### POST /api/upload
+Upload a file via multipart form data. Accepts `file` (required) and `directory` (optional) fields.
+- **Max size**: 10MB
+- **Allowed types**: `image/*`, `audio/*`
+- **Valid directories**: `artists`, `albums`, `songs`, `bin`
+- **Returns**: `{ path: string, url: string }` (HTTP 201)
+- Files are stored with nanoid-generated unique filenames
+
+### GET /api/storage/*
+Serve uploaded files by storage path. Sets immutable cache headers. Supports image formats (JPEG, PNG, GIF, WebP, SVG) and audio formats (MP3, WAV, OGG, FLAC, AAC, M4A).
+
+## Profile Management
+
+Anatomy profiles store structured analysis data as JSON objects keyed by attribute name (e.g., `{"Tempo": "120 BPM", "Mood": "melancholic"}`).
+
+### API Routes
+- `GET /api/anatomy/profiles` -- List profiles (filterable by `songId`)
+- `POST /api/anatomy/profiles` -- Create profile (`{ songId, value }` where value is a JSON string)
+- `GET /api/anatomy/profiles/:id` -- Get profile (enriched with song name)
+- `PUT /api/anatomy/profiles/:id` -- Update/archive profile
+- `GET /api/anatomy/songs/:id/profiles` -- List all profiles for a song
+- `POST /api/anatomy/songs/:id/profiles` -- Create new profile version for a song
+
+### ProfileEditor Component
+The `ProfileEditor` component (`components/anatomy/profile-editor.tsx`) fetches all active attributes and renders a textarea for each one. Supports creating new profiles and editing existing ones. Used on the Anatomy Song show page.
+
+## Import Functionality
+
+### POST /api/anatomy/import
+Accepts a Spotify URL and returns a preview of extracted track metadata using the Spotify import service. Validates that the URL is a supported Spotify URL (`open.spotify.com`, `spotify.link`). Returns track name, artists, album, release date, ISRC, image URL, and Spotify ID.
+
+**Schema**: `{ url: string }` (must be a valid URL)
+
+### POST /api/anatomy/import/confirm
+Accepts an array of tracks (from the preview step) and creates `anatomy_songs` and `anatomy_artists` records. Skips duplicates by Spotify ID or ISRC. Artists are matched case-insensitively by name; new artists receive placeholder ISNI values.
+
+**Schema**: `{ tracks: [{ name, artists: [{name}], album?, releaseDate?, isrc?, imageUrl?, spotifyId }] }`
+
+## Relationship Assignment Routes
+
+Songs can be assigned to artists and albums through junction tables:
+
+### My Music
+- `POST /api/my-music/songs/:id/artists` -- Assign artist (`{ artistId }`)
+- `PUT /api/my-music/songs/:id/artists/:artistId` -- Remove artist assignment
+- `POST /api/my-music/songs/:id/albums` -- Assign album (`{ albumId }`)
+- `PUT /api/my-music/songs/:id/albums/:albumId` -- Remove album assignment
+
+### Suno Studio
+- `POST /api/suno/collections/:id/prompts` -- Assign prompt (`{ promptId }`)
+- `PUT /api/suno/collections/:id/prompts/:promptId` -- Manage prompt assignment
+
+## Shared UI Components
+
+Located in `apps/web/src/components/shared/`:
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `FileUpload` | `file-upload.tsx` | File upload widget that POSTs to `/api/upload` and returns the storage path. Supports accept filter and directory parameter. |
+| `ImagePreview` | `image-preview.tsx` | Displays an image from storage path, or a placeholder icon when no path is set. Configurable size. |
+| `AudioPlayer` | `audio-player.tsx` | HTML5 audio player that plays files from storage. Shows "no audio" placeholder when path is null. |
+| `AssignModal` | `assign-modal.tsx` | Modal with searchable dropdown for assigning relationships (artist to song, prompt to collection, etc.). |
+| `SortableHeader` | `sortable-header.tsx` | Clickable table header cell with sort direction arrow indicator. |
+| `ListToolbar` | `list-toolbar.tsx` | Shared toolbar with search input and archive status segmented control (Active/All/Archived). |
+| `RatingField` | `rating-field.tsx` | Interactive star rating (0-10 scale displayed as 0-5 stars with half-star precision). Also exports `RatingDisplay`. |
+| `ArchiveToggle` | `archive-toggle.tsx` | Switch for setting archived status on edit forms. Also exports `ArchiveBadge` for read-only display. |
+
+### Anatomy Components
+
+Located in `apps/web/src/components/anatomy/`:
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `ProfileEditor` | `profile-editor.tsx` | Form for creating/editing anatomy profiles. Fetches all active attributes and renders a textarea per attribute. Saves as JSON. |
+
+## API Validation Schemas
+
+Located in `apps/api/src/validators/`:
+
+| File | Schemas |
+|------|---------|
+| `my-music.ts` | `createSongSchema`, `updateSongSchema`, `createArtistSchema`, `updateArtistSchema`, `createAlbumSchema`, `updateAlbumSchema`, `assignArtistSchema`, `assignAlbumSchema`, `listQuerySchema` |
+| `anatomy.ts` | `createAnatomySongSchema`, `updateAnatomySongSchema`, `createAnatomyArtistSchema`, `updateAnatomyArtistSchema`, `createAttributeSchema`, `updateAttributeSchema`, `createProfileSchema`, `updateProfileSchema`, `importUrlSchema`, `smartSearchSchema` |
+| `bin.ts` | `createBinSongSchema`, `updateBinSongSchema`, `createBinSourceSchema`, `updateBinSourceSchema`, `importYoutubeSchema` |
+| `suno.ts` | `createPromptSchema`, `updatePromptSchema`, `createCollectionSchema`, `updateCollectionSchema`, `assignPromptSchema`, `createGenerationSchema`, `assignGenerationPromptSchema` |

@@ -12,9 +12,11 @@ import {
   Text,
   LoadingOverlay,
   Badge,
+  Avatar,
 } from "@mantine/core";
 import { IconEye, IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
+import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
 
@@ -22,7 +24,18 @@ export const AlbumList = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [archiveFilter, setArchiveFilter] = useState("active");
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { show, edit, create } = useNavigation();
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
 
   const archivedValue =
     archiveFilter === "archived"
@@ -33,18 +46,18 @@ export const AlbumList = () => {
 
   const listResult = useList({
     resource: "my-music/albums",
-    pagination: { currentPage: page, pageSize: 10 },
+    pagination: { currentPage: page, pageSize: 20 },
     filters: [
       { field: "search", operator: "contains", value: search },
       { field: "archived", operator: "eq", value: archivedValue },
     ],
-    sorters: [{ field: "createdAt", order: "desc" }],
+    sorters: [{ field: sortField, order: sortOrder }],
   });
 
   const loading = listResult.query.isPending;
   const albums = listResult.result.data ?? [];
   const total = listResult.result.total ?? 0;
-  const pageCount = Math.ceil(total / 10);
+  const pageCount = Math.ceil(total / 20);
 
   return (
     <Stack>
@@ -76,18 +89,20 @@ export const AlbumList = () => {
         <Table striped highlightOnHover>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Name</Table.Th>
+              <Table.Th w={50}></Table.Th>
+              <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>EAN</Table.Th>
-              <Table.Th>Release Date</Table.Th>
-              <Table.Th>Rating</Table.Th>
+              <SortableHeader field="releaseDate" label="Release Date" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+              <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Status</Table.Th>
+              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {albums.length === 0 && !loading && (
               <Table.Tr>
-                <Table.Td colSpan={6}>
+                <Table.Td colSpan={7}>
                   <Text c="dimmed" ta="center" py="md">
                     No albums found.
                   </Text>
@@ -96,6 +111,9 @@ export const AlbumList = () => {
             )}
             {albums.map((album: any) => (
               <Table.Tr key={album.id}>
+                <Table.Td>
+                  <Avatar size={32} radius="sm" src={album.imagePath ? `/api/storage/${album.imagePath}` : null} />
+                </Table.Td>
                 <Table.Td>{album.name}</Table.Td>
                 <Table.Td>
                   <Text size="sm" c="dimmed">
@@ -115,6 +133,13 @@ export const AlbumList = () => {
                       Active
                     </Badge>
                   )}
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" c="dimmed">
+                    {album.createdAt
+                      ? new Date(album.createdAt).toLocaleDateString()
+                      : "-"}
+                  </Text>
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs">

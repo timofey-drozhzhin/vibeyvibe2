@@ -5,7 +5,7 @@ import * as schema from "./schema/index.js";
 let _db: ReturnType<typeof createDrizzle> | null = null;
 
 function createDrizzle() {
-  const url = process.env.DATABASE_URL || "file:./local.db";
+  const url = process.env.DATABASE_URL || "file:../../tmp/local.db";
   const authToken = process.env.DATABASE_AUTH_TOKEN;
 
   const client = createClient({

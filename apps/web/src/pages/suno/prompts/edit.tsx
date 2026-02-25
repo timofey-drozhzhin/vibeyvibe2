@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm, useNavigation } from "@refinedev/core";
+import { useForm, useNavigation, useList } from "@refinedev/core";
 import {
   Card,
   TextInput,
@@ -15,6 +15,15 @@ import {
 import { IconArrowLeft } from "@tabler/icons-react";
 import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
 
+interface ProfileOption {
+  id: string;
+  songId: string;
+  songName?: string;
+  value: string;
+  archived: boolean;
+  createdAt: string;
+}
+
 export const SunoPromptEdit = () => {
   const { list, show } = useNavigation();
 
@@ -22,7 +31,7 @@ export const SunoPromptEdit = () => {
   const [style, setStyle] = useState("");
   const [voiceGender, setVoiceGender] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
-  const [profileId, setProfileId] = useState("");
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [rating, setRating] = useState<number>(0);
   const [archived, setArchived] = useState(false);
 
@@ -34,13 +43,22 @@ export const SunoPromptEdit = () => {
 
   const record = query?.data?.data;
 
+  const { result: profilesResult } = useList<ProfileOption>({
+    resource: "anatomy/profiles",
+    pagination: { pageSize: 100 },
+    filters: [{ field: "archived", operator: "eq", value: false }],
+  });
+
+  const profiles = profilesResult.data ?? [];
+  const profileSelectData = buildProfileOptions(profiles);
+
   useEffect(() => {
     if (record) {
       setLyrics(record.lyrics ?? "");
       setStyle(record.style ?? "");
       setVoiceGender(record.voiceGender ?? null);
       setNotes(record.notes ?? "");
-      setProfileId(record.profileId ?? "");
+      setProfileId(record.profileId ?? null);
       setRating(record.rating ?? 0);
       setArchived(record.archived ?? false);
     }
@@ -112,11 +130,14 @@ export const SunoPromptEdit = () => {
             onChange={(e) => setNotes(e.currentTarget.value)}
           />
 
-          <TextInput
-            label="Profile ID"
-            placeholder="Anatomy profile ID (optional)"
+          <Select
+            label="Anatomy Profile"
+            placeholder="Select an anatomy profile (optional)"
+            data={profileSelectData}
             value={profileId}
-            onChange={(e) => setProfileId(e.currentTarget.value)}
+            onChange={setProfileId}
+            clearable
+            searchable
           />
 
           <NumberInput
@@ -150,3 +171,30 @@ export const SunoPromptEdit = () => {
     </Stack>
   );
 };
+
+function buildProfileOptions(profiles: ProfileOption[]) {
+  const songGroups: Record<string, ProfileOption[]> = {};
+  for (const profile of profiles) {
+    const songName = profile.songName || "Unknown Song";
+    if (!songGroups[songName]) {
+      songGroups[songName] = [];
+    }
+    songGroups[songName].push(profile);
+  }
+
+  const options: { value: string; label: string; group: string }[] = [];
+  for (const [songName, songProfiles] of Object.entries(songGroups)) {
+    const sorted = [...songProfiles].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    sorted.forEach((profile, index) => {
+      options.push({
+        value: profile.id,
+        label: `${songName} - Profile #${index + 1}`,
+        group: songName,
+      });
+    });
+  }
+
+  return options;
+}

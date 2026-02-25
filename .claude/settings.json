@@ -13,7 +13,6 @@
       "WebFetch",
       "WebSearch",
       "Write",
-      "Bash(.specify/**)",
       "Bash(git:*)",
       "Bash(git log:*)",
       "Bash(log:*)",

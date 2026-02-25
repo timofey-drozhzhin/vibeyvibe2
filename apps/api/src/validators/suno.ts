@@ -18,7 +18,9 @@ export const createCollectionSchema = z.object({
   description: z.string().nullable().optional(),
 });
 
-export const updateCollectionSchema = createCollectionSchema.partial();
+export const updateCollectionSchema = createCollectionSchema.partial().extend({
+  archived: z.boolean().optional(),
+});
 
 export const assignPromptSchema = z.object({
   promptId: z.string().min(1),

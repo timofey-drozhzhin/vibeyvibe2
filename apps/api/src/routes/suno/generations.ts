@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { eq, desc, asc, sql } from "drizzle-orm";
+import { eq, like, and, desc, asc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDb } from "../../db/index.js";
@@ -16,6 +16,8 @@ const listQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
   sort: z.string().optional(),
   order: z.enum(["asc", "desc"]).default("desc"),
+  search: z.string().optional(),
+  archived: z.coerce.boolean().optional(),
 });
 
 export const sunoGenerationsRoutes = new Hono();
@@ -25,8 +27,20 @@ sunoGenerationsRoutes.get(
   "/",
   zValidator("query", listQuerySchema),
   async (c) => {
-    const { page, pageSize, sort, order } = c.req.valid("query");
+    const { page, pageSize, sort, order, search, archived } = c.req.valid("query");
     const db = getDb();
+
+    const conditions = [];
+
+    if (search) {
+      conditions.push(like(sunoGenerations.sunoId, `%${search}%`));
+    }
+
+    if (archived !== undefined) {
+      conditions.push(eq(sunoGenerations.archived, archived));
+    }
+
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     let orderByColumn;
     switch (sort) {
@@ -44,12 +58,14 @@ sunoGenerationsRoutes.get(
       db
         .select()
         .from(sunoGenerations)
+        .where(where)
         .orderBy(orderByDir)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       db
         .select({ count: sql<number>`count(*)` })
-        .from(sunoGenerations),
+        .from(sunoGenerations)
+        .where(where),
     ]);
 
     return c.json({

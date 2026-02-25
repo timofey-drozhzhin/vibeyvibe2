@@ -60,6 +60,7 @@ export const anatomySongArtists = sqliteTable(
 export const anatomyAttributes = sqliteTable("anatomy_attributes", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
+  category: text("category"),
   description: text("description"),
   instruction: text("instruction"),
   examples: text("examples"),

@@ -13,6 +13,7 @@ import {
 import { IconArrowLeft, IconEdit } from "@tabler/icons-react";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
+import { ImagePreview } from "../../../components/shared/image-preview.js";
 
 export const ArtistShow = () => {
   const { list, edit, show: showNav } = useNavigation();
@@ -73,10 +74,10 @@ export const ArtistShow = () => {
 
             {record.imagePath && (
               <div>
-                <Text size="xs" c="dimmed">
-                  Image Path
+                <Text size="xs" c="dimmed" mb={4}>
+                  Image
                 </Text>
-                <Text size="sm">{record.imagePath}</Text>
+                <ImagePreview path={record.imagePath} alt={record.name} />
               </div>
             )}
 

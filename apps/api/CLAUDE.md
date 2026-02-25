@@ -18,6 +18,7 @@ src/
 ├── db/
 │   ├── index.ts          # Drizzle client factory with libSQL driver (getDb() singleton)
 │   ├── seed.ts           # Database seeding script (run via pnpm db:seed)
+│   ├── seed-attributes.ts # Standalone script to seed anatomy_attributes with 60+ categorized attributes
 │   └── schema/
 │       ├── index.ts      # Re-exports all schema modules
 │       ├── auth.ts       # Better Auth tables: user, session, account, verification
@@ -27,7 +28,8 @@ src/
 │       └── suno-studio.ts # Suno tables: suno_prompts, suno_collections, suno_collection_prompts, suno_generations, suno_generation_prompts
 ├── middleware/
 │   ├── auth.ts           # Auth middleware: session validation, dev bypass, route skipping for /api/auth/*
-│   └── error.ts          # Global error handler: HTTPException mapping, 500 fallback
+│   ├── error.ts          # Global error handler: HTTPException mapping, 500 fallback
+│   └── rate-limit.ts     # In-memory rate limiter (per IP, configurable window and max requests)
 ├── routes/
 │   ├── index.ts          # Route registry: mounts all sub-routers under /api
 │   ├── my-music/
@@ -43,17 +45,26 @@ src/
 │   ├── bin/
 │   │   ├── songs.ts      # CRUD for bin_songs
 │   │   └── sources.ts    # CRUD for bin_sources
-│   └── suno/
-│       ├── prompts.ts    # CRUD for suno_prompts
-│       ├── collections.ts # CRUD for suno_collections + prompt assignment
-│       └── generations.ts # CRUD for suno_generations + prompt assignment
+│   ├── suno/
+│   │   ├── prompts.ts    # CRUD for suno_prompts
+│   │   ├── collections.ts # CRUD for suno_collections + prompt assignment
+│   │   └── generations.ts # CRUD for suno_generations + prompt assignment
+│   ├── upload.ts         # File upload endpoint (multipart form data)
+│   └── storage.ts        # File serving endpoint (static file delivery)
 ├── services/
+│   ├── spotify/
+│   │   └── index.ts      # Spotify metadata extraction (uses spotify-url-info library)
 │   └── storage/
 │       ├── index.ts      # StorageClient interface + factory (createStorageClient)
 │       ├── local.ts      # LocalStorageClient: filesystem-based storage for development
 │       └── bunny.ts      # BunnyStorageClient: Bunny Edge Storage for production
+├── types/
+│   └── spotify-url-info.d.ts # Type declarations for the spotify-url-info library
 └── validators/
-    └── my-music.ts       # Zod schemas for My Music routes (songs, artists, albums, list params)
+    ├── my-music.ts       # Zod schemas for My Music routes (songs, artists, albums, list params)
+    ├── anatomy.ts        # Zod schemas for Anatomy routes (songs, artists, attributes, profiles, import)
+    ├── bin.ts            # Zod schemas for Bin routes (songs, sources)
+    └── suno.ts           # Zod schemas for Suno Studio routes (prompts, collections, generations)
 ```
 
 ## Schema Rules
@@ -128,12 +139,14 @@ Every route handler uses `@hono/zod-validator` with schemas defined in the `vali
 
 Update schemas are typically `.partial()` extensions of create schemas with an additional `archived` boolean field.
 
-Example validator schemas in `validators/my-music.ts`:
-- `createSongSchema` / `updateSongSchema` -- Song CRUD validation
-- `createArtistSchema` / `updateArtistSchema` -- Artist CRUD validation (ISNI, social usernames)
-- `createAlbumSchema` / `updateAlbumSchema` -- Album CRUD validation (EAN)
-- `assignArtistSchema` / `assignAlbumSchema` -- Relationship assignment validation
-- `listQuerySchema` -- Pagination and filtering parameters
+Schemas are organized by section in `validators/`:
+
+| File | Schemas |
+|------|---------|
+| `my-music.ts` | `createSongSchema`, `updateSongSchema`, `createArtistSchema`, `updateArtistSchema`, `createAlbumSchema`, `updateAlbumSchema`, `assignArtistSchema`, `assignAlbumSchema`, `listQuerySchema` |
+| `anatomy.ts` | `createAnatomySongSchema`, `updateAnatomySongSchema`, `createAnatomyArtistSchema`, `updateAnatomyArtistSchema`, `createAttributeSchema` (includes `category`), `updateAttributeSchema`, `createProfileSchema`, `updateProfileSchema`, `importUrlSchema`, `smartSearchSchema` |
+| `bin.ts` | `createBinSongSchema`, `updateBinSongSchema`, `createBinSourceSchema`, `updateBinSourceSchema`, `importYoutubeSchema` |
+| `suno.ts` | `createPromptSchema`, `updatePromptSchema`, `createCollectionSchema`, `updateCollectionSchema`, `assignPromptSchema`, `createGenerationSchema`, `assignGenerationPromptSchema` |
 
 When adding new routes, always create corresponding Zod schemas in `validators/` and apply them with `zValidator`.
 
@@ -156,6 +169,14 @@ The middleware:
 2. Calls Better Auth's `getSession` API
 3. Sets `user` and `session` context variables on the Hono context
 4. Returns 401 if no valid session exists
+
+### Rate Limiting
+Auth endpoints (`/api/auth/*`) are protected by an in-memory rate limiter configured at 10 requests per 60 seconds per IP address. The middleware (`middleware/rate-limit.ts`):
+- Tracks requests by IP using `X-Forwarded-For` or `X-Real-IP` headers
+- Returns HTTP 429 with `Retry-After` header when the limit is exceeded
+- Sets `X-RateLimit-Limit` and `X-RateLimit-Remaining` response headers
+- Cleans up expired entries every 60 seconds to prevent memory leaks
+- Uses an unreferenced timer so it does not prevent process exit
 
 ### Dev Auth Bypass
 For local development, authentication can be bypassed entirely. This requires a **double guard**:
@@ -184,6 +205,21 @@ interface StorageClient {
 
 ### Factory
 Call `createStorageClient()` to get the correct implementation based on the `STORAGE_PROVIDER` environment variable. The factory validates that required Bunny credentials are present when using the Bunny provider.
+
+## Spotify Import Service
+
+The Spotify metadata extraction service (`services/spotify/index.ts`) uses the `spotify-url-info` library to scrape public Spotify embed pages and extract track metadata without requiring Spotify API credentials.
+
+### Public API
+- `fetchSpotifyData(url: string): Promise<SpotifyImportResult>` -- Fetches metadata for a Spotify URL (track, album, or playlist). Returns normalized `SpotifyTrack` objects with name, artists, album, releaseDate, ISRC, imageUrl, and spotifyId.
+- `detectSpotifyType(url: string): "track" | "album" | "playlist" | "unknown"` -- Detects the Spotify resource type from a URL path.
+
+### Import Routes
+- `POST /api/anatomy/import` -- Preview: accepts a Spotify URL and returns extracted tracks for review.
+- `POST /api/anatomy/import/confirm` -- Confirm: accepts selected tracks and creates `anatomy_songs` and `anatomy_artists` records with duplicate detection.
+
+### Type Declarations
+The `spotify-url-info` library lacks built-in types. Custom type declarations are in `types/spotify-url-info.d.ts`.
 
 ## Migration Workflow
 

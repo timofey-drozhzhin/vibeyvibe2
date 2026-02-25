@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useShow, useNavigation } from "@refinedev/core";
 import {
   Card,
@@ -12,7 +13,12 @@ import {
   ActionIcon,
   Tooltip,
 } from "@mantine/core";
-import { IconArrowLeft, IconEdit, IconEye } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
+import { IconArrowLeft, IconEdit, IconEye, IconPlus, IconUnlink } from "@tabler/icons-react";
+import { AssignModal } from "../../../components/shared/assign-modal.js";
+
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 export const SunoCollectionShow = () => {
   const { list, edit, show } = useNavigation();
@@ -21,6 +27,43 @@ export const SunoCollectionShow = () => {
   const isLoading = query?.isLoading ?? false;
 
   const prompts: any[] = record?.prompts ?? [];
+
+  const [promptModalOpened, { open: openPromptModal, close: closePromptModal }] =
+    useDisclosure(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const handleRemovePrompt = async (promptId: string) => {
+    if (!record) return;
+    setRemovingId(promptId);
+    try {
+      const res = await fetch(
+        `${API_URL}/api/suno/collections/${record.id}/prompts/${promptId}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      notifications.show({
+        title: "Removed",
+        message: "Prompt removed from collection.",
+        color: "green",
+      });
+      query.refetch();
+    } catch (err: any) {
+      notifications.show({
+        title: "Error",
+        message: err.message || "Failed to remove prompt.",
+        color: "red",
+      });
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   return (
     <Stack>
@@ -80,7 +123,19 @@ export const SunoCollectionShow = () => {
 
       <Card withBorder padding="lg">
         <Stack gap="md">
-          <Title order={5}>Prompts in this Collection</Title>
+          <Group justify="space-between">
+            <Title order={5}>Prompts in this Collection</Title>
+            {record?.id && (
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconPlus size={14} />}
+                onClick={openPromptModal}
+              >
+                Assign Prompt
+              </Button>
+            )}
+          </Group>
 
           <Table striped highlightOnHover>
             <Table.Thead>
@@ -127,14 +182,26 @@ export const SunoCollectionShow = () => {
                     <Text size="sm">{prompt.rating ?? 0}/10</Text>
                   </Table.Td>
                   <Table.Td>
-                    <Tooltip label="View Prompt">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => show("suno/prompts", prompt.id)}
-                      >
-                        <IconEye size={16} />
-                      </ActionIcon>
-                    </Tooltip>
+                    <Group gap="xs">
+                      <Tooltip label="View Prompt">
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => show("suno/prompts", prompt.id)}
+                        >
+                          <IconEye size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                      <Tooltip label="Remove prompt from collection">
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          loading={removingId === prompt.id}
+                          onClick={() => handleRemovePrompt(prompt.id)}
+                        >
+                          <IconUnlink size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Group>
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -142,6 +209,19 @@ export const SunoCollectionShow = () => {
           </Table>
         </Stack>
       </Card>
+
+      {record?.id && (
+        <AssignModal
+          opened={promptModalOpened}
+          onClose={closePromptModal}
+          title="Assign Prompt"
+          resource="suno/prompts"
+          assignUrl={`/api/suno/collections/${record.id}/prompts`}
+          fieldName="promptId"
+          labelField="style"
+          onSuccess={() => query.refetch()}
+        />
+      )}
     </Stack>
   );
 };

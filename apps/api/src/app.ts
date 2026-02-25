@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import { authMiddleware } from "./middleware/auth.js";
+import { rateLimiter } from "./middleware/rate-limit.js";
 import { errorHandler } from "./middleware/error.js";
 import { getAuth } from "./auth/index.js";
 import { routes } from "./routes/index.js";
@@ -19,11 +20,13 @@ app.use(
   "/api/*",
   cors({
     origin: (origin) => {
-      const allowed = [
-        process.env.FRONTEND_URL || "http://localhost:5173",
-        "http://localhost:5173",
-      ];
-      return allowed.includes(origin) ? origin : "";
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+      const allowed = new Set([frontendUrl]);
+      // Only allow localhost in non-production environments
+      if (process.env.NODE_ENV !== "production") {
+        allowed.add("http://localhost:5173");
+      }
+      return allowed.has(origin) ? origin : "";
     },
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "OPTIONS"],
@@ -31,6 +34,10 @@ app.use(
     maxAge: 600,
   })
 );
+
+// Rate limiting for auth endpoints (10 requests per 60 seconds per IP)
+// Applied before the auth handler to prevent brute force login attacks
+app.use("/api/auth/*", rateLimiter(10, 60_000));
 
 // Health check (unauthenticated)
 app.get("/api/health", (c) => {

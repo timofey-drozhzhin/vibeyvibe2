@@ -3,15 +3,16 @@ import { useForm, useNavigation } from "@refinedev/core";
 import {
   Card,
   TextInput,
-  NumberInput,
   Button,
   Group,
   Stack,
   Title,
+  Text,
   LoadingOverlay,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
+import { RatingField } from "../../../components/shared/rating-field.js";
 
 export const ArtistEdit = () => {
   const { list, show } = useNavigation();
@@ -97,15 +98,12 @@ export const ArtistEdit = () => {
             value={imagePath}
             onChange={(e) => setImagePath(e.currentTarget.value)}
           />
-          <NumberInput
-            label="Rating"
-            placeholder="0-10"
-            min={0}
-            max={10}
-            step={0.5}
-            value={rating}
-            onChange={(val) => setRating(typeof val === "number" ? val : 0)}
-          />
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              Rating
+            </Text>
+            <RatingField value={rating} onChange={(val) => setRating(val)} />
+          </div>
           <TextInput
             label="Spotify ID"
             placeholder="Spotify artist ID"

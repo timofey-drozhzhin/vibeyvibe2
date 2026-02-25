@@ -12,9 +12,11 @@ import {
   Text,
   LoadingOverlay,
   Badge,
+  Avatar,
 } from "@mantine/core";
 import { IconEye, IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
+import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
 
@@ -22,7 +24,18 @@ export const SongList = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [archiveFilter, setArchiveFilter] = useState("active");
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { show, edit, create } = useNavigation();
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
 
   const archivedValue =
     archiveFilter === "archived"
@@ -33,17 +46,17 @@ export const SongList = () => {
 
   const listResult = useList({
     resource: "my-music/songs",
-    pagination: { currentPage: page, pageSize: 10 },
+    pagination: { currentPage: page, pageSize: 20 },
     filters: [
       { field: "search", operator: "contains", value: search },
       { field: "archived", operator: "eq", value: archivedValue },
     ],
-    sorters: [{ field: "createdAt", order: "desc" }],
+    sorters: [{ field: sortField, order: sortOrder }],
   });
 
   const songs = listResult.result.data ?? [];
   const total = listResult.result.total ?? 0;
-  const pageCount = Math.ceil(total / 10);
+  const pageCount = Math.ceil(total / 20);
 
   return (
     <Stack>
@@ -75,18 +88,20 @@ export const SongList = () => {
         <Table striped highlightOnHover>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Name</Table.Th>
+              <Table.Th w={50}></Table.Th>
+              <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>ISRC</Table.Th>
-              <Table.Th>Release Date</Table.Th>
-              <Table.Th>Rating</Table.Th>
+              <SortableHeader field="releaseDate" label="Release Date" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
+              <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Status</Table.Th>
+              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {songs.length === 0 && !listResult.query.isPending && (
               <Table.Tr>
-                <Table.Td colSpan={6}>
+                <Table.Td colSpan={7}>
                   <Text c="dimmed" ta="center" py="md">
                     No songs found.
                   </Text>
@@ -95,6 +110,9 @@ export const SongList = () => {
             )}
             {songs.map((song: any) => (
               <Table.Tr key={song.id}>
+                <Table.Td>
+                  <Avatar size={32} radius="sm" src={song.imagePath ? `/api/storage/${song.imagePath}` : null} />
+                </Table.Td>
                 <Table.Td>{song.name}</Table.Td>
                 <Table.Td>
                   <Text size="sm" c="dimmed">
@@ -114,6 +132,13 @@ export const SongList = () => {
                       Active
                     </Badge>
                   )}
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" c="dimmed">
+                    {song.createdAt
+                      ? new Date(song.createdAt).toLocaleDateString()
+                      : "-"}
+                  </Text>
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs">

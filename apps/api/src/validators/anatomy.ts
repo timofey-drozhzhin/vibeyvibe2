@@ -31,6 +31,7 @@ export const updateAnatomyArtistSchema = createAnatomyArtistSchema.partial().ext
 
 export const createAttributeSchema = z.object({
   name: z.string().min(1).max(100),
+  category: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   instruction: z.string().nullable().optional(),
   examples: z.string().nullable().optional(),

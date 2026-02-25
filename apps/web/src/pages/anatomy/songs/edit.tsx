@@ -15,6 +15,7 @@ import {
 import { IconArrowLeft } from "@tabler/icons-react";
 import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
 import { RatingField } from "../../../components/shared/rating-field.js";
+import { FileUpload } from "../../../components/shared/file-upload.js";
 
 interface AnatomySong {
   id: string;
@@ -137,11 +138,13 @@ export const AnatomySongEdit = () => {
             <RatingField value={rating} onChange={setRating} />
           </div>
 
-          <TextInput
-            label="Image Path"
+          <FileUpload
+            label="Image"
             value={imagePath}
-            onChange={(e) => setImagePath(e.currentTarget.value)}
-            placeholder="Path to image"
+            onChange={setImagePath}
+            accept="image/*"
+            directory="songs"
+            placeholder="Upload song image"
           />
 
           <TextInput

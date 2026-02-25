@@ -18,6 +18,7 @@ const listQuerySchema = z.object({
   order: z.enum(["asc", "desc"]).default("desc"),
   search: z.string().optional(),
   archived: z.coerce.boolean().optional(),
+  voiceGender: z.enum(["male", "female", "neutral"]).optional(),
 });
 
 export const sunoPromptsRoutes = new Hono();
@@ -27,7 +28,7 @@ sunoPromptsRoutes.get(
   "/",
   zValidator("query", listQuerySchema),
   async (c) => {
-    const { page, pageSize, sort, order, search, archived } =
+    const { page, pageSize, sort, order, search, archived, voiceGender } =
       c.req.valid("query");
     const db = getDb();
 
@@ -44,6 +45,10 @@ sunoPromptsRoutes.get(
 
     if (archived !== undefined) {
       conditions.push(eq(sunoPrompts.archived, archived));
+    }
+
+    if (voiceGender) {
+      conditions.push(eq(sunoPrompts.voiceGender, voiceGender));
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;

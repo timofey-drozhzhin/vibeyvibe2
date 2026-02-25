@@ -10,6 +10,7 @@ import {
   Button,
   Loader,
   Center,
+  Select,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
@@ -17,6 +18,7 @@ import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
 interface AnatomyAttribute {
   id: string;
   name: string;
+  category: string | null;
   description: string | null;
   instruction: string | null;
   examples: string | null;
@@ -36,6 +38,7 @@ export const AnatomyAttributeEdit = () => {
   const isSaving = mutation?.isPending;
 
   const [name, setName] = useState("");
+  const [category, setCategory] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [instruction, setInstruction] = useState("");
   const [examples, setExamples] = useState("");
@@ -44,6 +47,7 @@ export const AnatomyAttributeEdit = () => {
   useEffect(() => {
     if (record) {
       setName(record.name ?? "");
+      setCategory(record.category ?? null);
       setDescription(record.description ?? "");
       setInstruction(record.instruction ?? "");
       setExamples(record.examples ?? "");
@@ -62,6 +66,7 @@ export const AnatomyAttributeEdit = () => {
   const handleSubmit = () => {
     onFinish({
       name,
+      category: category || null,
       description: description || null,
       instruction: instruction || null,
       examples: examples || null,
@@ -91,6 +96,27 @@ export const AnatomyAttributeEdit = () => {
             onChange={(e) => setName(e.currentTarget.value)}
             placeholder="e.g. tempo, mood, vocal_style"
             description="Must be unique. Used as the attribute key in profiles."
+          />
+
+          <Select
+            label="Category"
+            value={category}
+            onChange={setCategory}
+            placeholder="Select category"
+            clearable
+            data={[
+              { value: "genre", label: "Genre" },
+              { value: "structure", label: "Structure" },
+              { value: "composition", label: "Composition" },
+              { value: "rhythm", label: "Rhythm" },
+              { value: "instrumentation", label: "Instrumentation" },
+              { value: "vocals", label: "Vocals" },
+              { value: "lyrics", label: "Lyrics" },
+              { value: "production", label: "Production" },
+              { value: "mood", label: "Mood" },
+              { value: "energy", label: "Energy" },
+              { value: "signature", label: "Signature" },
+            ]}
           />
 
           <Textarea

@@ -13,6 +13,7 @@ import {
 import { IconArrowLeft, IconEdit } from "@tabler/icons-react";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
+import { ImagePreview } from "../../../components/shared/image-preview.js";
 
 export const AlbumShow = () => {
   const { list, edit, show: showNav } = useNavigation();
@@ -76,6 +77,15 @@ export const AlbumShow = () => {
                 <RatingDisplay value={record.rating ?? 0} />
               </div>
             </Group>
+
+            {record.imagePath && (
+              <div>
+                <Text size="xs" c="dimmed" mb={4}>
+                  Cover
+                </Text>
+                <ImagePreview path={record.imagePath} alt={record.name} />
+              </div>
+            )}
 
             <Group gap="xl">
               {record.spotifyId && (

@@ -12,6 +12,8 @@ import { binSourcesRoutes } from "./bin/sources.js";
 import { sunoPromptsRoutes } from "./suno/prompts.js";
 import { sunoCollectionsRoutes } from "./suno/collections.js";
 import { sunoGenerationsRoutes } from "./suno/generations.js";
+import { uploadRoutes } from "./upload.js";
+import { storageRoutes } from "./storage.js";
 
 export const routes = new Hono();
 
@@ -35,6 +37,12 @@ routes.route("/bin/sources", binSourcesRoutes);
 routes.route("/suno/prompts", sunoPromptsRoutes);
 routes.route("/suno/collections", sunoCollectionsRoutes);
 routes.route("/suno/generations", sunoGenerationsRoutes);
+
+// Upload
+routes.route("/upload", uploadRoutes);
+
+// Storage (file serving)
+routes.route("/storage", storageRoutes);
 
 // Dashboard
 routes.get("/dashboard/stats", async (c) => {

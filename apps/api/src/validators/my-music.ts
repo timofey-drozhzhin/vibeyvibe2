@@ -40,6 +40,7 @@ export const updateArtistSchema = createArtistSchema.partial().extend({
 export const createAlbumSchema = z.object({
   name: z.string().min(1).max(200),
   ean: z.string().regex(eanRegex, "Invalid EAN format (13 digits)").nullable().optional(),
+  imagePath: z.string().nullable().optional(),
   releaseDate: z.string().nullable().optional(),
   rating: z.number().min(0).max(10).default(0),
   spotifyId: z.string().nullable().optional(),

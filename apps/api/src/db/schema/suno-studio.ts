@@ -24,6 +24,7 @@ export const sunoCollections = sqliteTable("suno_collections", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  archived: integer("archived", { mode: "boolean" }).default(false).notNull(),
   createdAt: text("created_at")
     .default(sql`(current_timestamp)`)
     .notNull(),
@@ -58,6 +59,7 @@ export const sunoGenerations = sqliteTable("suno_generations", {
   id: text("id").primaryKey(),
   sunoId: text("suno_id"),
   binSongId: text("bin_song_id").references(() => binSongs.id),
+  archived: integer("archived", { mode: "boolean" }).default(false).notNull(),
   createdAt: text("created_at")
     .default(sql`(current_timestamp)`)
     .notNull(),

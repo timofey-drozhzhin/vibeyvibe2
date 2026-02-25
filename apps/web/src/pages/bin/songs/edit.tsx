@@ -11,6 +11,7 @@ import {
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
+import { FileUpload } from "../../../components/shared/file-upload.js";
 
 interface BinSource {
   id: number;
@@ -137,11 +138,13 @@ export const BinSongEdit = () => {
             searchable
           />
 
-          <TextInput
-            label="Asset Path"
-            placeholder="/path/to/audio.mp3"
+          <FileUpload
+            label="Asset File"
             value={assetPath}
-            onChange={(e) => setAssetPath(e.currentTarget.value)}
+            onChange={setAssetPath}
+            accept="audio/*"
+            directory="bin"
+            placeholder="Upload audio file"
           />
 
           <TextInput

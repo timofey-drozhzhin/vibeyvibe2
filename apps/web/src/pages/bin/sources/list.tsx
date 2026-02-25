@@ -20,6 +20,7 @@ import {
   IconExternalLink,
 } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
+import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
 
 interface BinSource {
@@ -36,6 +37,17 @@ export const BinSourceList = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [archiveFilter, setArchiveFilter] = useState("active");
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
 
   const filters: CrudFilter[] = [];
   if (search) {
@@ -49,13 +61,14 @@ export const BinSourceList = () => {
 
   const { query: listQuery, result } = useList<BinSource>({
     resource: "bin/sources",
-    pagination: { currentPage: page, pageSize: 10 },
+    pagination: { currentPage: page, pageSize: 20 },
     filters,
+    sorters: [{ field: sortField, order: sortOrder }],
   });
 
   const records = result.data ?? [];
   const total = result.total ?? 0;
-  const pageCount = Math.ceil(total / 10);
+  const pageCount = Math.ceil(total / 20);
 
   return (
     <>
@@ -86,16 +99,17 @@ export const BinSourceList = () => {
         <Table striped highlightOnHover>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Name</Table.Th>
+              <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>URL</Table.Th>
               <Table.Th>Status</Table.Th>
+              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th style={{ width: 100 }}>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {listQuery.isPending ? (
               <Table.Tr>
-                <Table.Td colSpan={4}>
+                <Table.Td colSpan={5}>
                   <Text ta="center" c="dimmed" py="md">
                     Loading...
                   </Text>
@@ -103,7 +117,7 @@ export const BinSourceList = () => {
               </Table.Tr>
             ) : records.length === 0 ? (
               <Table.Tr>
-                <Table.Td colSpan={4}>
+                <Table.Td colSpan={5}>
                   <Text ta="center" c="dimmed" py="md">
                     No sources found
                   </Text>
@@ -142,6 +156,13 @@ export const BinSourceList = () => {
                         Active
                       </Badge>
                     )}
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c="dimmed">
+                      {source.createdAt
+                        ? new Date(source.createdAt).toLocaleDateString()
+                        : "-"}
+                    </Text>
                   </Table.Td>
                   <Table.Td>
                     <Group gap="xs">

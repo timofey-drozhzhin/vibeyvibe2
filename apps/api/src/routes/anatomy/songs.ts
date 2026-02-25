@@ -21,9 +21,10 @@ const isniRegex = /^\d{15}[\dX]$/;
 
 const listQuerySchema = z.object({
   q: z.string().optional(),
+  search: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
-  sort: z.enum(["releaseDate", "rating"]).default("releaseDate"),
+  sort: z.string().default("releaseDate"),
   order: z.enum(["asc", "desc"]).default("desc"),
   archived: z
     .enum(["true", "false"])
@@ -38,8 +39,9 @@ anatomySongsRoutes.get(
   "/",
   zValidator("query", listQuerySchema),
   async (c) => {
-    const { q, page, pageSize, sort, order, archived } =
+    const { q, search, page, pageSize, sort, order, archived } =
       c.req.valid("query");
+    const searchTerm = q || search;
     const db = getDb();
     const offset = (page - 1) * pageSize;
 
@@ -49,16 +51,16 @@ anatomySongsRoutes.get(
       conditions.push(eq(anatomySongs.archived, archived));
     }
 
-    if (q) {
-      if (isrcRegex.test(q)) {
+    if (searchTerm) {
+      if (isrcRegex.test(searchTerm)) {
         // Search by ISRC
-        conditions.push(eq(anatomySongs.isrc, q));
-      } else if (isniRegex.test(q)) {
+        conditions.push(eq(anatomySongs.isrc, searchTerm));
+      } else if (isniRegex.test(searchTerm)) {
         // Search artists by ISNI, then find their songs
         const matchingArtists = await db
           .select({ id: anatomyArtists.id })
           .from(anatomyArtists)
-          .where(eq(anatomyArtists.isni, q));
+          .where(eq(anatomyArtists.isni, searchTerm));
 
         if (matchingArtists.length > 0) {
           const artistIds = matchingArtists.map((a) => a.id);
@@ -92,7 +94,7 @@ anatomySongsRoutes.get(
         const matchingArtists = await db
           .select({ id: anatomyArtists.id })
           .from(anatomyArtists)
-          .where(like(anatomyArtists.name, `%${q}%`));
+          .where(like(anatomyArtists.name, `%${searchTerm}%`));
 
         const artistSongIds =
           matchingArtists.length > 0
@@ -111,13 +113,13 @@ anatomySongsRoutes.get(
 
         if (artistSongIds.length > 0) {
           conditions.push(
-            sql`(${like(anatomySongs.name, `%${q}%`)} OR ${anatomySongs.id} IN (${sql.join(
+            sql`(${like(anatomySongs.name, `%${searchTerm}%`)} OR ${anatomySongs.id} IN (${sql.join(
               artistSongIds.map((id) => sql`${id}`),
               sql`, `
             )}))`
           );
         } else {
-          conditions.push(like(anatomySongs.name, `%${q}%`));
+          conditions.push(like(anatomySongs.name, `%${searchTerm}%`));
         }
       }
     }
@@ -125,14 +127,22 @@ anatomySongsRoutes.get(
     const whereClause =
       conditions.length > 0 ? and(...conditions) : undefined;
 
-    const orderBy =
-      sort === "rating"
-        ? order === "asc"
-          ? asc(anatomySongs.rating)
-          : desc(anatomySongs.rating)
-        : order === "asc"
-          ? asc(anatomySongs.releaseDate)
-          : desc(anatomySongs.releaseDate);
+    let orderByColumn;
+    switch (sort) {
+      case "name":
+        orderByColumn = anatomySongs.name;
+        break;
+      case "rating":
+        orderByColumn = anatomySongs.rating;
+        break;
+      case "createdAt":
+        orderByColumn = anatomySongs.createdAt;
+        break;
+      case "releaseDate":
+      default:
+        orderByColumn = anatomySongs.releaseDate;
+    }
+    const orderBy = order === "asc" ? asc(orderByColumn) : desc(orderByColumn);
 
     const [data, countResult] = await Promise.all([
       db

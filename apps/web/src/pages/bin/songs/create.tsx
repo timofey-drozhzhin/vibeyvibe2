@@ -10,6 +10,7 @@ import {
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useState } from "react";
+import { FileUpload } from "../../../components/shared/file-upload.js";
 
 interface BinSource {
   id: number;
@@ -94,11 +95,13 @@ export const BinSongCreate = () => {
             searchable
           />
 
-          <TextInput
-            label="Asset Path"
-            placeholder="/path/to/audio.mp3"
+          <FileUpload
+            label="Asset File"
             value={assetPath}
-            onChange={(e) => setAssetPath(e.currentTarget.value)}
+            onChange={setAssetPath}
+            accept="audio/*"
+            directory="bin"
+            placeholder="Upload audio file"
           />
 
           <TextInput

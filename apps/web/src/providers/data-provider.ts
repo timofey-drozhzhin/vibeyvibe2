@@ -47,6 +47,15 @@ const dataProvider: DataProvider = {
         if ("field" in filter && filter.field === "archived" && filter.value !== undefined) {
           params.set("archived", String(filter.value));
         }
+        if ("field" in filter && filter.field === "sourceId" && filter.value) {
+          params.set("sourceId", String(filter.value));
+        }
+        if ("field" in filter && filter.field === "voiceGender" && filter.value) {
+          params.set("voiceGender", String(filter.value));
+        }
+        if ("field" in filter && filter.field === "category" && filter.value) {
+          params.set("category", String(filter.value));
+        }
       }
     }
 

@@ -43,6 +43,7 @@ export const myAlbums = sqliteTable("my_albums", {
   id: text("id").primaryKey(),
   ean: text("ean").unique(),
   name: text("name").notNull(),
+  imagePath: text("image_path"),
   releaseDate: text("release_date"),
   rating: real("rating").default(0).notNull(),
   archived: integer("archived", { mode: "boolean" }).default(false).notNull(),

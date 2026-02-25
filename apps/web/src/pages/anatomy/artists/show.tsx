@@ -16,6 +16,7 @@ import { IconArrowLeft, IconEye } from "@tabler/icons-react";
 import { RatingField } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
+import { ImagePreview } from "../../../components/shared/image-preview.js";
 
 interface AnatomySong {
   id: string;
@@ -104,7 +105,7 @@ export const AnatomyArtistShow = () => {
               <Table.Tr>
                 <Table.Td fw={600}>Image</Table.Td>
                 <Table.Td>
-                  <Code>{record.imagePath}</Code>
+                  <ImagePreview path={record.imagePath} alt={record.name} size={80} />
                 </Table.Td>
               </Table.Tr>
             )}

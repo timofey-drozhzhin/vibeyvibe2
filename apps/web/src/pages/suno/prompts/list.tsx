@@ -12,9 +12,11 @@ import {
   Text,
   LoadingOverlay,
   Badge,
+  Select,
 } from "@mantine/core";
 import { IconEye, IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
+import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
 
@@ -35,7 +37,19 @@ export const SunoPromptList = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [archiveFilter, setArchiveFilter] = useState("active");
+  const [voiceGenderFilter, setVoiceGenderFilter] = useState<string | null>(null);
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { show, edit, create } = useNavigation();
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
 
   const archivedValue =
     archiveFilter === "archived"
@@ -48,17 +62,20 @@ export const SunoPromptList = () => {
     { field: "search", operator: "contains", value: search || undefined },
     { field: "archived", operator: "eq", value: archivedValue },
   ];
+  if (voiceGenderFilter) {
+    filters.push({ field: "voiceGender", operator: "eq", value: voiceGenderFilter });
+  }
 
   const listResult = useList<SunoPrompt>({
     resource: "suno/prompts",
-    pagination: { currentPage: page, pageSize: 10 },
+    pagination: { currentPage: page, pageSize: 20 },
     filters,
-    sorters: [{ field: "createdAt", order: "desc" }],
+    sorters: [{ field: sortField, order: sortOrder }],
   });
 
   const prompts = listResult.result.data ?? [];
   const total = listResult.result.total ?? 0;
-  const pageCount = Math.ceil(total / 10);
+  const pageCount = Math.ceil(total / 20);
   const isLoading = listResult.query.isPending;
 
   const truncate = (text: string | null | undefined, max: number) => {
@@ -89,24 +106,42 @@ export const SunoPromptList = () => {
           setArchiveFilter(value);
           setPage(1);
         }}
-      />
+      >
+        <Select
+          placeholder="Voice Gender"
+          data={[
+            { value: "male", label: "Male" },
+            { value: "female", label: "Female" },
+            { value: "neutral", label: "Neutral" },
+          ]}
+          value={voiceGenderFilter}
+          onChange={(v) => {
+            setVoiceGenderFilter(v);
+            setPage(1);
+          }}
+          clearable
+          size="sm"
+          style={{ minWidth: 140 }}
+        />
+      </ListToolbar>
 
       <div style={{ position: "relative", minHeight: 200 }}>
         <LoadingOverlay visible={isLoading} />
         <Table striped highlightOnHover>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Style</Table.Th>
+              <SortableHeader field="style" label="Style" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Voice</Table.Th>
-              <Table.Th>Rating</Table.Th>
+              <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Status</Table.Th>
+              <SortableHeader field="createdAt" label="Created" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {prompts.length === 0 && !isLoading && (
               <Table.Tr>
-                <Table.Td colSpan={5}>
+                <Table.Td colSpan={6}>
                   <Text c="dimmed" ta="center" py="md">
                     No prompts found.
                   </Text>
@@ -139,6 +174,13 @@ export const SunoPromptList = () => {
                       Active
                     </Badge>
                   )}
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" c="dimmed">
+                    {prompt.createdAt
+                      ? new Date(prompt.createdAt).toLocaleDateString()
+                      : "-"}
+                  </Text>
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs">

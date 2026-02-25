@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, like, and, desc, sql } from "drizzle-orm";
+import { eq, like, and, desc, asc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getDb } from "../../db/index.js";
 import { anatomyAttributes } from "../../db/schema/anatomy.js";
@@ -12,8 +12,12 @@ import {
 
 const listQuerySchema = z.object({
   q: z.string().optional(),
+  search: z.string().optional(),
+  category: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  sort: z.string().optional(),
+  order: z.enum(["asc", "desc"]).default("desc"),
   archived: z
     .enum(["true", "false"])
     .transform((v) => v === "true")
@@ -27,9 +31,10 @@ anatomyAttributesRoutes.get(
   "/",
   zValidator("query", listQuerySchema),
   async (c) => {
-    const { q, page, pageSize, archived } = c.req.valid("query");
+    const { q, search, category, page, pageSize, sort, order, archived } = c.req.valid("query");
     const db = getDb();
     const offset = (page - 1) * pageSize;
+    const searchTerm = q || search;
 
     const conditions: ReturnType<typeof eq>[] = [];
 
@@ -37,19 +42,37 @@ anatomyAttributesRoutes.get(
       conditions.push(eq(anatomyAttributes.archived, archived));
     }
 
-    if (q) {
-      conditions.push(like(anatomyAttributes.name, `%${q}%`));
+    if (category) {
+      conditions.push(eq(anatomyAttributes.category, category));
+    }
+
+    if (searchTerm) {
+      conditions.push(like(anatomyAttributes.name, `%${searchTerm}%`));
     }
 
     const whereClause =
       conditions.length > 0 ? and(...conditions) : undefined;
+
+    let orderByColumn;
+    switch (sort) {
+      case "name":
+        orderByColumn = anatomyAttributes.name;
+        break;
+      case "category":
+        orderByColumn = anatomyAttributes.category;
+        break;
+      case "createdAt":
+      default:
+        orderByColumn = anatomyAttributes.createdAt;
+    }
+    const orderByDir = order === "asc" ? asc(orderByColumn) : desc(orderByColumn);
 
     const [data, countResult] = await Promise.all([
       db
         .select()
         .from(anatomyAttributes)
         .where(whereClause)
-        .orderBy(desc(anatomyAttributes.createdAt))
+        .orderBy(orderByDir)
         .limit(pageSize)
         .offset(offset),
       db

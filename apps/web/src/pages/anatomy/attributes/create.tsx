@@ -8,6 +8,7 @@ import {
   TextInput,
   Textarea,
   Button,
+  Select,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 
@@ -22,6 +23,7 @@ export const AnatomyAttributeCreate = () => {
   const isSaving = mutation?.isPending;
 
   const [name, setName] = useState("");
+  const [category, setCategory] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [instruction, setInstruction] = useState("");
   const [examples, setExamples] = useState("");
@@ -29,6 +31,7 @@ export const AnatomyAttributeCreate = () => {
   const handleSubmit = () => {
     onFinish({
       name,
+      category: category || null,
       description: description || null,
       instruction: instruction || null,
       examples: examples || null,
@@ -57,6 +60,27 @@ export const AnatomyAttributeCreate = () => {
             onChange={(e) => setName(e.currentTarget.value)}
             placeholder="e.g. tempo, mood, vocal_style"
             description="Must be unique. Used as the attribute key in profiles."
+          />
+
+          <Select
+            label="Category"
+            value={category}
+            onChange={setCategory}
+            placeholder="Select category"
+            clearable
+            data={[
+              { value: "genre", label: "Genre" },
+              { value: "structure", label: "Structure" },
+              { value: "composition", label: "Composition" },
+              { value: "rhythm", label: "Rhythm" },
+              { value: "instrumentation", label: "Instrumentation" },
+              { value: "vocals", label: "Vocals" },
+              { value: "lyrics", label: "Lyrics" },
+              { value: "production", label: "Production" },
+              { value: "mood", label: "Mood" },
+              { value: "energy", label: "Energy" },
+              { value: "signature", label: "Signature" },
+            ]}
           />
 
           <Textarea

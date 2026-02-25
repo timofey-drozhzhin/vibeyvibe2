@@ -3,15 +3,14 @@ config();
 
 import { getDb } from "./index.js";
 import * as schema from "./schema/index.js";
-import { nanoid } from "nanoid";
 
 async function seed() {
   const db = getDb();
 
   console.log("Seeding database...");
 
-  // Create dev user (for Better Auth)
-  const userId = nanoid();
+  // ─── Dev User ──────────────────────────────────────────────────────────────
+  const userId = "seed-admin-user-001";
   await db.insert(schema.user).values({
     id: userId,
     name: "Admin",
@@ -22,45 +21,156 @@ async function seed() {
     updatedAt: new Date(),
   }).onConflictDoNothing();
 
-  // Create account with password for dev user
   await db.insert(schema.account).values({
-    id: nanoid(),
+    id: "seed-admin-account-001",
     accountId: userId,
     providerId: "credential",
     userId: userId,
-    password: "$2a$10$placeholder", // Will be set properly via Better Auth signup
+    password: "$2a$10$placeholder",
     createdAt: new Date(),
     updatedAt: new Date(),
   }).onConflictDoNothing();
 
-  // Seed some anatomy attributes
-  const attributes = [
-    { name: "tempo", description: "Song tempo in BPM", instruction: "Identify the approximate BPM and tempo feel (slow, mid-tempo, uptempo, fast)", examples: "72 BPM - Slow ballad\n120 BPM - Mid-tempo pop\n140 BPM - Uptempo dance" },
-    { name: "mood", description: "Emotional mood/atmosphere", instruction: "Describe the overall emotional tone and atmosphere of the song", examples: "Melancholic, introspective\nEuphoric, energetic\nDark, brooding" },
-    { name: "vocal_style", description: "Vocal delivery and style", instruction: "Describe the vocal technique, range, and delivery style", examples: "Breathy, intimate vocals\nPowerful belting\nRaspy, soulful delivery" },
-    { name: "genre", description: "Primary and secondary genres", instruction: "Identify the main genre and any sub-genres or genre fusions", examples: "Pop/R&B fusion\nIndie rock with electronic elements\nTrap soul" },
-    { name: "instrumentation", description: "Key instruments and sounds", instruction: "List the main instruments and production elements that define the song's sound", examples: "808 bass, hi-hats, synth pads\nAcoustic guitar, strings, piano\nElectronic synths, drum machine" },
-    { name: "structure", description: "Song structure and arrangement", instruction: "Map out the song structure (verse, chorus, bridge, etc.) and notable arrangement choices", examples: "Verse-Chorus-Verse-Chorus-Bridge-Chorus\nIntro-Verse-Pre-Chorus-Drop-Verse-Drop-Outro" },
+  // ─── My Music: Artists ─────────────────────────────────────────────────────
+  const myArtists = [
+    { id: "seed-my-artist-kendrick", name: "Kendrick Lamar", isni: "0000000078078474" },
+    { id: "seed-my-artist-sza", name: "SZA", isni: "0000000498765432" },
+    { id: "seed-my-artist-tyler", name: "Tyler, the Creator", isni: "0000000412345678" },
   ];
-
-  for (const attr of attributes) {
-    await db.insert(schema.anatomyAttributes).values({
-      id: nanoid(),
-      name: attr.name,
-      description: attr.description,
-      instruction: attr.instruction,
-      examples: attr.examples,
-      archived: false,
-    }).onConflictDoNothing();
+  for (const a of myArtists) {
+    await db.insert(schema.myArtists).values({ ...a, archived: false }).onConflictDoNothing();
   }
 
-  // Seed a bin source
-  await db.insert(schema.binSources).values({
-    id: nanoid(),
-    name: "YouTube",
-    url: "https://youtube.com",
+  // ─── My Music: Albums ──────────────────────────────────────────────────────
+  const myAlbums = [
+    { id: "seed-my-album-gkmc", name: "good kid, m.A.A.d city", ean: "0602537362011", releaseDate: "2012-10-22" },
+    { id: "seed-my-album-sos", name: "SOS", ean: "0196588023125", releaseDate: "2022-12-09" },
+  ];
+  for (const a of myAlbums) {
+    await db.insert(schema.myAlbums).values({ ...a, archived: false, rating: 0 }).onConflictDoNothing();
+  }
+
+  // ─── My Music: Songs ──────────────────────────────────────────────────────
+  const mySongs = [
+    { id: "seed-my-song-swimming", name: "Swimming Pools (Drank)", isrc: "USAF11200015", rating: 8, releaseDate: "2012-10-22" },
+    { id: "seed-my-song-killbill", name: "Kill Bill", isrc: "USRC12200001", rating: 9, releaseDate: "2022-12-09" },
+    { id: "seed-my-song-earfquake", name: "EARFQUAKE", isrc: "USCM51900001", rating: 7, releaseDate: "2019-05-17" },
+    { id: "seed-my-song-moneytrees", name: "Money Trees", isrc: "USAF11200016", rating: 9, releaseDate: "2012-10-22" },
+    { id: "seed-my-song-shirt", name: "Shirt", isrc: "USRC12200002", rating: 7, releaseDate: "2022-12-09" },
+  ];
+  for (const s of mySongs) {
+    await db.insert(schema.mySongs).values({ ...s, archived: false }).onConflictDoNothing();
+  }
+
+  // ─── My Music: Song-Artist Relationships ──────────────────────────────────
+  const mySongArtists = [
+    { id: "seed-msa-1", songId: "seed-my-song-swimming", artistId: "seed-my-artist-kendrick" },
+    { id: "seed-msa-2", songId: "seed-my-song-moneytrees", artistId: "seed-my-artist-kendrick" },
+    { id: "seed-msa-3", songId: "seed-my-song-killbill", artistId: "seed-my-artist-sza" },
+    { id: "seed-msa-4", songId: "seed-my-song-shirt", artistId: "seed-my-artist-sza" },
+    { id: "seed-msa-5", songId: "seed-my-song-earfquake", artistId: "seed-my-artist-tyler" },
+  ];
+  for (const r of mySongArtists) {
+    try { await db.insert(schema.mySongArtists).values(r).onConflictDoNothing(); } catch { /* FK skip */ }
+  }
+
+  // ─── My Music: Song-Album Relationships ───────────────────────────────────
+  const mySongAlbums = [
+    { id: "seed-msal-1", songId: "seed-my-song-swimming", albumId: "seed-my-album-gkmc" },
+    { id: "seed-msal-2", songId: "seed-my-song-moneytrees", albumId: "seed-my-album-gkmc" },
+    { id: "seed-msal-3", songId: "seed-my-song-killbill", albumId: "seed-my-album-sos" },
+    { id: "seed-msal-4", songId: "seed-my-song-shirt", albumId: "seed-my-album-sos" },
+  ];
+  for (const r of mySongAlbums) {
+    try { await db.insert(schema.mySongAlbums).values(r).onConflictDoNothing(); } catch { /* FK skip */ }
+  }
+
+  // ─── Anatomy: Artists ─────────────────────────────────────────────────────
+  const anatArtists = [
+    { id: "seed-anat-artist-frank", name: "Frank Ocean", isni: "0000000114891282" },
+    { id: "seed-anat-artist-weeknd", name: "The Weeknd", isni: "0000000368534204" },
+  ];
+  for (const a of anatArtists) {
+    await db.insert(schema.anatomyArtists).values({ ...a, archived: false, rating: 0 }).onConflictDoNothing();
+  }
+
+  // ─── Anatomy: Songs ───────────────────────────────────────────────────────
+  const anatSongs = [
+    { id: "seed-anat-song-blinding", name: "Blinding Lights", isrc: "USUG11904425", rating: 9, releaseDate: "2019-11-29" },
+    { id: "seed-anat-song-nights", name: "Nights", isrc: "USUG11600001", rating: 10, releaseDate: "2016-08-20" },
+  ];
+  for (const s of anatSongs) {
+    await db.insert(schema.anatomySongs).values({ ...s, archived: false }).onConflictDoNothing();
+  }
+
+  // ─── Anatomy: Song-Artist Relationships ───────────────────────────────────
+  const anatSongArtists = [
+    { id: "seed-asa-1", songId: "seed-anat-song-blinding", artistId: "seed-anat-artist-weeknd" },
+    { id: "seed-asa-2", songId: "seed-anat-song-nights", artistId: "seed-anat-artist-frank" },
+  ];
+  for (const r of anatSongArtists) {
+    try { await db.insert(schema.anatomySongArtists).values(r).onConflictDoNothing(); } catch { /* FK skip */ }
+  }
+
+  // ─── Bin: Sources ─────────────────────────────────────────────────────────
+  const binSources = [
+    { id: "seed-bin-source-youtube", name: "YouTube", url: "https://youtube.com" },
+    { id: "seed-bin-source-spotify", name: "Spotify", url: "https://open.spotify.com" },
+  ];
+  for (const s of binSources) {
+    await db.insert(schema.binSources).values({ ...s, archived: false }).onConflictDoNothing();
+  }
+
+  // ─── Bin: Songs ───────────────────────────────────────────────────────────
+  const binSongs = [
+    { id: "seed-bin-song-1", name: "untitled discovery 1", sourceId: "seed-bin-source-youtube" },
+    { id: "seed-bin-song-2", name: "lofi beat sample", sourceId: "seed-bin-source-youtube" },
+    { id: "seed-bin-song-3", name: "indie gem from playlist", sourceId: "seed-bin-source-spotify" },
+  ];
+  for (const s of binSongs) {
+    await db.insert(schema.binSongs).values({ ...s, archived: false }).onConflictDoNothing();
+  }
+
+  // ─── Suno: Prompts ────────────────────────────────────────────────────────
+  const sunoPrompts = [
+    { id: "seed-suno-prompt-rnb", style: "neo-soul R&B", lyrics: "Verse about lost love under city lights...", voiceGender: "female" as const, rating: 7, notes: "Melancholic R&B Ballad" },
+    { id: "seed-suno-prompt-trap", style: "aggressive trap", lyrics: "Bars about hustle and grind...", voiceGender: "male" as const, rating: 6, notes: "Hard Hitting Trap" },
+  ];
+  for (const p of sunoPrompts) {
+    await db.insert(schema.sunoPrompts).values({ ...p, archived: false }).onConflictDoNothing();
+  }
+
+  // ─── Suno: Collections ────────────────────────────────────────────────────
+  await db.insert(schema.sunoCollections).values({
+    id: "seed-suno-collection-lnv",
+    name: "Late Night Vibes",
     archived: false,
   }).onConflictDoNothing();
+
+  // ─── Suno: Collection-Prompt Assignments ──────────────────────────────────
+  const collPrompts = [
+    { id: "seed-scp-1", collectionId: "seed-suno-collection-lnv", promptId: "seed-suno-prompt-rnb" },
+    { id: "seed-scp-2", collectionId: "seed-suno-collection-lnv", promptId: "seed-suno-prompt-trap" },
+  ];
+  for (const r of collPrompts) {
+    try { await db.insert(schema.sunoCollectionPrompts).values(r).onConflictDoNothing(); } catch { /* FK skip */ }
+  }
+
+  // ─── Suno: Generations ────────────────────────────────────────────────────
+  await db.insert(schema.sunoGenerations).values({
+    id: "seed-suno-gen-1",
+    sunoId: "sample-generation-001",
+    archived: false,
+  }).onConflictDoNothing();
+
+  // ─── Suno: Generation-Prompt Assignments ──────────────────────────────────
+  try {
+    await db.insert(schema.sunoGenerationPrompts).values({
+      id: "seed-sgp-1",
+      generationId: "seed-suno-gen-1",
+      promptId: "seed-suno-prompt-rnb",
+    }).onConflictDoNothing();
+  } catch { /* FK skip */ }
 
   console.log("Seed complete!");
   process.exit(0);

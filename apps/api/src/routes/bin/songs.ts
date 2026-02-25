@@ -18,6 +18,7 @@ const listQuerySchema = z.object({
   order: z.enum(["asc", "desc"]).default("desc"),
   search: z.string().optional(),
   archived: z.coerce.boolean().optional(),
+  sourceId: z.string().optional(),
 });
 
 export const binSongsRoutes = new Hono();
@@ -27,7 +28,7 @@ binSongsRoutes.get(
   "/",
   zValidator("query", listQuerySchema),
   async (c) => {
-    const { page, pageSize, sort, order, search, archived } =
+    const { page, pageSize, sort, order, search, archived, sourceId } =
       c.req.valid("query");
     const db = getDb();
 
@@ -39,6 +40,10 @@ binSongsRoutes.get(
 
     if (archived !== undefined) {
       conditions.push(eq(binSongs.archived, archived));
+    }
+
+    if (sourceId) {
+      conditions.push(eq(binSongs.sourceId, sourceId));
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
