@@ -92,6 +92,16 @@ const dataProvider: DataProvider = {
     });
     return { data };
   },
+
+  custom: async ({ url, method, payload, query }) => {
+    const params = query ? new URLSearchParams(query as Record<string, string>) : null;
+    const fullUrl = params ? `${url}?${params.toString()}` : url;
+    const data = await request(fullUrl, {
+      method: (method as string)?.toUpperCase() || "GET",
+      ...(payload ? { body: JSON.stringify(payload) } : {}),
+    });
+    return { data };
+  },
 };
 
 export default dataProvider;
