@@ -13,7 +13,7 @@ import {
   Text,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
-import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
+import { ArchiveButton } from "../../../components/shared/archive-toggle.js";
 import { RatingField } from "../../../components/shared/rating-field.js";
 import { FileUpload } from "../../../components/shared/file-upload.js";
 
@@ -84,7 +84,6 @@ export const AnatomySongEdit = () => {
       spotifyId: spotifyId || null,
       appleMusicId: appleMusicId || null,
       youtubeId: youtubeId || null,
-      archived,
     });
   };
 
@@ -168,19 +167,25 @@ export const AnatomySongEdit = () => {
             placeholder="YouTube video ID"
           />
 
-          <ArchiveToggle value={archived} onChange={setArchived} />
-
-          <Group justify="flex-end" mt="md">
-            <Button variant="subtle" onClick={() => list("anatomy/songs")}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              loading={isSaving}
-              disabled={!name || !isrc || !isrcValid || !releaseDate}
-            >
-              Save
-            </Button>
+          <Group justify="space-between" mt="md">
+            <ArchiveButton
+              archived={archived}
+              onToggle={(val) => {
+                onFinish({ archived: val });
+              }}
+            />
+            <Group>
+              <Button
+                onClick={handleSubmit}
+                loading={isSaving}
+                disabled={!name || !isrc || !isrcValid || !releaseDate}
+              >
+                Save
+              </Button>
+              <Button variant="subtle" onClick={() => list("anatomy/songs")}>
+                Cancel
+              </Button>
+            </Group>
           </Group>
         </Stack>
       </Card>

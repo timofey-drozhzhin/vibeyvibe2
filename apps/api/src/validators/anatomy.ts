@@ -8,7 +8,7 @@ export const createAnatomySongSchema = z.object({
   isrc: z.string().regex(isrcRegex, "Invalid ISRC format"),
   imagePath: z.string().nullable().optional(),
   releaseDate: z.string().min(1, "Release date is required"),
-  rating: z.number().min(0).max(10).default(0),
+  rating: z.number().int().min(0).max(5).default(0),
   spotifyId: z.string().nullable().optional(),
   appleMusicId: z.string().nullable().optional(),
   youtubeId: z.string().nullable().optional(),
@@ -22,7 +22,7 @@ export const createAnatomyArtistSchema = z.object({
   name: z.string().min(1).max(200),
   isni: z.string().regex(isniRegex, "Invalid ISNI format (16 digits)"),
   imagePath: z.string().nullable().optional(),
-  rating: z.number().min(0).max(10).default(0),
+  rating: z.number().int().min(0).max(5).default(0),
 });
 
 export const updateAnatomyArtistSchema = createAnatomyArtistSchema.partial().extend({

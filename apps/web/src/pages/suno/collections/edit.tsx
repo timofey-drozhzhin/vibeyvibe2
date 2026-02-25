@@ -11,12 +11,14 @@ import {
   LoadingOverlay,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
+import { ArchiveButton } from "../../../components/shared/archive-toggle.js";
 
 export const SunoCollectionEdit = () => {
   const { list, show } = useNavigation();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [archived, setArchived] = useState(false);
 
   const { onFinish, mutation, query } = useForm({
     resource: "suno/collections",
@@ -30,6 +32,7 @@ export const SunoCollectionEdit = () => {
     if (record) {
       setName(record.name ?? "");
       setDescription(record.description ?? "");
+      setArchived(record.archived ?? false);
     }
   }, [record]);
 
@@ -74,20 +77,28 @@ export const SunoCollectionEdit = () => {
             onChange={(e) => setDescription(e.currentTarget.value)}
           />
 
-          <Group justify="flex-end" mt="md">
-            <Button
-              variant="default"
-              onClick={() => record?.id ? show("suno/collections", record.id) : list("suno/collections")}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              loading={mutation.isPending}
-              disabled={!name.trim()}
-            >
-              Save
-            </Button>
+          <Group justify="space-between" mt="md">
+            <ArchiveButton
+              archived={archived}
+              onToggle={(val) => {
+                onFinish({ archived: val });
+              }}
+            />
+            <Group>
+              <Button
+                onClick={handleSubmit}
+                loading={mutation.isPending}
+                disabled={!name.trim()}
+              >
+                Save
+              </Button>
+              <Button
+                variant="subtle"
+                onClick={() => record?.id ? show("suno/collections", record.id) : list("suno/collections")}
+              >
+                Cancel
+              </Button>
+            </Group>
           </Group>
         </Stack>
       </Card>

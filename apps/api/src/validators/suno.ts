@@ -6,7 +6,7 @@ export const createPromptSchema = z.object({
   voiceGender: z.enum(["male", "female", "neutral"]).nullable().optional(),
   notes: z.string().nullable().optional(),
   profileId: z.string().nullable().optional(),
-  rating: z.number().min(0).max(10).default(0),
+  rating: z.number().int().min(0).max(5).default(0),
 });
 
 export const updatePromptSchema = createPromptSchema.partial().extend({

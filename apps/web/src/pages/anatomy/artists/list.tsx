@@ -5,7 +5,7 @@ import {
   Group,
   Text,
   Title,
-  Badge,
+  Button,
   Pagination,
   ActionIcon,
   Tooltip,
@@ -14,10 +14,11 @@ import {
   Center,
   Code,
 } from "@mantine/core";
-import { IconEye } from "@tabler/icons-react";
+import { IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
+import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
 
 interface AnatomyArtist {
   id: string;
@@ -36,7 +37,7 @@ export const AnatomyArtistList = () => {
   const [archiveFilter, setArchiveFilter] = useState("active");
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const { show } = useNavigation();
+  const { show, edit, create } = useNavigation();
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -70,6 +71,12 @@ export const AnatomyArtistList = () => {
     <>
       <Group justify="space-between" mb="md">
         <Title order={2}>Anatomy Artists</Title>
+        <Button
+          leftSection={<IconPlus size={16} />}
+          onClick={() => create("anatomy/artists")}
+        >
+          Create
+        </Button>
       </Group>
 
       <ListToolbar
@@ -109,7 +116,7 @@ export const AnatomyArtistList = () => {
             <Table.Tbody>
               {records.map((artist) => (
                 <Table.Tr key={artist.id}>
-                  <Table.Td>
+                  <Table.Td style={{ cursor: "pointer" }} onClick={() => show("anatomy/artists", artist.id)}>
                     <Text fw={500}>{artist.name}</Text>
                   </Table.Td>
                   <Table.Td>
@@ -119,15 +126,7 @@ export const AnatomyArtistList = () => {
                     <RatingDisplay value={artist.rating} />
                   </Table.Td>
                   <Table.Td>
-                    {artist.archived ? (
-                      <Badge color="red" variant="light">
-                        Archived
-                      </Badge>
-                    ) : (
-                      <Badge color="green" variant="light">
-                        Active
-                      </Badge>
-                    )}
+                    <ArchiveBadge archived={artist.archived} />
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed">
@@ -137,14 +136,16 @@ export const AnatomyArtistList = () => {
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <Tooltip label="View">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => show("anatomy/artists", artist.id)}
-                      >
-                        <IconEye size={16} />
-                      </ActionIcon>
-                    </Tooltip>
+                    <Group gap="xs">
+                      <Tooltip label="Edit">
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => edit("anatomy/artists", artist.id)}
+                        >
+                          <IconEdit size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Group>
                   </Table.Td>
                 </Table.Tr>
               ))}

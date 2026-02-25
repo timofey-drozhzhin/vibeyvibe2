@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useShow, useNavigation, useList } from "@refinedev/core";
 import {
   ActionIcon,
+  Anchor,
   Card,
   Group,
   Stack,
@@ -23,6 +24,7 @@ import { RatingField } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
 import { AssignModal } from "../../../components/shared/assign-modal.js";
 import { ImagePreview } from "../../../components/shared/image-preview.js";
+import { MediaEmbeds } from "../../../components/shared/media-embeds.js";
 import { ProfileEditor } from "../../../components/anatomy/profile-editor.js";
 
 interface AnatomyArtist {
@@ -193,208 +195,238 @@ export const AnatomySongShow = () => {
         </Group>
       </Group>
 
-      {/* Song details */}
-      <Card withBorder>
-        <Title order={4} mb="md">
-          Song Details
-        </Title>
-        <Table>
-          <Table.Tbody>
-            <Table.Tr>
-              <Table.Td fw={600} w={180}>
-                ISRC
-              </Table.Td>
-              <Table.Td>
-                <Code>{record.isrc}</Code>
-              </Table.Td>
-            </Table.Tr>
-            <Table.Tr>
-              <Table.Td fw={600}>Release Date</Table.Td>
-              <Table.Td>{record.releaseDate}</Table.Td>
-            </Table.Tr>
-            <Table.Tr>
-              <Table.Td fw={600}>Rating</Table.Td>
-              <Table.Td>
-                <RatingField value={record.rating} readOnly />
-              </Table.Td>
-            </Table.Tr>
-            {record.imagePath && (
-              <Table.Tr>
-                <Table.Td fw={600}>Image</Table.Td>
-                <Table.Td>
-                  <ImagePreview path={record.imagePath} alt={record.name} size={80} />
-                </Table.Td>
-              </Table.Tr>
-            )}
-            {record.spotifyId && (
-              <Table.Tr>
-                <Table.Td fw={600}>Spotify ID</Table.Td>
-                <Table.Td>
-                  <Code>{record.spotifyId}</Code>
-                </Table.Td>
-              </Table.Tr>
-            )}
-            {record.appleMusicId && (
-              <Table.Tr>
-                <Table.Td fw={600}>Apple Music ID</Table.Td>
-                <Table.Td>
-                  <Code>{record.appleMusicId}</Code>
-                </Table.Td>
-              </Table.Tr>
-            )}
-            {record.youtubeId && (
-              <Table.Tr>
-                <Table.Td fw={600}>YouTube ID</Table.Td>
-                <Table.Td>
-                  <Code>{record.youtubeId}</Code>
-                </Table.Td>
-              </Table.Tr>
-            )}
-            <Table.Tr>
-              <Table.Td fw={600}>Created</Table.Td>
-              <Table.Td>{record.createdAt}</Table.Td>
-            </Table.Tr>
-            <Table.Tr>
-              <Table.Td fw={600}>Updated</Table.Td>
-              <Table.Td>{record.updatedAt}</Table.Td>
-            </Table.Tr>
-          </Table.Tbody>
-        </Table>
-      </Card>
-
-      {/* Artists */}
-      <Card withBorder>
-        <Group justify="space-between" mb="md">
-          <Title order={4}>Artists</Title>
-          <Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={openArtistModal}>
-            Assign Artist
-          </Button>
-        </Group>
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Name</Table.Th>
-              <Table.Th>ISNI</Table.Th>
-              <Table.Th>Rating</Table.Th>
-              <Table.Th w={60}>Actions</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {(!record.artists || record.artists.length === 0) && (
-              <Table.Tr>
-                <Table.Td colSpan={4}>
-                  <Text c="dimmed" ta="center" py="md">No artists assigned.</Text>
-                </Table.Td>
-              </Table.Tr>
-            )}
-            {record.artists?.map((artist) => (
-              <Table.Tr
-                key={artist.id}
-                style={{ cursor: "pointer" }}
-                onClick={() => show("anatomy/artists", artist.id)}
-              >
-                <Table.Td><Text fw={500}>{artist.name}</Text></Table.Td>
-                <Table.Td><Code>{artist.isni}</Code></Table.Td>
-                <Table.Td><RatingField value={artist.rating} readOnly size={16} /></Table.Td>
-                <Table.Td>
-                  <Tooltip label="Remove artist from song">
-                    <ActionIcon variant="subtle" color="red" loading={removingId === artist.id} onClick={(e) => { e.stopPropagation(); handleRemoveArtist(artist.id); }}>
-                      <IconUnlink size={16} />
-                    </ActionIcon>
-                  </Tooltip>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
-      </Card>
-
-      {/* Profiles */}
-      <Card withBorder>
-        <Group justify="space-between" mb="md">
-          <Title order={4}>Profiles</Title>
-          <Button
-            variant="light"
-            leftSection={<IconPlus size={16} />}
-            size="sm"
-            onClick={handleCreateProfile}
-          >
-            Create Profile
-          </Button>
-        </Group>
-
-        {profilesLoading ? (
-          <Center py="md">
-            <Loader size="sm" />
-          </Center>
-        ) : profiles.length === 0 ? (
-          <Text c="dimmed">
-            No profiles yet. Create one to define song attributes.
-          </Text>
-        ) : (
-          <Stack gap="md">
-            {profiles.map((profile: AnatomyProfile, index: number) => {
-              const parsed = parseProfileValue(profile.value);
-              const isActive =
-                record.activeProfile?.id === profile.id;
-
-              return (
-                <Card key={profile.id} withBorder padding="sm">
-                  <Group justify="space-between" mb="xs">
-                    <Group gap="xs">
-                      <Text fw={600} size="sm">
-                        Profile #{profiles.length - index}
-                      </Text>
-                      {isActive && (
-                        <Badge color="green" variant="light" size="sm">
-                          Active
-                        </Badge>
-                      )}
-                      {profile.archived && (
-                        <Badge color="red" variant="light" size="sm">
-                          Archived
-                        </Badge>
-                      )}
-                    </Group>
-                    <Group gap="xs">
-                      <Text size="xs" c="dimmed">
-                        {new Date(profile.createdAt).toLocaleDateString()}
-                      </Text>
-                      <Button
-                        variant="subtle"
-                        size="xs"
-                        leftSection={<IconEdit size={14} />}
-                        onClick={() => handleEditProfile(profile)}
+      {/* Two column layout */}
+      <Group align="flex-start" gap="lg" wrap="nowrap">
+        {/* Left column - main content */}
+        <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
+          {/* Song details */}
+          <Card withBorder>
+            <Title order={4} mb="md">
+              Song Details
+            </Title>
+            <Table>
+              <Table.Tbody>
+                <Table.Tr>
+                  <Table.Td fw={600} w={180}>
+                    ISRC
+                  </Table.Td>
+                  <Table.Td>
+                    <Code>{record.isrc}</Code>
+                  </Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>Release Date</Table.Td>
+                  <Table.Td>{record.releaseDate}</Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>Rating</Table.Td>
+                  <Table.Td>
+                    <RatingField value={record.rating} readOnly />
+                  </Table.Td>
+                </Table.Tr>
+                {record.spotifyId && (
+                  <Table.Tr>
+                    <Table.Td fw={600}>Spotify ID</Table.Td>
+                    <Table.Td>
+                      <Anchor
+                        href={`https://open.spotify.com/track/${record.spotifyId}`}
+                        target="_blank"
+                        size="sm"
                       >
-                        Edit
-                      </Button>
-                    </Group>
-                  </Group>
+                        <Code>{record.spotifyId}</Code>
+                      </Anchor>
+                    </Table.Td>
+                  </Table.Tr>
+                )}
+                {record.appleMusicId && (
+                  <Table.Tr>
+                    <Table.Td fw={600}>Apple Music ID</Table.Td>
+                    <Table.Td>
+                      <Anchor
+                        href={`https://music.apple.com/song/${record.appleMusicId}`}
+                        target="_blank"
+                        size="sm"
+                      >
+                        <Code>{record.appleMusicId}</Code>
+                      </Anchor>
+                    </Table.Td>
+                  </Table.Tr>
+                )}
+                {record.youtubeId && (
+                  <Table.Tr>
+                    <Table.Td fw={600}>YouTube ID</Table.Td>
+                    <Table.Td>
+                      <Anchor
+                        href={`https://www.youtube.com/watch?v=${record.youtubeId}`}
+                        target="_blank"
+                        size="sm"
+                      >
+                        <Code>{record.youtubeId}</Code>
+                      </Anchor>
+                    </Table.Td>
+                  </Table.Tr>
+                )}
+                <Table.Tr>
+                  <Table.Td fw={600}>Created</Table.Td>
+                  <Table.Td>{record.createdAt}</Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>Updated</Table.Td>
+                  <Table.Td>{record.updatedAt}</Table.Td>
+                </Table.Tr>
+              </Table.Tbody>
+            </Table>
+          </Card>
 
-                  {parsed ? (
-                    <Table>
-                      <Table.Tbody>
-                        {Object.entries(parsed).map(([key, value]) => (
-                          <Table.Tr key={key}>
-                            <Table.Td fw={500} w={150} style={{ verticalAlign: "top" }}>
-                              {key}
-                            </Table.Td>
-                            <Table.Td>
-                              <Text size="sm">{String(value)}</Text>
-                            </Table.Td>
-                          </Table.Tr>
-                        ))}
-                      </Table.Tbody>
-                    </Table>
-                  ) : (
-                    <Code block>{profile.value}</Code>
-                  )}
-                </Card>
-              );
-            })}
+          {/* Artists */}
+          <Card withBorder>
+            <Group justify="space-between" mb="md">
+              <Title order={4}>Artists</Title>
+              <Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={openArtistModal}>
+                Assign Artist
+              </Button>
+            </Group>
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Name</Table.Th>
+                  <Table.Th>ISNI</Table.Th>
+                  <Table.Th>Rating</Table.Th>
+                  <Table.Th w={60}>Actions</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {(!record.artists || record.artists.length === 0) && (
+                  <Table.Tr>
+                    <Table.Td colSpan={4}>
+                      <Text c="dimmed" ta="center" py="md">No artists assigned.</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                )}
+                {record.artists?.map((artist) => (
+                  <Table.Tr
+                    key={artist.id}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => show("anatomy/artists", artist.id)}
+                  >
+                    <Table.Td><Text fw={500}>{artist.name}</Text></Table.Td>
+                    <Table.Td><Code>{artist.isni}</Code></Table.Td>
+                    <Table.Td><RatingField value={artist.rating} readOnly size={16} /></Table.Td>
+                    <Table.Td>
+                      <Tooltip label="Remove artist from song">
+                        <ActionIcon variant="subtle" color="red" loading={removingId === artist.id} onClick={(e) => { e.stopPropagation(); handleRemoveArtist(artist.id); }}>
+                          <IconUnlink size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Card>
+
+          {/* Profiles */}
+          <Card withBorder>
+            <Group justify="space-between" mb="md">
+              <Title order={4}>Profiles</Title>
+              <Button
+                variant="light"
+                leftSection={<IconPlus size={16} />}
+                size="sm"
+                onClick={handleCreateProfile}
+              >
+                Create Profile
+              </Button>
+            </Group>
+
+            {profilesLoading ? (
+              <Center py="md">
+                <Loader size="sm" />
+              </Center>
+            ) : profiles.length === 0 ? (
+              <Text c="dimmed">
+                No profiles yet. Create one to define song attributes.
+              </Text>
+            ) : (
+              <Stack gap="md">
+                {profiles.map((profile: AnatomyProfile, index: number) => {
+                  const parsed = parseProfileValue(profile.value);
+                  const isActive =
+                    record.activeProfile?.id === profile.id;
+
+                  return (
+                    <Card key={profile.id} withBorder padding="sm">
+                      <Group justify="space-between" mb="xs">
+                        <Group gap="xs">
+                          <Text fw={600} size="sm">
+                            Profile #{profiles.length - index}
+                          </Text>
+                          {isActive && (
+                            <Badge color="green" variant="light" size="sm">
+                              Active
+                            </Badge>
+                          )}
+                          {profile.archived && (
+                            <Badge color="red" variant="light" size="sm">
+                              Archived
+                            </Badge>
+                          )}
+                        </Group>
+                        <Group gap="xs">
+                          <Text size="xs" c="dimmed">
+                            {new Date(profile.createdAt).toLocaleDateString()}
+                          </Text>
+                          <Button
+                            variant="subtle"
+                            size="xs"
+                            leftSection={<IconEdit size={14} />}
+                            onClick={() => handleEditProfile(profile)}
+                          >
+                            Edit
+                          </Button>
+                        </Group>
+                      </Group>
+
+                      {parsed ? (
+                        <Table>
+                          <Table.Tbody>
+                            {Object.entries(parsed).map(([key, value]) => (
+                              <Table.Tr key={key}>
+                                <Table.Td fw={500} w={150} style={{ verticalAlign: "top" }}>
+                                  {key}
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text size="sm">{String(value)}</Text>
+                                </Table.Td>
+                              </Table.Tr>
+                            ))}
+                          </Table.Tbody>
+                        </Table>
+                      ) : (
+                        <Code block>{profile.value}</Code>
+                      )}
+                    </Card>
+                  );
+                })}
+              </Stack>
+            )}
+          </Card>
+        </Stack>
+
+        {/* Right column - media panel */}
+        {(record.imagePath || record.spotifyId || record.appleMusicId || record.youtubeId) && (
+          <Stack w={300} style={{ flexShrink: 0 }}>
+            {record.imagePath && (
+              <ImagePreview path={record.imagePath} alt={record.name} size={300} />
+            )}
+            <MediaEmbeds
+              spotifyId={record.spotifyId}
+              appleMusicId={record.appleMusicId}
+              youtubeId={record.youtubeId}
+            />
           </Stack>
         )}
-      </Card>
+      </Group>
 
       {/* Profile Editor Modal */}
       <Modal

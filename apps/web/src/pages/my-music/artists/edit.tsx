@@ -11,8 +11,10 @@ import {
   LoadingOverlay,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
-import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
+import { ArchiveButton } from "../../../components/shared/archive-toggle.js";
 import { RatingField } from "../../../components/shared/rating-field.js";
+import { FileUpload } from "../../../components/shared/file-upload.js";
+import { ImagePreview } from "../../../components/shared/image-preview.js";
 
 export const ArtistEdit = () => {
   const { list, show } = useNavigation();
@@ -58,7 +60,6 @@ export const ArtistEdit = () => {
       youtubeUsername: youtubeUsername || null,
       tiktokUsername: tiktokUsername || null,
       instagramUsername: instagramUsername || null,
-      archived,
     });
   };
 
@@ -92,12 +93,14 @@ export const ArtistEdit = () => {
             value={isni}
             onChange={(e) => setIsni(e.currentTarget.value)}
           />
-          <TextInput
-            label="Image Path"
-            placeholder="/path/to/image"
+          <FileUpload
+            label="Image"
             value={imagePath}
-            onChange={(e) => setImagePath(e.currentTarget.value)}
+            onChange={setImagePath}
+            accept="image/*"
+            directory="artists"
           />
+          {imagePath && <ImagePreview path={imagePath} alt={name} size={80} />}
           <div>
             <Text size="sm" fw={500} mb={4}>
               Rating
@@ -131,24 +134,30 @@ export const ArtistEdit = () => {
             onChange={(e) => setInstagramUsername(e.currentTarget.value)}
           />
 
-          <ArchiveToggle value={archived} onChange={setArchived} />
-
-          <Group justify="flex-end" mt="md">
-            <Button
-              variant="subtle"
-              onClick={() =>
-                id ? show("my-music/artists", id) : list("my-music/artists")
-              }
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              loading={mutation.isPending}
-              disabled={!name.trim()}
-            >
-              Save Changes
-            </Button>
+          <Group justify="space-between" mt="md">
+            <ArchiveButton
+              archived={archived}
+              onToggle={(val) => {
+                onFinish({ archived: val });
+              }}
+            />
+            <Group>
+              <Button
+                onClick={handleSubmit}
+                loading={mutation.isPending}
+                disabled={!name.trim()}
+              >
+                Save
+              </Button>
+              <Button
+                variant="subtle"
+                onClick={() =>
+                  id ? show("my-music/artists", id) : list("my-music/artists")
+                }
+              >
+                Cancel
+              </Button>
+            </Group>
           </Group>
         </Stack>
       </Card>

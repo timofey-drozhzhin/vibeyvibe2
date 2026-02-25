@@ -13,7 +13,7 @@ import {
   Badge,
   Select,
 } from "@mantine/core";
-import { IconEye, IconEdit, IconPlus, IconMusic } from "@tabler/icons-react";
+import { IconEdit, IconPlus, IconMusic } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
@@ -155,7 +155,7 @@ export const BinSongList = () => {
             ) : (
               records.map((song: BinSong) => (
                 <Table.Tr key={song.id}>
-                  <Table.Td>
+                  <Table.Td style={{ cursor: "pointer" }} onClick={() => show("bin/songs", song.id)}>
                     <Text fw={500}>{song.name}</Text>
                   </Table.Td>
                   <Table.Td>
@@ -184,11 +184,6 @@ export const BinSongList = () => {
                   </Table.Td>
                   <Table.Td>
                     <ArchiveBadge archived={song.archived} />
-                    {!song.archived && (
-                      <Badge variant="light" color="green">
-                        Active
-                      </Badge>
-                    )}
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed">
@@ -199,12 +194,6 @@ export const BinSongList = () => {
                   </Table.Td>
                   <Table.Td>
                     <Group gap="xs">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => show("bin/songs", song.id)}
-                      >
-                        <IconEye size={16} />
-                      </ActionIcon>
                       <ActionIcon
                         variant="subtle"
                         onClick={() => edit("bin/songs", song.id)}

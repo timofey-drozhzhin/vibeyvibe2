@@ -77,6 +77,8 @@ import { AnatomySongCreate } from "./pages/anatomy/songs/create.js";
 import { AnatomySongEdit } from "./pages/anatomy/songs/edit.js";
 import { AnatomySongShow } from "./pages/anatomy/songs/show.js";
 import { AnatomyArtistList } from "./pages/anatomy/artists/list.js";
+import { AnatomyArtistCreate } from "./pages/anatomy/artists/create.js";
+import { AnatomyArtistEdit } from "./pages/anatomy/artists/edit.js";
 import { AnatomyArtistShow } from "./pages/anatomy/artists/show.js";
 import { AnatomyAttributeList } from "./pages/anatomy/attributes/list.js";
 import { AnatomyAttributeCreate } from "./pages/anatomy/attributes/create.js";
@@ -159,6 +161,8 @@ export const App = () => {
         {
           name: "anatomy/artists",
           list: "/anatomy/artists",
+          create: "/anatomy/artists/create",
+          edit: "/anatomy/artists/edit/:id",
           show: "/anatomy/artists/show/:id",
           meta: {
             label: "Artists",
@@ -290,6 +294,8 @@ export const App = () => {
             </Route>
             <Route path="artists">
               <Route index element={<AnatomyArtistList />} />
+              <Route path="create" element={<AnatomyArtistCreate />} />
+              <Route path="edit/:id" element={<AnatomyArtistEdit />} />
               <Route path="show/:id" element={<AnatomyArtistShow />} />
             </Route>
             <Route path="attributes">

@@ -71,6 +71,9 @@ All temporary files go in `./tmp/` (gitignored). Local dev storage lives at `./t
 ### Documentation
 Always document structural changes in CLAUDE.md files. Keep these files up to date when adding new routes, schemas, pages, or changing conventions.
 
+### Structural Notes for Context Continuity
+`./tmp/DOCUMENTATIONS.md` is your temporary memory for CLAUDE.md and README.md documents. Update it before starting changes, and read it back after context compaction, to resume without losing important knowledge.
+
 ### Libraries Over Hand-Made Solutions
 Use well-maintained libraries instead of writing custom implementations. Prefer established solutions (Refine hooks, Mantine components, Drizzle queries, Zod schemas) over bespoke code.
 
@@ -188,7 +191,7 @@ The Spotify metadata extraction service (`apps/api/src/services/spotify/index.ts
 1. User enters a Spotify URL on the Import page (`/anatomy/import`)
 2. `POST /api/anatomy/import` validates the URL and calls `fetchSpotifyData` to return a preview of extracted tracks
 3. User reviews and selects tracks to import
-4. `POST /api/anatomy/import/confirm` creates `anatomy_songs` and `anatomy_artists` records from the selected tracks, with duplicate detection by Spotify ID and ISRC
+4. `POST /api/anatomy/import/confirm` creates `anatomy_songs` and `anatomy_artists` records from the selected tracks, with duplicate detection by Spotify ID and ISRC. Also downloads cover art images to storage (`songs/{nanoid}.jpg`, `artists/{nanoid}.jpg`) and updates `imagePath` on created records.
 
 ## File Upload Routes
 
@@ -256,8 +259,10 @@ Located in `apps/web/src/components/shared/`:
 | `AssignModal` | `assign-modal.tsx` | Modal with searchable dropdown for assigning relationships (artist to song, prompt to collection, etc.). |
 | `SortableHeader` | `sortable-header.tsx` | Clickable table header cell with sort direction arrow indicator. |
 | `ListToolbar` | `list-toolbar.tsx` | Shared toolbar with search input and archive status segmented control (Active/All/Archived). |
-| `RatingField` | `rating-field.tsx` | Interactive star rating (0-10 scale displayed as 0-5 stars with half-star precision). Also exports `RatingDisplay`. |
-| `ArchiveToggle` | `archive-toggle.tsx` | Switch for setting archived status on edit forms. Also exports `ArchiveBadge` for read-only display. |
+| `RatingField` | `rating-field.tsx` | Interactive star rating (0-5 whole stars, 0=unrated shows "--"). Click same star to reset. Also exports `RatingDisplay`. |
+| `ArchiveButton` | `archive-toggle.tsx` | Red "Archive" / green "Restore" button with confirmation Modal. Also exports `ArchiveBadge` (green "Active" / red "Archived" badge). |
+| `PlatformLinks` | `platform-links.tsx` | Spotify/Apple Music/YouTube icon buttons that open external URLs. Used in table Actions columns. |
+| `MediaEmbeds` | `media-embeds.tsx` | Spotify (300x90), Apple Music (300x140), YouTube (300x169) iframe embeds in a 300px Stack. Used on song show pages. |
 
 ### Anatomy Components
 

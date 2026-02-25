@@ -11,10 +11,9 @@ import {
   Tooltip,
   Text,
   LoadingOverlay,
-  Badge,
   Avatar,
 } from "@mantine/core";
-import { IconEye, IconEdit, IconPlus } from "@tabler/icons-react";
+import { IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
@@ -102,7 +101,7 @@ export const AlbumList = () => {
           <Table.Tbody>
             {albums.length === 0 && !loading && (
               <Table.Tr>
-                <Table.Td colSpan={7}>
+                <Table.Td colSpan={8}>
                   <Text c="dimmed" ta="center" py="md">
                     No albums found.
                   </Text>
@@ -114,7 +113,9 @@ export const AlbumList = () => {
                 <Table.Td>
                   <Avatar size={32} radius="sm" src={album.imagePath ? `/api/storage/${album.imagePath}` : null} />
                 </Table.Td>
-                <Table.Td>{album.name}</Table.Td>
+                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("my-music/albums", album.id)}>
+                  <Text fw={500}>{album.name}</Text>
+                </Table.Td>
                 <Table.Td>
                   <Text size="sm" c="dimmed">
                     {album.ean || "-"}
@@ -128,11 +129,6 @@ export const AlbumList = () => {
                 </Table.Td>
                 <Table.Td>
                   <ArchiveBadge archived={album.archived} />
-                  {!album.archived && (
-                    <Badge color="green" variant="light">
-                      Active
-                    </Badge>
-                  )}
                 </Table.Td>
                 <Table.Td>
                   <Text size="sm" c="dimmed">
@@ -143,14 +139,6 @@ export const AlbumList = () => {
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs">
-                    <Tooltip label="View">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => show("my-music/albums", album.id)}
-                      >
-                        <IconEye size={16} />
-                      </ActionIcon>
-                    </Tooltip>
                     <Tooltip label="Edit">
                       <ActionIcon
                         variant="subtle"

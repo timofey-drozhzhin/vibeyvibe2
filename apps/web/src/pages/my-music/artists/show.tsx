@@ -1,6 +1,8 @@
 import { useShow, useNavigation } from "@refinedev/core";
 import {
+  Anchor,
   Card,
+  Code,
   Group,
   Stack,
   Title,
@@ -48,143 +50,170 @@ export const ArtistShow = () => {
         )}
       </Group>
 
-      <Card withBorder p="lg" pos="relative">
-        <LoadingOverlay visible={isLoading} />
-        {record && (
-          <Stack gap="sm">
-            <Group>
-              <Title order={4}>{record.name}</Title>
-              <ArchiveBadge archived={record.archived} />
-            </Group>
+      <Group align="flex-start" gap="lg" wrap="nowrap">
+        {/* Left column - main content */}
+        <Stack style={{ flex: 1, minWidth: 0 }}>
+          <Card withBorder p="lg" pos="relative">
+            <LoadingOverlay visible={isLoading} />
+            {record && (
+              <Stack gap="sm">
+                <Group>
+                  <Title order={4}>{record.name}</Title>
+                  <ArchiveBadge archived={record.archived} />
+                </Group>
 
-            <Group gap="xl">
-              <div>
-                <Text size="xs" c="dimmed">
-                  ISNI
-                </Text>
-                <Text size="sm">{record.isni || "-"}</Text>
-              </div>
-              <div>
-                <Text size="xs" c="dimmed">
-                  Rating
-                </Text>
-                <RatingDisplay value={record.rating ?? 0} />
-              </div>
-            </Group>
+                <Group gap="xl">
+                  <div>
+                    <Text size="xs" c="dimmed">
+                      ISNI
+                    </Text>
+                    <Text size="sm">{record.isni || "-"}</Text>
+                  </div>
+                  <div>
+                    <Text size="xs" c="dimmed">
+                      Rating
+                    </Text>
+                    <RatingDisplay value={record.rating ?? 0} />
+                  </div>
+                </Group>
 
-            {record.imagePath && (
-              <div>
-                <Text size="xs" c="dimmed" mb={4}>
-                  Image
-                </Text>
-                <ImagePreview path={record.imagePath} alt={record.name} />
-              </div>
+                <Group gap="xl">
+                  {record.spotifyId && (
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        Spotify
+                      </Text>
+                      <Anchor
+                        href={`https://open.spotify.com/artist/${record.spotifyId}`}
+                        target="_blank"
+                        size="sm"
+                      >
+                        <Code>{record.spotifyId}</Code>
+                      </Anchor>
+                    </div>
+                  )}
+                  {record.youtubeUsername && (
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        YouTube
+                      </Text>
+                      <Anchor
+                        href={`https://www.youtube.com/@${record.youtubeUsername}`}
+                        target="_blank"
+                        size="sm"
+                      >
+                        {record.youtubeUsername}
+                      </Anchor>
+                    </div>
+                  )}
+                  {record.tiktokUsername && (
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        TikTok
+                      </Text>
+                      <Anchor
+                        href={`https://www.tiktok.com/@${record.tiktokUsername}`}
+                        target="_blank"
+                        size="sm"
+                      >
+                        {record.tiktokUsername}
+                      </Anchor>
+                    </div>
+                  )}
+                  {record.instagramUsername && (
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        Instagram
+                      </Text>
+                      <Anchor
+                        href={`https://www.instagram.com/${record.instagramUsername}`}
+                        target="_blank"
+                        size="sm"
+                      >
+                        {record.instagramUsername}
+                      </Anchor>
+                    </div>
+                  )}
+                </Group>
+
+                <Group gap="xl">
+                  <div>
+                    <Text size="xs" c="dimmed">
+                      Created
+                    </Text>
+                    <Text size="sm">{record.createdAt}</Text>
+                  </div>
+                  <div>
+                    <Text size="xs" c="dimmed">
+                      Updated
+                    </Text>
+                    <Text size="sm">{record.updatedAt}</Text>
+                  </div>
+                </Group>
+              </Stack>
             )}
+          </Card>
 
-            <Group gap="xl">
-              {record.spotifyId && (
-                <div>
-                  <Text size="xs" c="dimmed">
-                    Spotify ID
-                  </Text>
-                  <Text size="sm">{record.spotifyId}</Text>
-                </div>
-              )}
-              {record.youtubeUsername && (
-                <div>
-                  <Text size="xs" c="dimmed">
-                    YouTube
-                  </Text>
-                  <Text size="sm">{record.youtubeUsername}</Text>
-                </div>
-              )}
-              {record.tiktokUsername && (
-                <div>
-                  <Text size="xs" c="dimmed">
-                    TikTok
-                  </Text>
-                  <Text size="sm">{record.tiktokUsername}</Text>
-                </div>
-              )}
-              {record.instagramUsername && (
-                <div>
-                  <Text size="xs" c="dimmed">
-                    Instagram
-                  </Text>
-                  <Text size="sm">{record.instagramUsername}</Text>
-                </div>
-              )}
-            </Group>
+          {record?.songs && record.songs.length > 0 && (
+            <Card withBorder p="lg">
+              <Stack>
+                <Title order={5}>Songs</Title>
+                <Table striped highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Name</Table.Th>
+                      <Table.Th>ISRC</Table.Th>
+                      <Table.Th>Release Date</Table.Th>
+                      <Table.Th>Rating</Table.Th>
+                      <Table.Th>Status</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {record.songs.map((song: any) => (
+                      <Table.Tr
+                        key={song.id}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => showNav("my-music/songs", song.id)}
+                      >
+                        <Table.Td>{song.name}</Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="dimmed">
+                            {song.isrc || "-"}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm">{song.releaseDate || "-"}</Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <RatingDisplay value={song.rating ?? 0} />
+                        </Table.Td>
+                        <Table.Td>
+                          {song.archived ? (
+                            <Badge color="red" variant="light">
+                              Archived
+                            </Badge>
+                          ) : (
+                            <Badge color="green" variant="light">
+                              Active
+                            </Badge>
+                          )}
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Stack>
+            </Card>
+          )}
+        </Stack>
 
-            <Group gap="xl">
-              <div>
-                <Text size="xs" c="dimmed">
-                  Created
-                </Text>
-                <Text size="sm">{record.createdAt}</Text>
-              </div>
-              <div>
-                <Text size="xs" c="dimmed">
-                  Updated
-                </Text>
-                <Text size="sm">{record.updatedAt}</Text>
-              </div>
-            </Group>
+        {/* Right column - image panel */}
+        {record?.imagePath && (
+          <Stack w={300} style={{ flexShrink: 0 }}>
+            <ImagePreview path={record.imagePath} alt={record.name} size={300} />
           </Stack>
         )}
-      </Card>
-
-      {record?.songs && record.songs.length > 0 && (
-        <Card withBorder p="lg">
-          <Stack>
-            <Title order={5}>Songs</Title>
-            <Table striped highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>ISRC</Table.Th>
-                  <Table.Th>Release Date</Table.Th>
-                  <Table.Th>Rating</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {record.songs.map((song: any) => (
-                  <Table.Tr
-                    key={song.id}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => showNav("my-music/songs", song.id)}
-                  >
-                    <Table.Td>{song.name}</Table.Td>
-                    <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {song.isrc || "-"}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">{song.releaseDate || "-"}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <RatingDisplay value={song.rating ?? 0} />
-                    </Table.Td>
-                    <Table.Td>
-                      {song.archived ? (
-                        <Badge color="red" variant="light">
-                          Archived
-                        </Badge>
-                      ) : (
-                        <Badge color="green" variant="light">
-                          Active
-                        </Badge>
-                      )}
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Stack>
-        </Card>
-      )}
+      </Group>
     </Stack>
   );
 };

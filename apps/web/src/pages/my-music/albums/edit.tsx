@@ -11,8 +11,10 @@ import {
   LoadingOverlay,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
-import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
+import { ArchiveButton } from "../../../components/shared/archive-toggle.js";
 import { RatingField } from "../../../components/shared/rating-field.js";
+import { FileUpload } from "../../../components/shared/file-upload.js";
+import { ImagePreview } from "../../../components/shared/image-preview.js";
 
 export const AlbumEdit = () => {
   const { list, show } = useNavigation();
@@ -26,6 +28,7 @@ export const AlbumEdit = () => {
 
   const [name, setName] = useState("");
   const [ean, setEan] = useState("");
+  const [imagePath, setImagePath] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [rating, setRating] = useState<number>(0);
   const [spotifyId, setSpotifyId] = useState("");
@@ -37,6 +40,7 @@ export const AlbumEdit = () => {
     if (record) {
       setName(record.name ?? "");
       setEan(record.ean ?? "");
+      setImagePath(record.imagePath ?? "");
       setReleaseDate(record.releaseDate ?? "");
       setRating(record.rating ?? 0);
       setSpotifyId(record.spotifyId ?? "");
@@ -50,12 +54,12 @@ export const AlbumEdit = () => {
     onFinish({
       name,
       ean: ean || null,
+      imagePath: imagePath || null,
       releaseDate: releaseDate || null,
       rating,
       spotifyId: spotifyId || null,
       appleMusicId: appleMusicId || null,
       youtubeId: youtubeId || null,
-      archived,
     });
   };
 
@@ -89,6 +93,14 @@ export const AlbumEdit = () => {
             value={ean}
             onChange={(e) => setEan(e.currentTarget.value)}
           />
+          <FileUpload
+            label="Image"
+            value={imagePath}
+            onChange={setImagePath}
+            accept="image/*"
+            directory="albums"
+          />
+          {imagePath && <ImagePreview path={imagePath} alt={name} size={80} />}
           <TextInput
             label="Release Date"
             placeholder="YYYY-MM-DD"
@@ -120,24 +132,30 @@ export const AlbumEdit = () => {
             onChange={(e) => setYoutubeId(e.currentTarget.value)}
           />
 
-          <ArchiveToggle value={archived} onChange={setArchived} />
-
-          <Group justify="flex-end" mt="md">
-            <Button
-              variant="subtle"
-              onClick={() =>
-                id ? show("my-music/albums", id) : list("my-music/albums")
-              }
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              loading={mutation.isPending}
-              disabled={!name.trim()}
-            >
-              Save Changes
-            </Button>
+          <Group justify="space-between" mt="md">
+            <ArchiveButton
+              archived={archived}
+              onToggle={(val) => {
+                onFinish({ archived: val });
+              }}
+            />
+            <Group>
+              <Button
+                onClick={handleSubmit}
+                loading={mutation.isPending}
+                disabled={!name.trim()}
+              >
+                Save
+              </Button>
+              <Button
+                variant="subtle"
+                onClick={() =>
+                  id ? show("my-music/albums", id) : list("my-music/albums")
+                }
+              >
+                Cancel
+              </Button>
+            </Group>
           </Group>
         </Stack>
       </Card>

@@ -21,7 +21,7 @@ const listQuerySchema = z.object({
   sort: z.string().optional(),
   order: z.enum(["asc", "desc"]).default("desc"),
   search: z.string().optional(),
-  archived: z.coerce.boolean().optional(),
+  archived: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
 });
 
 export const sunoCollectionsRoutes = new Hono();

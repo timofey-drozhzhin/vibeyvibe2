@@ -13,7 +13,7 @@ import {
   Select,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
-import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
+import { ArchiveButton } from "../../../components/shared/archive-toggle.js";
 
 interface AnatomyAttribute {
   id: string;
@@ -70,7 +70,6 @@ export const AnatomyAttributeEdit = () => {
       description: description || null,
       instruction: instruction || null,
       examples: examples || null,
-      archived,
     });
   };
 
@@ -146,19 +145,25 @@ export const AnatomyAttributeEdit = () => {
             autosize
           />
 
-          <ArchiveToggle value={archived} onChange={setArchived} />
-
-          <Group justify="flex-end" mt="md">
-            <Button variant="subtle" onClick={() => list("anatomy/attributes")}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              loading={isSaving}
-              disabled={!name}
-            >
-              Save
-            </Button>
+          <Group justify="space-between" mt="md">
+            <ArchiveButton
+              archived={archived}
+              onToggle={(val) => {
+                onFinish({ archived: val });
+              }}
+            />
+            <Group>
+              <Button
+                onClick={handleSubmit}
+                loading={isSaving}
+                disabled={!name}
+              >
+                Save
+              </Button>
+              <Button variant="subtle" onClick={() => list("anatomy/attributes")}>
+                Cancel
+              </Button>
+            </Group>
           </Group>
         </Stack>
       </Card>

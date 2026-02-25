@@ -14,7 +14,7 @@ import {
   Badge,
   Select,
 } from "@mantine/core";
-import { IconEye, IconEdit, IconPlus } from "@tabler/icons-react";
+import { IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
@@ -150,8 +150,8 @@ export const SunoPromptList = () => {
             )}
             {prompts.map((prompt) => (
               <Table.Tr key={prompt.id}>
-                <Table.Td>
-                  <Text size="sm">{truncate(prompt.style, 40)}</Text>
+                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("suno/prompts", prompt.id)}>
+                  <Text fw={500} size="sm">{truncate(prompt.style, 40)}</Text>
                 </Table.Td>
                 <Table.Td>
                   {prompt.voiceGender ? (
@@ -169,11 +169,6 @@ export const SunoPromptList = () => {
                 </Table.Td>
                 <Table.Td>
                   <ArchiveBadge archived={prompt.archived} />
-                  {!prompt.archived && (
-                    <Badge color="green" variant="light">
-                      Active
-                    </Badge>
-                  )}
                 </Table.Td>
                 <Table.Td>
                   <Text size="sm" c="dimmed">
@@ -184,14 +179,6 @@ export const SunoPromptList = () => {
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs">
-                    <Tooltip label="View">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => show("suno/prompts", prompt.id)}
-                      >
-                        <IconEye size={16} />
-                      </ActionIcon>
-                    </Tooltip>
                     <Tooltip label="Edit">
                       <ActionIcon
                         variant="subtle"

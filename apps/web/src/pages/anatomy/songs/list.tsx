@@ -5,7 +5,6 @@ import {
   Group,
   Text,
   Title,
-  Badge,
   Pagination,
   ActionIcon,
   Tooltip,
@@ -15,11 +14,12 @@ import {
   Center,
   Avatar,
 } from "@mantine/core";
-import { IconEye, IconEdit, IconPlus } from "@tabler/icons-react";
+import { IconEdit, IconPlus, IconDna } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
+import { PlatformLinks } from "../../../components/shared/platform-links.js";
 
 interface AnatomySong {
   id: string;
@@ -126,7 +126,7 @@ export const AnatomySongList = () => {
                   <Table.Td>
                     <Avatar size={32} radius="sm" src={song.imagePath ? `/api/storage/${song.imagePath}` : null} />
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td style={{ cursor: "pointer" }} onClick={() => show("anatomy/songs", song.id)}>
                     <Text fw={500}>{song.name}</Text>
                   </Table.Td>
                   <Table.Td>
@@ -141,15 +141,7 @@ export const AnatomySongList = () => {
                     <RatingDisplay value={song.rating} />
                   </Table.Td>
                   <Table.Td>
-                    {song.archived ? (
-                      <Badge color="red" variant="light">
-                        Archived
-                      </Badge>
-                    ) : (
-                      <Badge color="green" variant="light">
-                        Active
-                      </Badge>
-                    )}
+                    <ArchiveBadge archived={song.archived} />
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed">
@@ -160,12 +152,10 @@ export const AnatomySongList = () => {
                   </Table.Td>
                   <Table.Td>
                     <Group gap="xs">
-                      <Tooltip label="View">
-                        <ActionIcon
-                          variant="subtle"
-                          onClick={() => show("anatomy/songs", song.id)}
-                        >
-                          <IconEye size={16} />
+                      <PlatformLinks spotifyId={song.spotifyId} appleMusicId={song.appleMusicId} youtubeId={song.youtubeId} />
+                      <Tooltip label="Create Profile">
+                        <ActionIcon variant="subtle" color="teal" onClick={() => show("anatomy/songs", song.id)}>
+                          <IconDna size={16} />
                         </ActionIcon>
                       </Tooltip>
                       <Tooltip label="Edit">

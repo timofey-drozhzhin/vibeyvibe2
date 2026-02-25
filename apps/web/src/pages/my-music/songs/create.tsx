@@ -11,6 +11,8 @@ import {
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { RatingField } from "../../../components/shared/rating-field.js";
+import { FileUpload } from "../../../components/shared/file-upload.js";
+import { ImagePreview } from "../../../components/shared/image-preview.js";
 
 export const SongCreate = () => {
   const { list } = useNavigation();
@@ -71,12 +73,14 @@ export const SongCreate = () => {
             value={isrc}
             onChange={(e) => setIsrc(e.currentTarget.value)}
           />
-          <TextInput
-            label="Image Path"
-            placeholder="/path/to/image"
+          <FileUpload
+            label="Image"
             value={imagePath}
-            onChange={(e) => setImagePath(e.currentTarget.value)}
+            onChange={setImagePath}
+            accept="image/*"
+            directory="songs"
           />
+          {imagePath && <ImagePreview path={imagePath} alt={name} size={80} />}
           <TextInput
             label="Release Date"
             placeholder="YYYY-MM-DD"

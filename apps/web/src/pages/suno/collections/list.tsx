@@ -12,7 +12,7 @@ import {
   Text,
   LoadingOverlay,
 } from "@mantine/core";
-import { IconEye, IconEdit, IconPlus } from "@tabler/icons-react";
+import { IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 
@@ -112,7 +112,7 @@ export const SunoCollectionList = () => {
             )}
             {collections.map((collection: any) => (
               <Table.Tr key={collection.id}>
-                <Table.Td>
+                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("suno/collections", collection.id)}>
                   <Text size="sm" fw={500}>
                     {collection.name}
                   </Text>
@@ -131,14 +131,6 @@ export const SunoCollectionList = () => {
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs">
-                    <Tooltip label="View">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => show("suno/collections", collection.id)}
-                      >
-                        <IconEye size={16} />
-                      </ActionIcon>
-                    </Tooltip>
                     <Tooltip label="Edit">
                       <ActionIcon
                         variant="subtle"

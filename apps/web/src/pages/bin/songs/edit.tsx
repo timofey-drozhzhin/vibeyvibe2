@@ -10,7 +10,7 @@ import {
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
-import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
+import { ArchiveButton } from "../../../components/shared/archive-toggle.js";
 import { FileUpload } from "../../../components/shared/file-upload.js";
 
 interface BinSource {
@@ -76,7 +76,6 @@ export const BinSongEdit = () => {
 
     const values: Record<string, unknown> = {
       name: name.trim(),
-      archived,
     };
     if (sourceId) {
       values.sourceId = Number(sourceId);
@@ -155,21 +154,27 @@ export const BinSongEdit = () => {
             onChange={(e) => setSourceUrl(e.currentTarget.value)}
           />
 
-          <ArchiveToggle value={archived} onChange={setArchived} />
-
-          <Group justify="flex-end" mt="sm">
-            <Button
-              variant="default"
-              onClick={() => list("bin/songs")}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              loading={mutation.isPending}
-            >
-              Save
-            </Button>
+          <Group justify="space-between" mt="sm">
+            <ArchiveButton
+              archived={archived}
+              onToggle={(val) => {
+                onFinish({ archived: val });
+              }}
+            />
+            <Group>
+              <Button
+                onClick={handleSubmit}
+                loading={mutation.isPending}
+              >
+                Save
+              </Button>
+              <Button
+                variant="subtle"
+                onClick={() => list("bin/songs")}
+              >
+                Cancel
+              </Button>
+            </Group>
           </Group>
         </Stack>
       </Card>

@@ -14,12 +14,48 @@ import {
   fetchSpotifyData,
   detectSpotifyType,
 } from "../../services/spotify/index.js";
+import { createStorageClient } from "../../services/storage/index.js";
 
 export const anatomyImportRoutes = new Hono();
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Download an image from a URL and upload it to storage.
+ * Uses a per-request cache to avoid re-downloading the same URL.
+ * Returns the storage path on success, or null on failure.
+ */
+async function downloadAndStoreImage(
+  imageUrl: string,
+  directory: "songs" | "artists",
+  cache: Map<string, string>
+): Promise<string | null> {
+  const cacheKey = `${directory}:${imageUrl}`;
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey)!;
+  }
+
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) return null;
+
+    const buffer = await response.arrayBuffer();
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    const ext = contentType.includes("png") ? ".png" : ".jpg";
+    const storagePath = `${directory}/${nanoid()}${ext}`;
+
+    const storage = createStorageClient();
+    await storage.upload(storagePath, buffer, contentType);
+
+    cache.set(cacheKey, storagePath);
+    return storagePath;
+  } catch {
+    // Image download/upload failure must not block song creation
+    return null;
+  }
+}
 
 function detectUrlType(url: string): "spotify" | "unknown" {
   try {
@@ -106,6 +142,7 @@ anatomyImportRoutes.post(
 
     const createdSongs: any[] = [];
     const skippedSongs: { name: string; reason: string }[] = [];
+    const imageCache = new Map<string, string>(); // url -> storagePath
 
     for (const track of tracks) {
       // Generate a placeholder ISRC if one was not provided.
@@ -156,9 +193,25 @@ anatomyImportRoutes.post(
           isrc,
           releaseDate: track.releaseDate || "Unknown",
           spotifyId: track.spotifyId || null,
-          imagePath: null, // Image download is not handled here
+          imagePath: null,
         })
         .returning();
+
+      // Download and store the song cover image
+      if (track.imageUrl) {
+        const songImagePath = await downloadAndStoreImage(
+          track.imageUrl,
+          "songs",
+          imageCache
+        );
+        if (songImagePath) {
+          await db
+            .update(anatomySongs)
+            .set({ imagePath: songImagePath })
+            .where(eq(anatomySongs.id, songId));
+          song[0].imagePath = songImagePath;
+        }
+      }
 
       // Resolve or create artists and link them
       for (const artistData of track.artists) {
@@ -184,6 +237,21 @@ anatomyImportRoutes.post(
             name: artistData.name,
             isni: placeholderIsni,
           });
+        }
+
+        // Download and store artist image (use song cover as best available)
+        if (track.imageUrl) {
+          const artistImagePath = await downloadAndStoreImage(
+            track.imageUrl,
+            "artists",
+            imageCache
+          );
+          if (artistImagePath) {
+            await db
+              .update(anatomyArtists)
+              .set({ imagePath: artistImagePath })
+              .where(eq(anatomyArtists.id, artistId));
+          }
         }
 
         // Link artist to song (ignore duplicates via unique constraint)

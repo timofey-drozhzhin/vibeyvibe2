@@ -11,14 +11,14 @@ import {
   Tooltip,
   Text,
   LoadingOverlay,
-  Badge,
   Avatar,
 } from "@mantine/core";
-import { IconEye, IconEdit, IconPlus } from "@tabler/icons-react";
+import { IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
+import { PlatformLinks } from "../../../components/shared/platform-links.js";
 
 export const SongList = () => {
   const [page, setPage] = useState(1);
@@ -101,7 +101,7 @@ export const SongList = () => {
           <Table.Tbody>
             {songs.length === 0 && !listResult.query.isPending && (
               <Table.Tr>
-                <Table.Td colSpan={7}>
+                <Table.Td colSpan={8}>
                   <Text c="dimmed" ta="center" py="md">
                     No songs found.
                   </Text>
@@ -113,7 +113,9 @@ export const SongList = () => {
                 <Table.Td>
                   <Avatar size={32} radius="sm" src={song.imagePath ? `/api/storage/${song.imagePath}` : null} />
                 </Table.Td>
-                <Table.Td>{song.name}</Table.Td>
+                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("my-music/songs", song.id)}>
+                  <Text fw={500}>{song.name}</Text>
+                </Table.Td>
                 <Table.Td>
                   <Text size="sm" c="dimmed">
                     {song.isrc || "-"}
@@ -127,11 +129,6 @@ export const SongList = () => {
                 </Table.Td>
                 <Table.Td>
                   <ArchiveBadge archived={song.archived} />
-                  {!song.archived && (
-                    <Badge color="green" variant="light">
-                      Active
-                    </Badge>
-                  )}
                 </Table.Td>
                 <Table.Td>
                   <Text size="sm" c="dimmed">
@@ -142,14 +139,7 @@ export const SongList = () => {
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs">
-                    <Tooltip label="View">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => show("my-music/songs", song.id)}
-                      >
-                        <IconEye size={16} />
-                      </ActionIcon>
-                    </Tooltip>
+                    <PlatformLinks spotifyId={song.spotifyId} appleMusicId={song.appleMusicId} youtubeId={song.youtubeId} />
                     <Tooltip label="Edit">
                       <ActionIcon
                         variant="subtle"

@@ -14,10 +14,10 @@ import { RatingField } from "../../../components/shared/rating-field.js";
 import { FileUpload } from "../../../components/shared/file-upload.js";
 import { ImagePreview } from "../../../components/shared/image-preview.js";
 
-export const ArtistCreate = () => {
+export const AnatomyArtistCreate = () => {
   const { list } = useNavigation();
   const { onFinish, mutation } = useForm({
-    resource: "my-music/artists",
+    resource: "anatomy/artists",
     action: "create",
     redirect: "show",
   });
@@ -26,21 +26,13 @@ export const ArtistCreate = () => {
   const [isni, setIsni] = useState("");
   const [imagePath, setImagePath] = useState("");
   const [rating, setRating] = useState<number>(0);
-  const [spotifyId, setSpotifyId] = useState("");
-  const [youtubeUsername, setYoutubeUsername] = useState("");
-  const [tiktokUsername, setTiktokUsername] = useState("");
-  const [instagramUsername, setInstagramUsername] = useState("");
 
   const handleSubmit = () => {
     onFinish({
       name,
-      isni: isni || null,
+      isni,
       imagePath: imagePath || null,
       rating,
-      spotifyId: spotifyId || null,
-      youtubeUsername: youtubeUsername || null,
-      tiktokUsername: tiktokUsername || null,
-      instagramUsername: instagramUsername || null,
     });
   };
 
@@ -50,11 +42,11 @@ export const ArtistCreate = () => {
         <Button
           variant="subtle"
           leftSection={<IconArrowLeft size={16} />}
-          onClick={() => list("my-music/artists")}
+          onClick={() => list("anatomy/artists")}
         >
           Back
         </Button>
-        <Title order={3}>Create Artist</Title>
+        <Title order={3}>Add Anatomy Artist</Title>
       </Group>
 
       <Card withBorder p="lg" maw={600}>
@@ -68,8 +60,9 @@ export const ArtistCreate = () => {
           />
           <TextInput
             label="ISNI"
-            placeholder="16 digits"
-            description="International Standard Name Identifier (16 digits)"
+            placeholder="16-digit ISNI"
+            description="International Standard Name Identifier"
+            required
             value={isni}
             onChange={(e) => setIsni(e.currentTarget.value)}
           />
@@ -87,44 +80,18 @@ export const ArtistCreate = () => {
             </Text>
             <RatingField value={rating} onChange={(val) => setRating(val)} />
           </div>
-          <TextInput
-            label="Spotify ID"
-            placeholder="Spotify artist ID"
-            value={spotifyId}
-            onChange={(e) => setSpotifyId(e.currentTarget.value)}
-          />
-          <TextInput
-            label="YouTube Username"
-            placeholder="@username"
-            description="Starts with @"
-            value={youtubeUsername}
-            onChange={(e) => setYoutubeUsername(e.currentTarget.value)}
-          />
-          <TextInput
-            label="TikTok Username"
-            placeholder="@username"
-            description="Starts with @"
-            value={tiktokUsername}
-            onChange={(e) => setTiktokUsername(e.currentTarget.value)}
-          />
-          <TextInput
-            label="Instagram Username"
-            placeholder="username"
-            value={instagramUsername}
-            onChange={(e) => setInstagramUsername(e.currentTarget.value)}
-          />
 
           <Group justify="flex-end" mt="md">
             <Button
               variant="subtle"
-              onClick={() => list("my-music/artists")}
+              onClick={() => list("anatomy/artists")}
             >
               Cancel
             </Button>
             <Button
               onClick={handleSubmit}
               loading={mutation.isPending}
-              disabled={!name.trim()}
+              disabled={!name.trim() || !isni.trim()}
             >
               Create Artist
             </Button>

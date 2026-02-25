@@ -16,10 +16,10 @@ import { RatingField } from "../../../components/shared/rating-field.js";
 import { FileUpload } from "../../../components/shared/file-upload.js";
 import { ImagePreview } from "../../../components/shared/image-preview.js";
 
-export const SongEdit = () => {
+export const AnatomyArtistEdit = () => {
   const { list, show } = useNavigation();
   const { onFinish, mutation, query, id, formLoading } = useForm({
-    resource: "my-music/songs",
+    resource: "anatomy/artists",
     action: "edit",
     redirect: "show",
   });
@@ -27,25 +27,17 @@ export const SongEdit = () => {
   const record = query?.data?.data;
 
   const [name, setName] = useState("");
-  const [isrc, setIsrc] = useState("");
+  const [isni, setIsni] = useState("");
   const [imagePath, setImagePath] = useState("");
-  const [releaseDate, setReleaseDate] = useState("");
   const [rating, setRating] = useState<number>(0);
-  const [spotifyId, setSpotifyId] = useState("");
-  const [appleMusicId, setAppleMusicId] = useState("");
-  const [youtubeId, setYoutubeId] = useState("");
   const [archived, setArchived] = useState(false);
 
   useEffect(() => {
     if (record) {
       setName(record.name ?? "");
-      setIsrc(record.isrc ?? "");
+      setIsni(record.isni ?? "");
       setImagePath(record.imagePath ?? "");
-      setReleaseDate(record.releaseDate ?? "");
       setRating(record.rating ?? 0);
-      setSpotifyId(record.spotifyId ?? "");
-      setAppleMusicId(record.appleMusicId ?? "");
-      setYoutubeId(record.youtubeId ?? "");
       setArchived(record.archived ?? false);
     }
   }, [record]);
@@ -53,13 +45,9 @@ export const SongEdit = () => {
   const handleSubmit = () => {
     onFinish({
       name,
-      isrc: isrc || null,
+      isni,
       imagePath: imagePath || null,
-      releaseDate: releaseDate || null,
       rating,
-      spotifyId: spotifyId || null,
-      appleMusicId: appleMusicId || null,
-      youtubeId: youtubeId || null,
     });
   };
 
@@ -69,11 +57,11 @@ export const SongEdit = () => {
         <Button
           variant="subtle"
           leftSection={<IconArrowLeft size={16} />}
-          onClick={() => list("my-music/songs")}
+          onClick={() => list("anatomy/artists")}
         >
           Back
         </Button>
-        <Title order={3}>Edit Song</Title>
+        <Title order={3}>Edit Anatomy Artist</Title>
       </Group>
 
       <Card withBorder p="lg" maw={600} pos="relative">
@@ -81,56 +69,33 @@ export const SongEdit = () => {
         <Stack>
           <TextInput
             label="Name"
-            placeholder="Song name"
+            placeholder="Artist name"
             required
             value={name}
             onChange={(e) => setName(e.currentTarget.value)}
           />
           <TextInput
-            label="ISRC"
-            placeholder="e.g. USRC17607839"
-            description="International Standard Recording Code"
-            value={isrc}
-            onChange={(e) => setIsrc(e.currentTarget.value)}
+            label="ISNI"
+            placeholder="16-digit ISNI"
+            description="International Standard Name Identifier"
+            required
+            value={isni}
+            onChange={(e) => setIsni(e.currentTarget.value)}
           />
           <FileUpload
             label="Image"
             value={imagePath}
             onChange={setImagePath}
             accept="image/*"
-            directory="songs"
+            directory="artists"
           />
           {imagePath && <ImagePreview path={imagePath} alt={name} size={80} />}
-          <TextInput
-            label="Release Date"
-            placeholder="YYYY-MM-DD"
-            value={releaseDate}
-            onChange={(e) => setReleaseDate(e.currentTarget.value)}
-          />
           <div>
             <Text size="sm" fw={500} mb={4}>
               Rating
             </Text>
             <RatingField value={rating} onChange={(val) => setRating(val)} />
           </div>
-          <TextInput
-            label="Spotify ID"
-            placeholder="Spotify track ID"
-            value={spotifyId}
-            onChange={(e) => setSpotifyId(e.currentTarget.value)}
-          />
-          <TextInput
-            label="Apple Music ID"
-            placeholder="Apple Music track ID"
-            value={appleMusicId}
-            onChange={(e) => setAppleMusicId(e.currentTarget.value)}
-          />
-          <TextInput
-            label="YouTube ID"
-            placeholder="YouTube video ID"
-            value={youtubeId}
-            onChange={(e) => setYoutubeId(e.currentTarget.value)}
-          />
 
           <Group justify="space-between" mt="md">
             <ArchiveButton
@@ -143,14 +108,14 @@ export const SongEdit = () => {
               <Button
                 onClick={handleSubmit}
                 loading={mutation.isPending}
-                disabled={!name.trim()}
+                disabled={!name.trim() || !isni.trim()}
               >
                 Save
               </Button>
               <Button
                 variant="subtle"
                 onClick={() =>
-                  id ? show("my-music/songs", id) : list("my-music/songs")
+                  id ? show("anatomy/artists", id) : list("anatomy/artists")
                 }
               >
                 Cancel

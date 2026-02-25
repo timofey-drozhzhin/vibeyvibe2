@@ -199,10 +199,12 @@ pages/{section}/{resource}/
 ### List Pages
 - Use `useTable` hook for server-side data fetching
 - Default `pageSize: 20` on all list pages
-- Include search input for text filtering
-- Include archive status toggle/filter
+- Include search input for text filtering via `ListToolbar` component
+- Include archive status segmented control (Active/All/Archived)
 - Paginate with Refine's built-in pagination
-- Row actions: View (show), Edit -- never Delete
+- Clickable name column navigates to show page (`cursor: pointer`, `onClick → show(resource, id)`)
+- Row actions: Edit button only (no View button) + PlatformLinks for songs -- never Delete
+- Use `ArchiveBadge` in Status column (shows green "Active" or red "Archived")
 
 ### Create Pages
 - Use `useForm` hook with validation
@@ -213,7 +215,9 @@ pages/{section}/{resource}/
 ### Edit Pages
 - Use `useForm` hook with `refineCoreProps: { action: "edit" }`
 - Pre-populate fields from existing record
-- Include archive toggle (checkbox/switch)
+- Use `FileUpload` + `ImagePreview` for image fields (not TextInput)
+- Button layout: `[ArchiveButton]` on left, `[Save] [Cancel]` on right (`Group justify="space-between"`)
+- `ArchiveButton` calls `onFinish({ archived: newValue })` directly with confirmation modal
 - Submit via PUT to the resource endpoint
 - Redirect to show page on success
 
@@ -221,14 +225,16 @@ pages/{section}/{resource}/
 - Use `useShow` hook to fetch record by ID
 - Display all fields in a readable layout
 - Include navigation to edit page
-- Show archive status prominently if archived
+- Show archive status prominently with `ArchiveBadge`
+- Song show pages use two-column layout: main content (flex:1) + right panel (300px) with `MediaEmbeds`
+- Platform IDs (Spotify, Apple Music, YouTube) displayed as clickable links to external URLs
 
 ## Validation
 
 Client-side validation mirrors the Zod schemas defined on the API side. Use Mantine form validation or the Refine form integration to validate before submission:
 - Required fields match the API's `.min(1)` constraints
 - Format patterns (ISRC, ISNI, EAN, social usernames) should match the API regex patterns
-- Numeric ranges (ratings 0-10) should be enforced in the UI
+- Numeric ranges (ratings 0-5) should be enforced in the UI
 
 ## No Delete Buttons
 

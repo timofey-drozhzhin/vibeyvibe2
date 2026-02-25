@@ -13,7 +13,7 @@ import {
   LoadingOverlay,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
-import { ArchiveToggle } from "../../../components/shared/archive-toggle.js";
+import { ArchiveButton } from "../../../components/shared/archive-toggle.js";
 
 interface ProfileOption {
   id: string;
@@ -72,7 +72,6 @@ export const SunoPromptEdit = () => {
       notes: notes || undefined,
       profileId: profileId || undefined,
       rating,
-      archived,
     });
   };
 
@@ -150,21 +149,27 @@ export const SunoPromptEdit = () => {
             onChange={(val) => setRating(typeof val === "number" ? val : 0)}
           />
 
-          <ArchiveToggle value={archived} onChange={setArchived} />
-
-          <Group justify="flex-end" mt="md">
-            <Button
-              variant="default"
-              onClick={() => record?.id ? show("suno/prompts", record.id) : list("suno/prompts")}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              loading={mutation.isPending}
-            >
-              Save
-            </Button>
+          <Group justify="space-between" mt="md">
+            <ArchiveButton
+              archived={archived}
+              onToggle={(val) => {
+                onFinish({ archived: val });
+              }}
+            />
+            <Group>
+              <Button
+                onClick={handleSubmit}
+                loading={mutation.isPending}
+              >
+                Save
+              </Button>
+              <Button
+                variant="subtle"
+                onClick={() => record?.id ? show("suno/prompts", record.id) : list("suno/prompts")}
+              >
+                Cancel
+              </Button>
+            </Group>
           </Group>
         </Stack>
       </Card>

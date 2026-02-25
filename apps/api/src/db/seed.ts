@@ -52,11 +52,11 @@ async function seed() {
 
   // ─── My Music: Songs ──────────────────────────────────────────────────────
   const mySongs = [
-    { id: "seed-my-song-swimming", name: "Swimming Pools (Drank)", isrc: "USAF11200015", rating: 8, releaseDate: "2012-10-22" },
-    { id: "seed-my-song-killbill", name: "Kill Bill", isrc: "USRC12200001", rating: 9, releaseDate: "2022-12-09" },
-    { id: "seed-my-song-earfquake", name: "EARFQUAKE", isrc: "USCM51900001", rating: 7, releaseDate: "2019-05-17" },
-    { id: "seed-my-song-moneytrees", name: "Money Trees", isrc: "USAF11200016", rating: 9, releaseDate: "2012-10-22" },
-    { id: "seed-my-song-shirt", name: "Shirt", isrc: "USRC12200002", rating: 7, releaseDate: "2022-12-09" },
+    { id: "seed-my-song-swimming", name: "Swimming Pools (Drank)", isrc: "USAF11200015", rating: 4, releaseDate: "2012-10-22", spotifyId: "5ByAIlEEnxYdvpnezg7HTX", youtubeId: "B5YNiCfWC3A" },
+    { id: "seed-my-song-killbill", name: "Kill Bill", isrc: "USRC12200001", rating: 5, releaseDate: "2022-12-09", spotifyId: "1Qrg8KqiBpW07V7PNxwwwL", appleMusicId: "1649751085", youtubeId: "hJgcKRHuz_Y" },
+    { id: "seed-my-song-earfquake", name: "EARFQUAKE", isrc: "USCM51900001", rating: 4, releaseDate: "2019-05-17", spotifyId: "5hVghJ4KaYES3BFUATCYn0", youtubeId: "HmAsUQEFYGI" },
+    { id: "seed-my-song-moneytrees", name: "Money Trees", isrc: "USAF11200016", rating: 5, releaseDate: "2012-10-22", spotifyId: "2HbKqm4o0w5wEeEFXm2s4y", youtubeId: "iMK0tDBbmMU" },
+    { id: "seed-my-song-shirt", name: "Shirt", isrc: "USRC12200002", rating: 3, releaseDate: "2022-12-09", spotifyId: "74MCSNz7GEQwW8f61GOfkL" },
   ];
   for (const s of mySongs) {
     await db.insert(schema.mySongs).values({ ...s, archived: false }).onConflictDoNothing();
@@ -96,8 +96,8 @@ async function seed() {
 
   // ─── Anatomy: Songs ───────────────────────────────────────────────────────
   const anatSongs = [
-    { id: "seed-anat-song-blinding", name: "Blinding Lights", isrc: "USUG11904425", rating: 9, releaseDate: "2019-11-29" },
-    { id: "seed-anat-song-nights", name: "Nights", isrc: "USUG11600001", rating: 10, releaseDate: "2016-08-20" },
+    { id: "seed-anat-song-blinding", name: "Blinding Lights", isrc: "USUG11904425", rating: 5, releaseDate: "2019-11-29", spotifyId: "0VjIjW4GlUZAMYd2vXMi3b", youtubeId: "4NRXx6U8ABQ" },
+    { id: "seed-anat-song-nights", name: "Nights", isrc: "USUG11600001", rating: 5, releaseDate: "2016-08-20", spotifyId: "7eqoqGkKe8gLv2Vba1RSCJ", youtubeId: "r4l9bFqgMaQ" },
   ];
   for (const s of anatSongs) {
     await db.insert(schema.anatomySongs).values({ ...s, archived: false }).onConflictDoNothing();
@@ -133,8 +133,8 @@ async function seed() {
 
   // ─── Suno: Prompts ────────────────────────────────────────────────────────
   const sunoPrompts = [
-    { id: "seed-suno-prompt-rnb", style: "neo-soul R&B", lyrics: "Verse about lost love under city lights...", voiceGender: "female" as const, rating: 7, notes: "Melancholic R&B Ballad" },
-    { id: "seed-suno-prompt-trap", style: "aggressive trap", lyrics: "Bars about hustle and grind...", voiceGender: "male" as const, rating: 6, notes: "Hard Hitting Trap" },
+    { id: "seed-suno-prompt-rnb", style: "neo-soul R&B", lyrics: "Verse about lost love under city lights...", voiceGender: "female" as const, rating: 4, notes: "Melancholic R&B Ballad" },
+    { id: "seed-suno-prompt-trap", style: "aggressive trap", lyrics: "Bars about hustle and grind...", voiceGender: "male" as const, rating: 3, notes: "Hard Hitting Trap" },
   ];
   for (const p of sunoPrompts) {
     await db.insert(schema.sunoPrompts).values({ ...p, archived: false }).onConflictDoNothing();

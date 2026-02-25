@@ -60,17 +60,18 @@ const dataProvider: DataProvider = {
     }
 
     const url = `${BASE}/${resource}?${params.toString()}`;
-    const result = await request(url);
+    const raw = await request(url);
 
-    return {
-      data: result.data,
-      total: result.total,
-    };
+    const items = Array.isArray(raw) ? raw : (raw.data || []);
+    const total = raw.total ?? raw.pagination?.total ?? items.length;
+
+    return { data: items, total };
   },
 
   getOne: async ({ resource, id }) => {
     const url = `${BASE}/${resource}/${id}`;
-    const data = await request(url);
+    const raw = await request(url);
+    const data = raw && typeof raw === 'object' && 'data' in raw && !Array.isArray(raw.data) ? raw.data : raw;
     return { data };
   },
 

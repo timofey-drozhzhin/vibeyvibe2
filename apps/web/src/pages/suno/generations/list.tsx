@@ -100,8 +100,8 @@ export const SunoGenerationList = () => {
             )}
             {generations.map((generation: any) => (
               <Table.Tr key={generation.id}>
-                <Table.Td>
-                  <Text size="sm" ff="monospace">
+                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("suno/generations", generation.id)}>
+                  <Text size="sm" fw={500} ff="monospace">
                     {generation.sunoId || "-"}
                   </Text>
                 </Table.Td>

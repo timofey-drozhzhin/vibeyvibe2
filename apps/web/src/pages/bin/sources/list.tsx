@@ -10,11 +10,9 @@ import {
   ActionIcon,
   Pagination,
   Button,
-  Badge,
   Anchor,
 } from "@mantine/core";
 import {
-  IconEye,
   IconEdit,
   IconPlus,
   IconExternalLink,
@@ -126,7 +124,7 @@ export const BinSourceList = () => {
             ) : (
               records.map((source) => (
                 <Table.Tr key={source.id}>
-                  <Table.Td>
+                  <Table.Td style={{ cursor: "pointer" }} onClick={() => show("bin/sources", source.id)}>
                     <Text fw={500}>{source.name}</Text>
                   </Table.Td>
                   <Table.Td>
@@ -151,11 +149,6 @@ export const BinSourceList = () => {
                   </Table.Td>
                   <Table.Td>
                     <ArchiveBadge archived={source.archived} />
-                    {!source.archived && (
-                      <Badge variant="light" color="green">
-                        Active
-                      </Badge>
-                    )}
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed">
@@ -166,12 +159,6 @@ export const BinSourceList = () => {
                   </Table.Td>
                   <Table.Td>
                     <Group gap="xs">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => show("bin/sources", source.id)}
-                      >
-                        <IconEye size={16} />
-                      </ActionIcon>
                       <ActionIcon
                         variant="subtle"
                         onClick={() => edit("bin/sources", source.id)}

@@ -11,10 +11,9 @@ import {
   Tooltip,
   Text,
   LoadingOverlay,
-  Badge,
   Avatar,
 } from "@mantine/core";
-import { IconEye, IconEdit, IconPlus } from "@tabler/icons-react";
+import { IconEdit, IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
@@ -101,7 +100,7 @@ export const ArtistList = () => {
           <Table.Tbody>
             {artists.length === 0 && !loading && (
               <Table.Tr>
-                <Table.Td colSpan={6}>
+                <Table.Td colSpan={7}>
                   <Text c="dimmed" ta="center" py="md">
                     No artists found.
                   </Text>
@@ -113,7 +112,9 @@ export const ArtistList = () => {
                 <Table.Td>
                   <Avatar size={32} radius="sm" src={artist.imagePath ? `/api/storage/${artist.imagePath}` : null} />
                 </Table.Td>
-                <Table.Td>{artist.name}</Table.Td>
+                <Table.Td style={{ cursor: "pointer" }} onClick={() => show("my-music/artists", artist.id)}>
+                  <Text fw={500}>{artist.name}</Text>
+                </Table.Td>
                 <Table.Td>
                   <Text size="sm" c="dimmed">
                     {artist.isni || "-"}
@@ -124,11 +125,6 @@ export const ArtistList = () => {
                 </Table.Td>
                 <Table.Td>
                   <ArchiveBadge archived={artist.archived} />
-                  {!artist.archived && (
-                    <Badge color="green" variant="light">
-                      Active
-                    </Badge>
-                  )}
                 </Table.Td>
                 <Table.Td>
                   <Text size="sm" c="dimmed">
@@ -139,14 +135,6 @@ export const ArtistList = () => {
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs">
-                    <Tooltip label="View">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => show("my-music/artists", artist.id)}
-                      >
-                        <IconEye size={16} />
-                      </ActionIcon>
-                    </Tooltip>
                     <Tooltip label="Edit">
                       <ActionIcon
                         variant="subtle"

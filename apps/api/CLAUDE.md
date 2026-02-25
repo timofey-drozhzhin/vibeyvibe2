@@ -150,6 +150,16 @@ Schemas are organized by section in `validators/`:
 
 When adding new routes, always create corresponding Zod schemas in `validators/` and apply them with `zValidator`.
 
+### Boolean Query Parameters
+Never use `z.coerce.boolean()` for query string parameters. In JavaScript, `Boolean("false") === true`, so query param `?archived=false` would incorrectly match `true`. Instead use:
+```typescript
+z.enum(["true", "false"]).transform((v) => v === "true").optional()
+```
+This pattern is used in all `listQuerySchema` definitions across the codebase.
+
+### Rating Scale
+All rating fields use a 0-5 integer scale (0 = unrated, 1-5 = stars). This applies to songs, artists, albums, and prompts across all validators.
+
 ## Authentication
 
 ### Better Auth Setup
@@ -216,7 +226,7 @@ The Spotify metadata extraction service (`services/spotify/index.ts`) uses the `
 
 ### Import Routes
 - `POST /api/anatomy/import` -- Preview: accepts a Spotify URL and returns extracted tracks for review.
-- `POST /api/anatomy/import/confirm` -- Confirm: accepts selected tracks and creates `anatomy_songs` and `anatomy_artists` records with duplicate detection.
+- `POST /api/anatomy/import/confirm` -- Confirm: accepts selected tracks and creates `anatomy_songs` and `anatomy_artists` records with duplicate detection. Downloads cover art images to storage (`songs/{nanoid}.jpg` and `artists/{nanoid}.jpg`) and updates `imagePath` on records. Image download failures do not block record creation.
 
 ### Type Declarations
 The `spotify-url-info` library lacks built-in types. Custom type declarations are in `types/spotify-url-info.d.ts`.
