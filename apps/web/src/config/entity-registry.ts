@@ -295,6 +295,7 @@ export const entityRegistry: EntityDef[] = [
     listColumns: [
       "image_path",
       "name",
+      "artists",
       "release_date",
       "rating",
       "archived",
@@ -374,6 +375,7 @@ export const entityRegistry: EntityDef[] = [
     listColumns: [
       "image_path",
       "name",
+      "artists",
       "release_date",
       "rating",
       "archived",

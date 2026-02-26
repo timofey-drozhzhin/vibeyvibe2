@@ -1,7 +1,13 @@
-import { Text, Avatar } from "@mantine/core";
+import { Anchor, Text, Avatar, Group } from "@mantine/core";
+import { useNavigation } from "@refinedev/core";
 import { RatingDisplay } from "../shared/rating-field.js";
 import { ArchiveBadge } from "../shared/archive-toggle.js";
 import type { EntityDef } from "../../config/entity-registry.js";
+import {
+  resolveRelationshipTarget,
+  getResourceName,
+  findEntity,
+} from "../../config/entity-registry.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -22,6 +28,8 @@ function formatDate(value: any): string {
 }
 
 export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => {
+  const { show } = useNavigation();
+
   // Image path -> small avatar preview
   if (fieldKey === "image_path") {
     return (
@@ -66,47 +74,84 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
     );
   }
 
-  // Foreign key fields -> show enriched display name if available
+  // Foreign key fields -> clickable enriched display name
   if (fieldKey.endsWith("_id")) {
-    // Look for enriched data on the record. Common patterns:
-    // - bin_source_id -> record.source?.name
-    // - song_id -> record.songName
-    // - suno_prompt_id -> record.prompt?.name
     const fieldDef = entity.fields.find((f) => f.key === fieldKey);
-    const label = fieldDef?.label ?? fieldKey;
+    const baseKey = fieldKey.replace(/_id$/, "");
+    const displayName =
+      record[baseKey]?.name ?? record[`${baseKey}Name`] ?? null;
 
-    // Try common enrichment patterns
-    if (fieldKey === "song_id" && record.songName) {
-      return <Text size="sm">{record.songName}</Text>;
-    }
-    if (fieldKey === "bin_source_id" && record.source) {
-      return <Text size="sm">{record.source.name}</Text>;
-    }
-    if (record[fieldKey.replace(/_id$/, "")]?.name) {
-      return <Text size="sm">{record[fieldKey.replace(/_id$/, "")].name}</Text>;
+    if (displayName && fieldDef?.target) {
+      const targetEntity = resolveRelationshipTarget(entity, fieldDef.target);
+      if (targetEntity) {
+        const targetResource = getResourceName(targetEntity);
+        return (
+          <Anchor
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              show(targetResource, record[fieldKey]);
+            }}
+          >
+            {displayName}
+          </Anchor>
+        );
+      }
     }
 
-    // Fallback to raw value
     return (
       <Text size="sm" c="dimmed">
-        {value ?? ""}
+        {displayName ?? (value != null ? String(value) : "")}
       </Text>
     );
   }
 
-  // Enriched arrays (e.g. artists on songs/albums)
-  if (fieldKey === "artists" && Array.isArray(record.artists)) {
-    const names = record.artists.map((a: any) => a.name).join(", ");
+  // Enriched arrays (e.g. artists on songs, artists on albums)
+  if (Array.isArray(record[fieldKey]) && record[fieldKey].length > 0 && record[fieldKey][0]?.name) {
+    const items: any[] = record[fieldKey];
+    const targetEntity = findEntity(entity.context, fieldKey);
+    const targetResource = targetEntity ? getResourceName(targetEntity) : null;
+
     return (
-      <Text size="sm" c="dimmed">
-        {names || ""}
-      </Text>
+      <Group gap={4} wrap="wrap">
+        {items.map((item: any, i: number) => (
+          <span key={item.id}>
+            {targetResource ? (
+              <Anchor
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  show(targetResource, item.id);
+                }}
+              >
+                {item.name}
+              </Anchor>
+            ) : (
+              <Text size="sm" component="span">{item.name}</Text>
+            )}
+            {i < items.length - 1 && (
+              <Text size="sm" component="span" c="dimmed">, </Text>
+            )}
+          </span>
+        ))}
+      </Group>
     );
   }
 
-  // Name column -> plain text (clickable behavior handled by parent)
+  // Name column -> clickable link to show page
   if (fieldKey === "name") {
-    return <Text fw={500}>{value || ""}</Text>;
+    const resource = getResourceName(entity);
+    return (
+      <Anchor
+        fw={500}
+        onClick={(e) => {
+          e.stopPropagation();
+          show(resource, record.id);
+        }}
+      >
+        {value || ""}
+      </Anchor>
+    );
   }
 
   // Default -> text display

@@ -228,20 +228,8 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
             )}
             {records.map((record: any) => (
               <Table.Tr key={record.id}>
-                {entity.listColumns.map((col) => {
-                  const isNameCol = col === "name";
-                  return (
-                    <Table.Td
-                      key={col}
-                      style={
-                        isNameCol ? { cursor: "pointer" } : undefined
-                      }
-                      onClick={
-                        isNameCol
-                          ? () => show(resource, record.id)
-                          : undefined
-                      }
-                    >
+                {entity.listColumns.map((col) => (
+                    <Table.Td key={col}>
                       <ListCell
                         fieldKey={col}
                         value={record[col]}
@@ -249,8 +237,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
                         record={record}
                       />
                     </Table.Td>
-                  );
-                })}
+                ))}
                 {showPlatformLinks && (
                   <Table.Td>
                     <PlatformLinks
