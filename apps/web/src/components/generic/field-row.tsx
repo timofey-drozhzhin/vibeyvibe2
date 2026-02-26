@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Table, Text, Anchor, Stack, Select } from "@mantine/core";
+import { Table, Text, Anchor, Select } from "@mantine/core";
 import { useList } from "@refinedev/core";
 import { EditableField } from "../shared/editable-field.js";
 import { RatingField } from "../shared/rating-field.js";
 import { ImageUpload } from "../shared/image-upload.js";
-import { AudioPlayer } from "../shared/audio-player.js";
-import { FileUpload } from "../shared/file-upload.js";
+import { AudioUpload } from "../shared/audio-upload.js";
 import type { FieldDef, EntityDef } from "../../config/entity-registry.js";
 import { resolveRelationshipTarget, getResourceName } from "../../config/entity-registry.js";
 
@@ -110,17 +109,12 @@ function renderFieldContent(
 
     case "audio":
       return (
-        <Stack gap="xs">
-          <AudioPlayer path={value ?? null} />
-          <FileUpload
-            value={value ?? ""}
-            onChange={(path) => onSave(path)}
-            accept={field.accept || "audio/*"}
-            directory={field.directory}
-            label="Upload Audio"
-            placeholder="Select an audio file"
-          />
-        </Stack>
+        <AudioUpload
+          path={value ?? null}
+          onUpload={(path) => onSave(path)}
+          accept={field.accept || "audio/*"}
+          directory={field.directory}
+        />
       );
 
     case "fk":
