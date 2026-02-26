@@ -74,44 +74,40 @@ cd vibeyvibe
 pnpm install
 
 # 3. Copy environment variables
-cp .env.example .env
+cp .env.dev-example .env
 
-# 4. Push database schema (creates local SQLite file)
-pnpm db:push
-
-# 5. Seed the database with sample data
-pnpm db:seed
-
-# 6. Start development servers
+# 4. Start development servers (auto-creates tmp/, pushes DB schema if needed)
 pnpm dev
 ```
 
 The web app will be available at `http://localhost:5173` and the API at `http://localhost:3001`.
 
-With `DEV_AUTH_BYPASS=true` set in `.env` (the default), authentication is bypassed during development. A synthetic "Dev User" is injected automatically.
+> **Note:** `pnpm dev` automatically copies `.env.dev-example` to `.env` if missing, creates `tmp/storage/`, and runs `db:push` if the database doesn't exist.
+
+With `DEV_AUTH_BYPASS=true` set in `.env`, authentication is bypassed during development. A synthetic "Dev User" is injected automatically.
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `NODE_ENV` | No | `development` | Environment mode (`development` or `production`) |
-| `DATABASE_URL` | No | `file:../../tmp/local.db` | SQLite file path (dev, relative to `apps/api`) or libSQL URL (prod) |
-| `DATABASE_AUTH_TOKEN` | Prod | -- | libSQL auth token for remote database |
-| `BETTER_AUTH_SECRET` | Yes | -- | Auth encryption secret (min 16 chars, 32+ recommended) |
-| `BETTER_AUTH_URL` | Yes | `http://localhost:3001` | Base URL for the auth system |
-| `GOOGLE_CLIENT_ID` | No | -- | Google OAuth client ID (enables Google sign-in) |
-| `GOOGLE_CLIENT_SECRET` | No | -- | Google OAuth client secret |
-| `STORAGE_PROVIDER` | No | `local` | `local` (filesystem) or `bunny` (Bunny Edge Storage) |
-| `STORAGE_LOCAL_PATH` | No | `../../tmp/storage` | Path for local file storage (relative to API root) |
-| `BUNNY_STORAGE_ZONE` | Bunny | -- | Bunny Edge Storage zone name |
-| `BUNNY_STORAGE_PASSWORD` | Bunny | -- | Bunny Edge Storage access key |
-| `BUNNY_STORAGE_REGION` | No | `storage.bunnycdn.com` | Bunny storage region hostname |
-| `BUNNY_CDN_HOSTNAME` | Bunny | -- | Bunny CDN pull zone hostname |
-| `BUNNY_CDN_SECURITY_KEY` | No | -- | Bunny CDN URL signing key |
-| `DEV_AUTH_BYPASS` | No | -- | Set `true` to bypass auth in development |
-| `FRONTEND_URL` | No | `http://localhost:5173` | Frontend origin for CORS |
-| `VITE_API_URL` | No | `""` | API base URL for the web app (empty = same origin) |
-| `VITE_GOOGLE_CLIENT_ID` | No | -- | Google OAuth client ID (enables OAuth button in UI) |
+All env variables are validated on startup via Zod (`apps/api/src/env.ts`). No defaults — all values must be set in `.env`. See `.env.dev-example` and `.env.prod-example` for templates.
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NODE_ENV` | Yes | Environment mode (`development`, `production`, `test`) |
+| `DATABASE_URL` | Yes | SQLite file path (dev, relative to `apps/api`) or libSQL URL (prod) |
+| `DATABASE_AUTH_TOKEN` | No | libSQL auth token for remote database |
+| `BETTER_AUTH_SECRET` | Yes | Auth encryption secret (min 16 chars, 32+ recommended) |
+| `BETTER_AUTH_URL` | Yes | Base URL for the auth system |
+| `GOOGLE_CLIENT_ID` | No | Google OAuth client ID (enables Google sign-in) |
+| `GOOGLE_CLIENT_SECRET` | No | Google OAuth client secret |
+| `STORAGE_PROVIDER` | Yes | `local` (filesystem) or `bunny` (Bunny Edge Storage) |
+| `STORAGE_LOCAL_PATH` | Yes | Path for local file storage (relative to API root) |
+| `BUNNY_STORAGE_ZONE` | No | Bunny Edge Storage zone name |
+| `BUNNY_STORAGE_PASSWORD` | No | Bunny Edge Storage access key |
+| `BUNNY_STORAGE_REGION` | No | Bunny storage region hostname |
+| `BUNNY_CDN_HOSTNAME` | No | Bunny CDN pull zone hostname |
+| `BUNNY_CDN_SECURITY_KEY` | No | Bunny CDN URL signing key |
+| `DEV_AUTH_BYPASS` | No | Set `true` to bypass auth in development |
+| `FRONTEND_URL` | Yes | Frontend origin for CORS |
 
 ## Database
 
@@ -353,7 +349,8 @@ pnpm typecheck        # TypeScript type checking
 ├── tmp/                        # Temporary files (gitignored)
 │   └── storage/                # Local file storage for dev
 ├── .devcontainer/              # Dev container configuration
-├── .env.example                # Environment variable template
+├── .env.dev-example            # Development environment template
+├── .env.prod-example           # Production environment template
 ├── package.json                # Root workspace scripts
 ├── pnpm-workspace.yaml         # pnpm workspace config
 ├── tsconfig.base.json          # Shared TypeScript base config

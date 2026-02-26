@@ -259,21 +259,23 @@ The API deploys to Bunny Edge Scripting, which has specific constraints:
 
 ## Environment Variables
 
-| Variable               | Required | Default                    | Description                          |
-|------------------------|----------|----------------------------|--------------------------------------|
-| NODE_ENV               | No       | development                | Environment mode                     |
-| DATABASE_URL           | No       | file:../../tmp/local.db    | SQLite file path or libSQL URL       |
-| DATABASE_AUTH_TOKEN    | No       | --                         | libSQL auth token (production)       |
-| BETTER_AUTH_SECRET     | Yes      | --                         | Auth encryption secret (min 16 chars)|
-| BETTER_AUTH_URL        | Yes      | --                         | Auth base URL                        |
-| GOOGLE_CLIENT_ID       | No       | --                         | Google OAuth client ID               |
-| GOOGLE_CLIENT_SECRET   | No       | --                         | Google OAuth client secret           |
-| STORAGE_PROVIDER       | No       | local                      | "local" or "bunny"                   |
-| STORAGE_LOCAL_PATH     | No       | ../../tmp/storage          | Local storage directory              |
-| BUNNY_STORAGE_ZONE     | Bunny    | --                         | Bunny storage zone name              |
-| BUNNY_STORAGE_PASSWORD | Bunny    | --                         | Bunny storage access key             |
-| BUNNY_STORAGE_REGION   | No       | storage.bunnycdn.com       | Bunny storage region hostname        |
-| BUNNY_CDN_HOSTNAME     | Bunny    | --                         | Bunny CDN pull zone hostname         |
-| BUNNY_CDN_SECURITY_KEY | No       | --                         | Bunny CDN security key               |
-| DEV_AUTH_BYPASS        | No       | --                         | Set "true" to bypass auth in dev     |
-| FRONTEND_URL           | No       | http://localhost:5173       | Frontend origin for CORS             |
+All env variables are validated by the Zod schema in `src/env.ts`. No defaults — all values must be set in the root `.env` file.
+
+| Variable               | Required | Description                          |
+|------------------------|----------|--------------------------------------|
+| NODE_ENV               | Yes      | Environment mode (development/production/test) |
+| DATABASE_URL           | Yes      | SQLite file path or libSQL URL       |
+| DATABASE_AUTH_TOKEN    | No       | libSQL auth token (production)       |
+| BETTER_AUTH_SECRET     | Yes      | Auth encryption secret (min 16 chars)|
+| BETTER_AUTH_URL        | Yes      | Auth base URL                        |
+| GOOGLE_CLIENT_ID       | No       | Google OAuth client ID               |
+| GOOGLE_CLIENT_SECRET   | No       | Google OAuth client secret           |
+| STORAGE_PROVIDER       | Yes      | "local" or "bunny"                   |
+| STORAGE_LOCAL_PATH     | Yes      | Local storage directory              |
+| BUNNY_STORAGE_ZONE     | No       | Bunny storage zone name              |
+| BUNNY_STORAGE_PASSWORD | No       | Bunny storage access key             |
+| BUNNY_STORAGE_REGION   | No       | Bunny storage region hostname        |
+| BUNNY_CDN_HOSTNAME     | No       | Bunny CDN pull zone hostname         |
+| BUNNY_CDN_SECURITY_KEY | No       | Bunny CDN security key               |
+| DEV_AUTH_BYPASS        | No       | Set "true" to bypass auth in dev     |
+| FRONTEND_URL           | Yes      | Frontend origin for CORS             |
