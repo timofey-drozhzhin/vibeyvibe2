@@ -3,7 +3,74 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, like, and, or, desc as descFn, asc as ascFn, sql } from "drizzle-orm";
 import { getDb } from "../../db/index.js";
-import type { EntityRouteConfig, RelationshipRouteConfig } from "./types.js";
+import type { EntityRouteConfig, RelationshipRouteConfig, FkEnrichment } from "./types.js";
+
+// ---------------------------------------------------------------------------
+// Auto FK enrichment helpers
+// ---------------------------------------------------------------------------
+
+/** Batch-enrich FK columns for list responses. */
+async function autoEnrichFkList(db: any, rows: any[], enrichments: FkEnrichment[]): Promise<any[]> {
+  if (rows.length === 0) return rows;
+  let result = rows;
+
+  for (const fk of enrichments) {
+    const fkIds = [...new Set(result.map((r: any) => r[fk.column]).filter(Boolean))];
+    if (fkIds.length === 0) {
+      const baseKey = fk.column.replace(/_id$/, "");
+      result = result.map((r: any) => ({ ...r, [baseKey]: null }));
+      continue;
+    }
+
+    const labelCol = fk.labelColumn ?? fk.targetTable.name;
+    const targetRows = await db
+      .select({ id: fk.targetTable.id, name: labelCol })
+      .from(fk.targetTable)
+      .where(
+        sql`${fk.targetTable.id} IN (${sql.join(
+          fkIds.map((id: number) => sql`${id}`),
+          sql`, `
+        )})`
+      );
+
+    const map: Record<number, { id: number; name: string }> = {};
+    for (const row of targetRows) {
+      map[row.id] = { id: row.id, name: row.name };
+    }
+
+    const baseKey = fk.column.replace(/_id$/, "");
+    result = result.map((r: any) => ({
+      ...r,
+      [baseKey]: r[fk.column] ? map[r[fk.column]] || null : null,
+    }));
+  }
+
+  return result;
+}
+
+/** Enrich FK columns for a single detail response. */
+async function autoEnrichFkDetail(db: any, entity: any, enrichments: FkEnrichment[]): Promise<Record<string, any>> {
+  const result: Record<string, any> = {};
+
+  for (const fk of enrichments) {
+    const baseKey = fk.column.replace(/_id$/, "");
+    if (!entity[fk.column]) {
+      result[baseKey] = null;
+      continue;
+    }
+
+    const labelCol = fk.labelColumn ?? fk.targetTable.name;
+    const target = await db
+      .select({ id: fk.targetTable.id, name: labelCol })
+      .from(fk.targetTable)
+      .where(eq(fk.targetTable.id, entity[fk.column]))
+      .get();
+
+    result[baseKey] = target ? { id: target.id, name: target.name } : null;
+  }
+
+  return result;
+}
 
 function buildListQuerySchema(config: EntityRouteConfig) {
   const base: Record<string, z.ZodTypeAny> = {
@@ -85,7 +152,12 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
       db.select({ count: sql<number>`count(*)` }).from(config.table).where(whereClause),
     ]);
 
-    const enriched = config.listEnricher ? await config.listEnricher(db, data) : data;
+    let enriched = config.fkEnrichments?.length
+      ? await autoEnrichFkList(db, data, config.fkEnrichments)
+      : data;
+    if (config.listEnricher) {
+      enriched = await config.listEnricher(db, enriched);
+    }
     return c.json({ data: enriched, total: countResult[0].count, page, pageSize });
   });
 
@@ -116,11 +188,15 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
     const entity = await db.select().from(config.table).where(and(...conditions)).get();
     if (!entity) return c.json({ error: `${config.entityName} not found` }, 404);
 
-    if (config.detailEnricher) {
-      const enrichments = await config.detailEnricher(db, entity);
-      return c.json({ ...entity, ...enrichments });
+    let enrichments: Record<string, any> = {};
+    if (config.fkEnrichments?.length) {
+      enrichments = await autoEnrichFkDetail(db, entity, config.fkEnrichments);
     }
-    return c.json(entity);
+    if (config.detailEnricher) {
+      const custom = await config.detailEnricher(db, entity);
+      enrichments = { ...enrichments, ...custom };
+    }
+    return c.json({ ...entity, ...enrichments });
   });
 
   // ---- PUT /:id ----

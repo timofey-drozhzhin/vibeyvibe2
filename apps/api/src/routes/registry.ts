@@ -224,89 +224,6 @@ async function songDetailEnricher(db: any, entity: any) {
   };
 }
 
-/**
- * Load song name for a profile detail view.
- */
-async function profileDetailEnricher(db: any, entity: any) {
-  if (!entity.song_id) return { songName: "Unknown Song" };
-  const song = await db
-    .select({ id: songs.id, name: songs.name })
-    .from(songs)
-    .where(eq(songs.id, entity.song_id))
-    .get();
-  return { songName: song?.name || "Unknown Song" };
-}
-
-/**
- * Batch-load song names for profile list view.
- */
-async function profileListEnricher(db: any, rows: any[]) {
-  if (rows.length === 0) return rows;
-  const songIds = [...new Set(rows.map((r: any) => r.song_id).filter(Boolean))];
-  if (songIds.length === 0) return rows;
-
-  const songRows = await db
-    .select({ id: songs.id, name: songs.name })
-    .from(songs)
-    .where(
-      sql`${songs.id} IN (${sql.join(
-        songIds.map((id: number) => sql`${id}`),
-        sql`, `
-      )})`
-    );
-
-  const songMap: Record<number, string> = {};
-  for (const s of songRows) {
-    songMap[s.id] = s.name;
-  }
-
-  return rows.map((profile: any) => ({
-    ...profile,
-    songName: songMap[profile.song_id] || "Unknown Song",
-  }));
-}
-
-/**
- * Load source info for a bin song detail view.
- */
-async function binSongDetailEnricher(db: any, entity: any) {
-  if (!entity.bin_source_id) return { source: null, bin_source: null };
-  const source = await db
-    .select()
-    .from(binSources)
-    .where(eq(binSources.id, entity.bin_source_id))
-    .get();
-  return { source: source || null, bin_source: source || null };
-}
-
-/**
- * Batch-load source info for bin song list view.
- */
-async function binSongListEnricher(db: any, rows: any[]) {
-  if (rows.length === 0) return rows;
-  const sourceIds = [...new Set(rows.map((r: any) => r.bin_source_id).filter(Boolean))];
-  if (sourceIds.length === 0) return rows.map((r: any) => ({ ...r, source: null }));
-
-  const sourceRows = await db
-    .select({ id: binSources.id, name: binSources.name })
-    .from(binSources)
-    .where(
-      sql`${binSources.id} IN (${sql.join(
-        sourceIds.map((id: number) => sql`${id}`),
-        sql`, `
-      )})`
-    );
-
-  const sourceMap: Record<number, { id: number; name: string }> = {};
-  for (const s of sourceRows) {
-    sourceMap[s.id] = { id: s.id, name: s.name };
-  }
-
-  return rows.map((song: any) => {
-    const source = song.bin_source_id ? sourceMap[song.bin_source_id] || null : null;
-    return { ...song, source, bin_source: source };
-  });
-}
 
 /**
  * Load prompts for a collection detail view.
@@ -323,18 +240,6 @@ async function collectionDetailEnricher(db: any, entity: any) {
   };
 }
 
-/**
- * Load profile info for a suno prompt detail view.
- */
-async function sunoPromptDetailEnricher(db: any, entity: any) {
-  if (!entity.song_profile_id) return { profile: null };
-  const profile = await db
-    .select()
-    .from(songProfiles)
-    .where(eq(songProfiles.id, entity.song_profile_id))
-    .get();
-  return { profile: profile || null };
-}
 
 /**
  * Batch-load artists for an array of album rows.
@@ -657,8 +562,9 @@ export const registry: EntityRouteConfig[] = [
         mode: "eq",
       },
     ],
-    listEnricher: profileListEnricher,
-    detailEnricher: profileDetailEnricher,
+    fkEnrichments: [
+      { column: "song_id", targetTable: songs },
+    ],
   },
 
   // =========================================================================
@@ -706,8 +612,9 @@ export const registry: EntityRouteConfig[] = [
         mode: "eq",
       },
     ],
-    listEnricher: binSongListEnricher,
-    detailEnricher: binSongDetailEnricher,
+    fkEnrichments: [
+      { column: "bin_source_id", targetTable: binSources },
+    ],
   },
 
   // =========================================================================
@@ -757,7 +664,9 @@ export const registry: EntityRouteConfig[] = [
       created_at: sunoPrompts.created_at,
     },
     contextColumnValue: "suno",
-    detailEnricher: sunoPromptDetailEnricher,
+    fkEnrichments: [
+      { column: "song_profile_id", targetTable: songProfiles },
+    ],
   },
 
   // =========================================================================
@@ -796,5 +705,9 @@ export const registry: EntityRouteConfig[] = [
       created_at: sunoSongs.created_at,
     },
     contextColumnValue: "suno",
+    fkEnrichments: [
+      { column: "suno_prompt_id", targetTable: sunoPrompts },
+      { column: "bin_song_id", targetTable: binSongs },
+    ],
   },
 ];

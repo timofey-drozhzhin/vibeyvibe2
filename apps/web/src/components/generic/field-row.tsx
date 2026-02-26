@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Table, Text, Anchor, Select } from "@mantine/core";
-import { useList } from "@refinedev/core";
+import { Table, Text, Anchor, Select, Group, ActionIcon, Box } from "@mantine/core";
+import { useList, useNavigation } from "@refinedev/core";
+import { IconEdit } from "@tabler/icons-react";
 import { EditableField } from "../shared/editable-field.js";
 import { RatingField } from "../shared/rating-field.js";
 import { ImageUpload } from "../shared/image-upload.js";
@@ -153,6 +154,7 @@ interface ForeignKeyFieldProps {
 
 const ForeignKeyField = ({ field, value, onSave, entity, record }: ForeignKeyFieldProps) => {
   const [editing, setEditing] = useState(false);
+  const { show } = useNavigation();
 
   const targetEntity = field.target
     ? resolveRelationshipTarget(entity, field.target)
@@ -178,6 +180,11 @@ const ForeignKeyField = ({ field, value, onSave, entity, record }: ForeignKeyFie
   // Try to resolve display name from record enrichment
   const displayName = resolveDisplayName(field, value, record);
 
+  const handleStartEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditing(true);
+  };
+
   if (editing) {
     return (
       <Select
@@ -201,15 +208,40 @@ const ForeignKeyField = ({ field, value, onSave, entity, record }: ForeignKeyFie
   }
 
   return (
-    <Text
-      size="sm"
-      c={displayName ? undefined : "dimmed"}
-      fs={displayName ? undefined : "italic"}
-      style={{ cursor: "pointer" }}
-      onClick={() => setEditing(true)}
-    >
-      {displayName || "Click to select"}
-    </Text>
+    <Box className="editable-field">
+      <Group gap="xs" wrap="nowrap" align="center">
+        {displayName && value != null ? (
+          <Anchor
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (targetResource) show(targetResource, value);
+            }}
+          >
+            {displayName}
+          </Anchor>
+        ) : (
+          <Text
+            size="sm"
+            c="dimmed"
+            fs="italic"
+            style={{ cursor: "pointer" }}
+            onClick={handleStartEdit}
+          >
+            Click to select
+          </Text>
+        )}
+        <ActionIcon
+          className="edit-icon"
+          size="xs"
+          variant="subtle"
+          color="gray"
+          onClick={handleStartEdit}
+        >
+          <IconEdit size={14} />
+        </ActionIcon>
+      </Group>
+    </Box>
   );
 };
 

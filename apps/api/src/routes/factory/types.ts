@@ -17,6 +17,12 @@ export interface RelationshipRouteConfig {
   bodyField: string;        // POST body field name (e.g., "artistId")
 }
 
+export interface FkEnrichment {
+  column: string;           // FK column name (e.g., "bin_source_id")
+  targetTable: any;         // Drizzle table object (e.g., binSources)
+  labelColumn?: any;        // Drizzle column for display label (default: targetTable.name)
+}
+
 export interface EntityRouteConfig {
   context: string;
   slug: string;
@@ -35,6 +41,7 @@ export interface EntityRouteConfig {
 
   contextColumnValue?: string;   // Auto-filter by context column (e.g., "my_music")
 
+  fkEnrichments?: FkEnrichment[];  // Auto-enrich FK columns with target entity name
   listEnricher?: (db: any, rows: any[]) => Promise<any[]>;
   detailEnricher?: (db: any, entity: any) => Promise<Record<string, any>>;
 

@@ -441,7 +441,41 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 7. anatomy/song-attributes
+  // 7. anatomy/song-profiles
+  // =========================================================================
+  {
+    slug: "song-profiles",
+    tableName: "song_profiles",
+    name: "Song Profile",
+    pluralName: "Song Profiles",
+    context: "anatomy",
+    fields: [
+      {
+        key: "song_id",
+        label: "Song",
+        type: "fk",
+        target: "songs",
+        targetLabelField: "name",
+      },
+      {
+        key: "rating",
+        label: "Rating",
+        type: "rating",
+      },
+      {
+        key: "value",
+        label: "Value",
+        type: "textarea",
+        placeholder: "JSON attribute\u2192value pairs",
+      },
+    ],
+    relationships: [],
+    listColumns: ["name", "song_id", "rating", "archived", "created_at"],
+    asideFields: [],
+  },
+
+  // =========================================================================
+  // 8. anatomy/song-attributes
   // =========================================================================
   {
     slug: "song-attributes",
@@ -478,65 +512,7 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 8. anatomy/song-profiles
-  // =========================================================================
-  {
-    slug: "song-profiles",
-    tableName: "song_profiles",
-    name: "Song Profile",
-    pluralName: "Song Profiles",
-    context: "anatomy",
-    fields: [
-      {
-        key: "song_id",
-        label: "Song",
-        type: "fk",
-        target: "songs",
-        targetLabelField: "name",
-      },
-      {
-        key: "rating",
-        label: "Rating",
-        type: "rating",
-      },
-      {
-        key: "value",
-        label: "Value",
-        type: "textarea",
-        placeholder: "JSON attribute\u2192value pairs",
-      },
-    ],
-    relationships: [],
-    listColumns: ["name", "song_id", "rating", "archived", "created_at"],
-    asideFields: [],
-  },
-
-  // =========================================================================
-  // 9. bin/sources
-  // =========================================================================
-  {
-    slug: "sources",
-    tableName: "bin_sources",
-    name: "Source",
-    pluralName: "Sources",
-    context: "bin",
-    fields: [
-      {
-        key: "url",
-        label: "URL",
-        type: "url",
-        placeholder: "https://...",
-        createField: true,
-        createRequired: true,
-      },
-    ],
-    relationships: [],
-    listColumns: ["name", "url", "archived", "created_at"],
-    asideFields: [],
-  },
-
-  // =========================================================================
-  // 10. bin/songs
+  // 9. bin/songs
   // =========================================================================
   {
     slug: "songs",
@@ -580,34 +556,74 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 11. suno/prompt-collections
+  // 10. bin/sources
   // =========================================================================
   {
-    slug: "prompt-collections",
-    tableName: "suno_prompt_collections",
-    name: "Prompt Collection",
-    pluralName: "Prompt Collections",
-    context: "suno",
+    slug: "sources",
+    tableName: "bin_sources",
+    name: "Source",
+    pluralName: "Sources",
+    context: "bin",
     fields: [
       {
-        key: "description",
-        label: "Description",
-        type: "text",
+        key: "url",
+        label: "URL",
+        type: "url",
+        placeholder: "https://...",
+        createField: true,
+        createRequired: true,
       },
     ],
-    relationships: [
-      {
-        type: "many-to-many",
-        target: "prompts",
-        label: "Prompts",
-        subResource: "prompts",
-        assignFieldName: "promptId",
-        pivotTable: "suno_collection_prompts",
-        columns: [{ key: "name", label: "Name", type: "text" }],
-      },
-    ],
-    listColumns: ["name", "description", "archived", "created_at"],
+    relationships: [],
+    listColumns: ["name", "url", "archived", "created_at"],
     asideFields: [],
+  },
+
+  // =========================================================================
+  // 11. suno/songs
+  // =========================================================================
+  {
+    slug: "songs",
+    tableName: "suno_songs",
+    name: "Song",
+    pluralName: "Songs",
+    context: "suno",
+    storageDirectory: "suno",
+    fields: [
+      {
+        key: "suno_uid",
+        label: "Suno",
+        type: "uid",
+        platform: "suno",
+      },
+      {
+        key: "image_path",
+        label: "Image",
+        type: "image",
+        directory: "suno",
+      },
+      {
+        key: "suno_prompt_id",
+        label: "Prompt",
+        type: "fk",
+        target: "prompts",
+      },
+      {
+        key: "bin_song_id",
+        label: "Bin Song",
+        type: "fk",
+        target: "bin/songs",
+      },
+    ],
+    relationships: [],
+    listColumns: [
+      "image_path",
+      "name",
+      "suno_prompt_id",
+      "archived",
+      "created_at",
+    ],
+    asideFields: ["image_path", "suno_uid"],
   },
 
   // =========================================================================
@@ -645,80 +661,6 @@ export const entityRegistry: EntityDef[] = [
     relationships: [],
     listColumns: ["name", "archived", "created_at"],
     asideFields: [],
-  },
-
-  // =========================================================================
-  // 13. suno/song-playlists
-  // =========================================================================
-  {
-    slug: "song-playlists",
-    tableName: "suno_song_playlists",
-    name: "Song Playlist",
-    pluralName: "Song Playlists",
-    context: "suno",
-    fields: [
-      {
-        key: "description",
-        label: "Description",
-        type: "text",
-      },
-    ],
-    relationships: [],
-    listColumns: ["name", "description", "archived", "created_at"],
-    asideFields: [],
-  },
-
-  // =========================================================================
-  // 14. suno/songs
-  // =========================================================================
-  {
-    slug: "songs",
-    tableName: "suno_songs",
-    name: "Song",
-    pluralName: "Songs",
-    context: "suno",
-    storageDirectory: "suno",
-    fields: [
-      {
-        key: "suno_uid",
-        label: "Suno",
-        type: "uid",
-        platform: "suno",
-      },
-      {
-        key: "image_path",
-        label: "Image",
-        type: "image",
-        directory: "suno",
-      },
-      {
-        key: "suno_prompt_id",
-        label: "Prompt",
-        type: "fk",
-        target: "prompts",
-      },
-      {
-        key: "bin_song_id",
-        label: "Bin Song",
-        type: "fk",
-        target: "bin/songs",
-      },
-      {
-        key: "suno_song_playlist_id",
-        label: "Playlist",
-        type: "fk",
-        target: "song-playlists",
-      },
-    ],
-    relationships: [],
-    listColumns: [
-      "image_path",
-      "name",
-      "suno_prompt_id",
-      "archived",
-      "created_at",
-    ],
-    asideFields: ["image_path", "suno_uid"],
   },
 ];
 
