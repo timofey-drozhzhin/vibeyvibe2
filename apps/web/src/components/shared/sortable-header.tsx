@@ -7,6 +7,7 @@ interface SortableHeaderProps {
   currentSort: string;
   currentOrder: "asc" | "desc";
   onSort: (field: string) => void;
+  style?: React.CSSProperties;
 }
 
 /** Reusable sortable table header cell. Shows sort direction arrow when active. */
@@ -16,12 +17,13 @@ export const SortableHeader = ({
   currentSort,
   currentOrder,
   onSort,
+  style,
 }: SortableHeaderProps) => {
   const isActive = currentSort === field;
 
   return (
     <Table.Th
-      style={{ cursor: "pointer", userSelect: "none" }}
+      style={{ cursor: "pointer", userSelect: "none", ...style }}
       onClick={() => onSort(field)}
     >
       <Group gap={4} wrap="nowrap">

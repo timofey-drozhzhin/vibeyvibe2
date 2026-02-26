@@ -47,6 +47,7 @@ const sortableFields = new Set([
   "attribute_category",
 ]);
 
+
 function getFieldLabel(fieldKey: string, entity: EntityDef): string {
   if (defaultLabels[fieldKey] !== undefined) return defaultLabels[fieldKey];
   const fieldDef = entity.fields.find((f) => f.key === fieldKey);
@@ -191,8 +192,9 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
               {entity.listColumns.map((col) => {
                 const label = getFieldLabel(col, entity);
 
-                // Image column has no label, just a narrow header
-                if (col === "image_path") {
+                // Image columns get a narrow header with no label
+                const colDef = entity.fields.find((f) => f.key === col);
+                if (colDef?.type === "image") {
                   return <Table.Th key={col} w={50} />;
                 }
 

@@ -132,10 +132,10 @@ function renderFieldContent(
       return <Text size="sm" c="dimmed">--</Text>;
 
     case "readonly":
-      return <Text size="sm">{value != null ? String(value) : "--"}</Text>;
+      return <Text size="sm">{value != null ? String(value) : ""}</Text>;
 
     default:
-      return <Text size="sm">{value != null ? String(value) : "--"}</Text>;
+      return <Text size="sm">{value != null ? String(value) : ""}</Text>;
   }
 }
 

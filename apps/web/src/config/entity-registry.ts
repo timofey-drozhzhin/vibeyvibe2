@@ -575,7 +575,7 @@ export const entityRegistry: EntityDef[] = [
       },
     ],
     relationships: [],
-    listColumns: ["name", "bin_source_id", "rating", "archived", "created_at"],
+    listColumns: ["name", "asset_path", "rating", "archived", "created_at"],
     asideFields: [],
   },
 

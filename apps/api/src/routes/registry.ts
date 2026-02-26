@@ -270,13 +270,13 @@ async function profileListEnricher(db: any, rows: any[]) {
  * Load source info for a bin song detail view.
  */
 async function binSongDetailEnricher(db: any, entity: any) {
-  if (!entity.bin_source_id) return { source: null };
+  if (!entity.bin_source_id) return { source: null, bin_source: null };
   const source = await db
     .select()
     .from(binSources)
     .where(eq(binSources.id, entity.bin_source_id))
     .get();
-  return { source: source || null };
+  return { source: source || null, bin_source: source || null };
 }
 
 /**
@@ -302,10 +302,10 @@ async function binSongListEnricher(db: any, rows: any[]) {
     sourceMap[s.id] = { id: s.id, name: s.name };
   }
 
-  return rows.map((song: any) => ({
-    ...song,
-    source: song.bin_source_id ? sourceMap[song.bin_source_id] || null : null,
-  }));
+  return rows.map((song: any) => {
+    const source = song.bin_source_id ? sourceMap[song.bin_source_id] || null : null;
+    return { ...song, source, bin_source: source };
+  });
 }
 
 /**

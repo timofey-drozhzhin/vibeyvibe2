@@ -169,11 +169,11 @@ function renderColumnValue(
     case "rating":
       return <RatingDisplay value={value ?? 0} />;
     case "badge":
-      return value ? <Badge size="sm">{String(value)}</Badge> : <Text size="sm" c="dimmed">--</Text>;
+      return value ? <Badge size="sm">{String(value)}</Badge> : null;
     case "date":
-      return <Text size="sm">{value || "--"}</Text>;
+      return <Text size="sm">{value || ""}</Text>;
     case "text":
     default:
-      return <Text size="sm" fw={col.key === "name" ? 500 : undefined}>{value != null ? String(value) : "--"}</Text>;
+      return <Text size="sm" fw={col.key === "name" ? 500 : undefined}>{value != null ? String(value) : ""}</Text>;
   }
 }

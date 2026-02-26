@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Image, Box, Loader } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { IconPhoto, IconUpload } from "@tabler/icons-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
@@ -63,8 +64,9 @@ export const ImageUpload = ({
 
       const data = (await res.json()) as { path: string; url: string };
       onUpload(data.path);
-    } catch {
-      // Upload failure is silent — could add a notification here
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      notifications.show({ title: "Upload error", message, color: "red" });
     } finally {
       setUploading(false);
       // Reset input so same file can be re-selected

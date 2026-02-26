@@ -29,22 +29,76 @@ function formatDate(value: any): string {
 
 export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => {
   const { show } = useNavigation();
+  const fieldDef = entity.fields.find((f) => f.key === fieldKey);
 
-  // Image path -> small avatar preview
-  if (fieldKey === "image_path") {
-    return (
-      <Avatar
-        size={32}
-        radius="sm"
-        src={value ? `${API_URL}/api/storage/${value}` : null}
-      />
-    );
+  // --- Resolve by field type from the registry first ---
+
+  if (fieldDef) {
+    switch (fieldDef.type) {
+      case "image":
+        return (
+          <Avatar
+            size={32}
+            radius="sm"
+            src={value ? `${API_URL}/api/storage/${value}` : null}
+          />
+        );
+
+      case "audio":
+        if (!value) return null;
+        return (
+          <audio
+            controls
+            preload="none"
+            src={`${API_URL}/api/storage/${value}`}
+            onClick={(e) => e.stopPropagation()}
+          />
+        );
+
+      case "rating":
+        return <RatingDisplay value={value ?? 0} />;
+
+      case "url":
+        if (!value) return null;
+        return (
+          <Anchor href={value} target="_blank" rel="noopener noreferrer" size="sm">
+            {value}
+          </Anchor>
+        );
+
+      case "fk": {
+        const baseKey = fieldKey.replace(/_id$/, "");
+        const displayName =
+          record[baseKey]?.name ?? record[`${baseKey}Name`] ?? null;
+
+        if (displayName && fieldDef.target) {
+          const targetEntity = resolveRelationshipTarget(entity, fieldDef.target);
+          if (targetEntity) {
+            const targetResource = getResourceName(targetEntity);
+            return (
+              <Anchor
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  show(targetResource, record[fieldKey]);
+                }}
+              >
+                {displayName}
+              </Anchor>
+            );
+          }
+        }
+
+        return (
+          <Text size="sm" c="dimmed">
+            {displayName ?? (value != null ? String(value) : "")}
+          </Text>
+        );
+      }
+    }
   }
 
-  // Rating -> read-only stars
-  if (fieldKey === "rating") {
-    return <RatingDisplay value={value ?? 0} />;
-  }
+  // --- Built-in columns (not in field registry) ---
 
   // Archived -> badge
   if (fieldKey === "archived") {
@@ -60,53 +114,23 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
     );
   }
 
-  // Date fields (e.g. release_date)
-  if (fieldKey.endsWith("_date")) {
-    return <Text size="sm">{value || ""}</Text>;
-  }
-
-  // UID fields (spotify_uid, suno_uid, etc.)
-  if (fieldKey.endsWith("_uid")) {
+  // Name column -> clickable link to show page
+  if (fieldKey === "name") {
+    const resource = getResourceName(entity);
     return (
-      <Text size="sm" c="dimmed">
+      <Anchor
+        fw={500}
+        onClick={(e) => {
+          e.stopPropagation();
+          show(resource, record.id);
+        }}
+      >
         {value || ""}
-      </Text>
+      </Anchor>
     );
   }
 
-  // Foreign key fields -> clickable enriched display name
-  if (fieldKey.endsWith("_id")) {
-    const fieldDef = entity.fields.find((f) => f.key === fieldKey);
-    const baseKey = fieldKey.replace(/_id$/, "");
-    const displayName =
-      record[baseKey]?.name ?? record[`${baseKey}Name`] ?? null;
-
-    if (displayName && fieldDef?.target) {
-      const targetEntity = resolveRelationshipTarget(entity, fieldDef.target);
-      if (targetEntity) {
-        const targetResource = getResourceName(targetEntity);
-        return (
-          <Anchor
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              show(targetResource, record[fieldKey]);
-            }}
-          >
-            {displayName}
-          </Anchor>
-        );
-      }
-    }
-
-    return (
-      <Text size="sm" c="dimmed">
-        {displayName ?? (value != null ? String(value) : "")}
-      </Text>
-    );
-  }
-
-  // Enriched arrays (e.g. artists on songs, artists on albums)
+  // Enriched arrays (e.g. artists on songs)
   if (Array.isArray(record[fieldKey]) && record[fieldKey].length > 0 && record[fieldKey][0]?.name) {
     const items: any[] = record[fieldKey];
     const targetEntity = findEntity(entity.context, fieldKey);
@@ -135,22 +159,6 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
           </span>
         ))}
       </Group>
-    );
-  }
-
-  // Name column -> clickable link to show page
-  if (fieldKey === "name") {
-    const resource = getResourceName(entity);
-    return (
-      <Anchor
-        fw={500}
-        onClick={(e) => {
-          e.stopPropagation();
-          show(resource, record.id);
-        }}
-      >
-        {value || ""}
-      </Anchor>
     );
   }
 

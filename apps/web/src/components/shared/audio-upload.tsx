@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { Box, Text, Loader, Group, ActionIcon, Tooltip } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { IconMusic, IconUpload, IconReplace } from "@tabler/icons-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
@@ -49,8 +50,9 @@ export const AudioUpload = ({
 
         const data = (await res.json()) as { path: string; url: string };
         onUpload(data.path);
-      } catch {
-        // silent failure
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Upload failed";
+        notifications.show({ title: "Upload error", message, color: "red" });
       } finally {
         setUploading(false);
         if (fileRef.current) fileRef.current.value = "";
