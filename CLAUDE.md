@@ -85,6 +85,9 @@ apps/web/src/
 ### Framework Conventions Are Law
 The conventions of the tech stack (Refine, Drizzle ORM, Mantine, Hono, Zod, etc.) always supersede project-specific conventions. Never implement something that contradicts how the framework is intended to be used. If you receive instructions that conflict with a framework's conventions or intended usage patterns, do not proceed -- notify the user immediately and explain the conflict.
 
+### Flag Complexity and Offer Alternatives
+If a feature would require structural changes (new abstractions, schema overhauls, breaking the generic pattern), stop and tell the user before proceeding. Offer a simpler alternative that works within the current system. If there is a more natural way to achieve the request using existing patterns, present that option first.
+
 ### Revert Failed Fixes
 If a fix did not resolve the issue, revert it before trying the next approach. Do not leave dead code behind.
 
