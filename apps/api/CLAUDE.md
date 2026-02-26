@@ -20,8 +20,7 @@ src/
 ├── db/
 │   ├── index.ts          # Drizzle client factory with libSQL driver (getDb() singleton)
 │   ├── schema.ts         # Unified Drizzle schema (ALL domain tables in one file)
-│   ├── seed.ts           # Database seeding script (run via pnpm db:seed)
-│   ├── seed-attributes.ts # Standalone script to seed song_attributes with 60+ categorized attributes
+│   ├── seed.ts           # Database seeding script — sample data + all 59 song attributes (run via pnpm db:seed)
 │   └── schema/
 │       ├── index.ts      # Re-exports schema.ts + auth.ts
 │       └── auth.ts       # Better Auth tables: user, session, account, verification

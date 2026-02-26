@@ -38,8 +38,7 @@ apps/api/src/db/
   schema/
     index.ts              # Re-exports schema.ts + auth.ts
     auth.ts               # Better Auth tables (unchanged)
-  seed.ts                 # Database seeding
-  seed-attributes.ts      # Song attributes seeding
+  seed.ts                 # Database seeding (sample data + all song attributes)
 
 apps/api/src/routes/
   factory/
@@ -188,8 +187,7 @@ For local development, `pnpm dev` automatically copies `.env.dev-example` to `.e
 
 ### Seeding
 
-- `pnpm db:seed` -- Seeds the database with sample data (runs `apps/api/src/db/seed.ts`).
-- `apps/api/src/db/seed-attributes.ts` -- Standalone script to seed the `song_attributes` table with a comprehensive set of 60+ analysis attributes grouped by category. Run directly via `tsx apps/api/src/db/seed-attributes.ts` from the API directory.
+- `pnpm db:seed` -- Seeds the database with sample data and all 59 song attributes (runs `apps/api/src/db/seed.ts`). Attributes are upserted — existing ones are updated if changed, new ones are inserted.
 
 ### Notable Schema Details
 
