@@ -65,6 +65,7 @@ const sections: Section[] = [
     items: [
       { label: "Songs", icon: IconMusicBolt, to: "/anatomy/songs" },
       { label: "Artists", icon: IconMicrophone2, to: "/anatomy/artists" },
+      { label: "Albums", icon: IconDisc, to: "/anatomy/albums" },
       { label: "Attributes", icon: IconAdjustments, to: "/anatomy/attributes" },
       { label: "Import", icon: IconFileImport, to: "/anatomy/import" },
     ],

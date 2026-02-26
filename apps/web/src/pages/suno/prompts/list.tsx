@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useList, useNavigation, type CrudFilter } from "@refinedev/core";
+import { useList, useNavigation, useCreate, type CrudFilter } from "@refinedev/core";
 import {
   Table,
   Group,
@@ -7,14 +7,15 @@ import {
   Title,
   Stack,
   Pagination,
-  ActionIcon,
-  Tooltip,
   Text,
   LoadingOverlay,
   Badge,
   Select,
+  Modal,
+  Textarea,
 } from "@mantine/core";
-import { IconEdit, IconPlus } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
@@ -40,7 +41,12 @@ export const SunoPromptList = () => {
   const [voiceGenderFilter, setVoiceGenderFilter] = useState<string | null>(null);
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const { show, edit, create } = useNavigation();
+  const { show } = useNavigation();
+  const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
+  const [newLyrics, setNewLyrics] = useState("");
+  const createMutation = useCreate();
+  const { mutateAsync: createRecord } = createMutation;
+  const creating = createMutation.mutation.isPending;
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -49,6 +55,12 @@ export const SunoPromptList = () => {
       setSortField(field);
       setSortOrder("asc");
     }
+  };
+
+  const handleCreate = async () => {
+    const result = await createRecord({ resource: "suno/prompts", values: { lyrics: newLyrics || null } });
+    closeCreate(); setNewLyrics("");
+    show("suno/prompts", (result as any).data.id);
   };
 
   const archivedValue =
@@ -89,9 +101,9 @@ export const SunoPromptList = () => {
         <Title order={3}>Prompts</Title>
         <Button
           leftSection={<IconPlus size={16} />}
-          onClick={() => create("suno/prompts")}
+          onClick={openCreate}
         >
-          Create
+          New
         </Button>
       </Group>
 
@@ -135,13 +147,12 @@ export const SunoPromptList = () => {
               <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Status</Table.Th>
               <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-              <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {prompts.length === 0 && !isLoading && (
               <Table.Tr>
-                <Table.Td colSpan={6}>
+                <Table.Td colSpan={5}>
                   <Text c="dimmed" ta="center" py="md">
                     No prompts found.
                   </Text>
@@ -177,18 +188,6 @@ export const SunoPromptList = () => {
                       : "-"}
                   </Text>
                 </Table.Td>
-                <Table.Td>
-                  <Group gap="xs">
-                    <Tooltip label="Edit">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => edit("suno/prompts", prompt.id)}
-                      >
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -200,6 +199,16 @@ export const SunoPromptList = () => {
           <Pagination value={page} onChange={setPage} total={pageCount} />
         </Group>
       )}
+
+      <Modal opened={createOpened} onClose={closeCreate} title="New Prompt">
+        <Stack gap="md">
+          <Textarea label="Lyrics" value={newLyrics} onChange={(e) => setNewLyrics(e.currentTarget.value)} placeholder="Enter lyrics..." minRows={4} />
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={closeCreate}>Cancel</Button>
+            <Button onClick={handleCreate} loading={creating}>Create</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 };

@@ -95,7 +95,7 @@ With `DEV_AUTH_BYPASS=true` set in `.env` (the default), authentication is bypas
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `NODE_ENV` | No | `development` | Environment mode (`development` or `production`) |
-| `DATABASE_URL` | No | `file:./local.db` | SQLite file path (dev) or libSQL URL (prod) |
+| `DATABASE_URL` | No | `file:../../tmp/local.db` | SQLite file path (dev, relative to `apps/api`) or libSQL URL (prod) |
 | `DATABASE_AUTH_TOKEN` | Prod | -- | libSQL auth token for remote database |
 | `BETTER_AUTH_SECRET` | Yes | -- | Auth encryption secret (min 16 chars, 32+ recommended) |
 | `BETTER_AUTH_URL` | Yes | `http://localhost:3001` | Base URL for the auth system |
@@ -117,7 +117,7 @@ With `DEV_AUTH_BYPASS=true` set in `.env` (the default), authentication is bypas
 
 | Environment | Driver | Connection |
 |-------------|--------|------------|
-| Development | SQLite file | `file:./local.db` (relative to `apps/api`) |
+| Development | SQLite file | `tmp/local.db` (relative to workspace root) |
 | Production | libSQL (Turso/Bunny) | `DATABASE_URL` + `DATABASE_AUTH_TOKEN` |
 
 - ORM: **Drizzle ORM** with the libSQL driver
@@ -130,7 +130,7 @@ With `DEV_AUTH_BYPASS=true` set in `.env` (the default), authentication is bypas
 | Prefix | Section | Tables |
 |--------|---------|--------|
 | `my_` | My Music | `my_songs`, `my_artists`, `my_albums`, `my_song_artists`, `my_song_albums` |
-| `anatomy_` | Anatomy | `anatomy_songs`, `anatomy_artists`, `anatomy_song_artists`, `anatomy_attributes`, `anatomy_profiles` |
+| `anatomy_` | Anatomy | `anatomy_songs`, `anatomy_artists`, `anatomy_albums`, `anatomy_song_artists`, `anatomy_song_albums`, `anatomy_attributes`, `anatomy_profiles` |
 | `bin_` | Bin | `bin_sources`, `bin_songs` |
 | `suno_` | Suno Studio | `suno_prompts`, `suno_collections`, `suno_collection_prompts`, `suno_generations`, `suno_generation_prompts` |
 | (none) | Auth | `user`, `session`, `account`, `verification` (managed by Better Auth) |
@@ -166,10 +166,10 @@ The upload endpoint (`POST /api/upload`) accepts multipart form data with:
 ## Application Sections
 
 ### My Music
-Personal music library. Catalog songs, artists, and albums with industry identifiers (ISRC, ISNI, EAN), ratings (0-10), cover art, and links to Spotify, Apple Music, and YouTube. Songs can be assigned to artists and albums through junction tables.
+Personal music library. Catalog songs, artists, and albums with industry identifiers (ISRC, ISNI, EAN), ratings (0-5), cover art, and links to Spotify, Apple Music, and YouTube. Songs can be assigned to artists and albums through junction tables.
 
 ### Anatomy
-Song analysis workspace. Study reference songs through structured attributes (tempo, mood, instrumentation, etc.) organized by category. Build anatomy profiles that map attribute values to songs. Profiles store a JSON object keyed by attribute name. Supports smart search across ISRC codes, ISNI identifiers, and names. Includes Spotify import to extract song metadata from track, album, or playlist URLs.
+Song analysis workspace. Study reference songs, artists, and albums through structured attributes (tempo, mood, instrumentation, etc.) organized by category. Build anatomy profiles that map attribute values to songs. Profiles store a JSON object keyed by attribute name. Supports smart search across ISRC codes, ISNI identifiers, and names. Includes Spotify import to extract song metadata from track, album, or playlist URLs.
 
 ### Bin
 Collection point for song discoveries. Track where songs come from via sources (playlists, channels, recommendations) and store raw audio assets. Each bin song can link to a source and hold an uploaded audio file.
@@ -317,7 +317,7 @@ pnpm typecheck        # TypeScript type checking
 │   │   │   ├── middleware/      # Auth, error, and rate limiting middleware
 │   │   │   ├── routes/          # API route handlers
 │   │   │   │   ├── my-music/   # Songs, artists, albums
-│   │   │   │   ├── anatomy/    # Songs, artists, attributes, profiles, import
+│   │   │   │   ├── anatomy/    # Songs, artists, albums, attributes, profiles, import
 │   │   │   │   ├── bin/        # Songs, sources
 │   │   │   │   ├── suno/       # Prompts, collections, generations
 │   │   │   │   ├── upload.ts   # File upload endpoint
@@ -340,9 +340,9 @@ pnpm typecheck        # TypeScript type checking
 │       │   │   ├── layout/     # Layout wrapper and sidebar navigation
 │       │   │   ├── shared/     # Reusable components
 │       │   │   └── anatomy/    # Anatomy-specific components
-│       │   ├── pages/          # CRUD pages by section
+│       │   ├── pages/          # List + show pages by section (no separate create/edit)
 │       │   │   ├── my-music/   # songs/, artists/, albums/
-│       │   │   ├── anatomy/    # songs/, artists/, attributes/
+│       │   │   ├── anatomy/    # songs/, artists/, albums/, attributes/, import.tsx
 │       │   │   ├── bin/        # songs/, sources/
 │       │   │   └── suno/       # prompts/, collections/, generations/
 │       │   └── utils/          # Utility functions

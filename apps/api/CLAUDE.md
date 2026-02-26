@@ -262,7 +262,7 @@ The API deploys to Bunny Edge Scripting, which has specific constraints:
 | Variable               | Required | Default                    | Description                          |
 |------------------------|----------|----------------------------|--------------------------------------|
 | NODE_ENV               | No       | development                | Environment mode                     |
-| DATABASE_URL           | No       | file:./local.db            | SQLite file path or libSQL URL       |
+| DATABASE_URL           | No       | file:../../tmp/local.db    | SQLite file path or libSQL URL       |
 | DATABASE_AUTH_TOKEN    | No       | --                         | libSQL auth token (production)       |
 | BETTER_AUTH_SECRET     | Yes      | --                         | Auth encryption secret (min 16 chars)|
 | BETTER_AUTH_URL        | Yes      | --                         | Auth base URL                        |

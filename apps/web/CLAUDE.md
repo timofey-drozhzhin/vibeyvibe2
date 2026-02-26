@@ -26,21 +26,22 @@ src/
 │   ├── login.tsx         # Login page: email/password form + optional Google OAuth button
 │   ├── dashboard.tsx     # Dashboard page: section overview cards with icons
 │   ├── my-music/         # My Music resource pages
-│   │   ├── songs/        # list.tsx, create.tsx, edit.tsx, show.tsx
-│   │   ├── artists/      # list.tsx, create.tsx, edit.tsx, show.tsx
-│   │   └── albums/       # list.tsx, create.tsx, edit.tsx, show.tsx
+│   │   ├── songs/        # list.tsx, show.tsx
+│   │   ├── artists/      # list.tsx, show.tsx
+│   │   └── albums/       # list.tsx, show.tsx
 │   ├── anatomy/          # Anatomy resource pages
-│   │   ├── songs/        # list.tsx, create.tsx, edit.tsx, show.tsx
-│   │   ├── artists/      # list.tsx, create.tsx, edit.tsx, show.tsx
-│   │   ├── attributes/   # list.tsx, create.tsx, edit.tsx, show.tsx
+│   │   ├── songs/        # list.tsx, show.tsx
+│   │   ├── artists/      # list.tsx, show.tsx
+│   │   ├── albums/       # list.tsx, show.tsx
+│   │   ├── attributes/   # list.tsx, show.tsx
 │   │   └── import.tsx    # Spotify import page (preview + confirm flow)
 │   ├── bin/              # Bin resource pages
-│   │   ├── songs/        # list.tsx, create.tsx, edit.tsx, show.tsx
-│   │   └── sources/      # list.tsx, create.tsx, edit.tsx, show.tsx
+│   │   ├── songs/        # list.tsx, show.tsx
+│   │   └── sources/      # list.tsx, show.tsx
 │   └── suno/             # Suno Studio resource pages
-│       ├── prompts/      # list.tsx, create.tsx, edit.tsx, show.tsx
-│       ├── collections/  # list.tsx, create.tsx, edit.tsx, show.tsx
-│       └── generations/  # list.tsx, create.tsx, edit.tsx, show.tsx
+│       ├── prompts/      # list.tsx, show.tsx
+│       ├── collections/  # list.tsx, show.tsx
+│       └── generations/  # list.tsx, show.tsx
 └── utils/                # Utility functions and helpers
 ```
 
@@ -55,50 +56,30 @@ Routing is handled by React Router v7 via the `@refinedev/react-router` integrat
 | `/`                               | Dashboard      | Section overview cards         |
 | `/login`                          | Login          | Email/password + Google OAuth  |
 | `/my-music/songs`                 | List           | My songs list                  |
-| `/my-music/songs/create`          | Create         | Add a new song                 |
-| `/my-music/songs/:id`             | Show           | Song detail view               |
-| `/my-music/songs/:id/edit`        | Edit           | Edit song                      |
+| `/my-music/songs/show/:id`        | Show           | Song detail view               |
 | `/my-music/artists`               | List           | My artists list                |
-| `/my-music/artists/create`        | Create         | Add a new artist               |
-| `/my-music/artists/:id`           | Show           | Artist detail view             |
-| `/my-music/artists/:id/edit`      | Edit           | Edit artist                    |
+| `/my-music/artists/show/:id`      | Show           | Artist detail view             |
 | `/my-music/albums`                | List           | My albums list                 |
-| `/my-music/albums/create`         | Create         | Add a new album                |
-| `/my-music/albums/:id`            | Show           | Album detail view              |
-| `/my-music/albums/:id/edit`       | Edit           | Edit album                     |
+| `/my-music/albums/show/:id`       | Show           | Album detail view              |
 | `/anatomy/songs`                  | List           | Anatomy songs list             |
-| `/anatomy/songs/create`           | Create         | Add anatomy song               |
-| `/anatomy/songs/:id`              | Show           | Anatomy song detail            |
-| `/anatomy/songs/:id/edit`         | Edit           | Edit anatomy song              |
+| `/anatomy/songs/show/:id`         | Show           | Anatomy song detail            |
 | `/anatomy/artists`                | List           | Anatomy artists list           |
-| `/anatomy/artists/create`         | Create         | Add anatomy artist             |
-| `/anatomy/artists/:id`            | Show           | Anatomy artist detail          |
-| `/anatomy/artists/:id/edit`       | Edit           | Edit anatomy artist            |
+| `/anatomy/artists/show/:id`       | Show           | Anatomy artist detail          |
+| `/anatomy/albums`                 | List           | Anatomy albums list            |
+| `/anatomy/albums/show/:id`        | Show           | Anatomy album detail           |
 | `/anatomy/attributes`             | List           | Attributes list                |
-| `/anatomy/attributes/create`      | Create         | Add attribute                  |
-| `/anatomy/attributes/:id`         | Show           | Attribute detail               |
-| `/anatomy/attributes/:id/edit`    | Edit           | Edit attribute                 |
+| `/anatomy/attributes/show/:id`    | Show           | Attribute detail               |
 | `/anatomy/import`                 | Import         | Import songs from Spotify URLs |
 | `/bin/songs`                      | List           | Bin songs list                 |
-| `/bin/songs/create`               | Create         | Add bin song                   |
-| `/bin/songs/:id`                  | Show           | Bin song detail                |
-| `/bin/songs/:id/edit`             | Edit           | Edit bin song                  |
+| `/bin/songs/show/:id`             | Show           | Bin song detail                |
 | `/bin/sources`                    | List           | Bin sources list               |
-| `/bin/sources/create`             | Create         | Add bin source                 |
-| `/bin/sources/:id`                | Show           | Bin source detail              |
-| `/bin/sources/:id/edit`           | Edit           | Edit bin source                |
+| `/bin/sources/show/:id`           | Show           | Bin source detail              |
 | `/suno/prompts`                   | List           | Suno prompts list              |
-| `/suno/prompts/create`            | Create         | Create prompt                  |
-| `/suno/prompts/:id`               | Show           | Prompt detail                  |
-| `/suno/prompts/:id/edit`          | Edit           | Edit prompt                    |
+| `/suno/prompts/show/:id`          | Show           | Prompt detail                  |
 | `/suno/collections`               | List           | Collections list               |
-| `/suno/collections/create`        | Create         | Create collection              |
-| `/suno/collections/:id`           | Show           | Collection detail              |
-| `/suno/collections/:id/edit`      | Edit           | Edit collection                |
+| `/suno/collections/show/:id`      | Show           | Collection detail              |
 | `/suno/generations`               | List           | Generations list               |
-| `/suno/generations/create`        | Create         | Create generation              |
-| `/suno/generations/:id`           | Show           | Generation detail              |
-| `/suno/generations/:id/edit`      | Edit           | Edit generation                |
+| `/suno/generations/show/:id`      | Show           | Generation detail              |
 
 ## Data Provider
 
@@ -135,11 +116,11 @@ The auth provider (`providers/auth-provider.ts`) implements Refine's `AuthProvid
 
 ### Refine Hooks
 Use Refine's data hooks for all CRUD operations:
-- `useTable` -- List pages with server-side pagination, sorting, and filtering
-- `useForm` -- Create and edit pages with form state management
+- `useList` -- List pages with server-side data fetching
 - `useShow` -- Show pages to fetch a single record
-- `useList` / `useOne` -- Ad-hoc data fetching
-- `useCreate` / `useUpdate` -- Programmatic mutations
+- `useOne` -- Ad-hoc single-record fetching
+- `useCreate` -- Programmatic record creation (used in list page create modals)
+- `useUpdate` -- Programmatic record updates (used for inline editing on show pages)
 - `useLogin` / `useLogout` -- Auth actions
 
 ### Mantine Components
@@ -150,6 +131,21 @@ Use Mantine v8 components for all UI:
 - Navigation: `NavLink`, `Tabs`, `Breadcrumbs`
 - Feedback: `Button`, `ActionIcon`, `Notifications`
 - Overlay: `Modal`, `Drawer`
+
+### EntityPage Pattern
+The `EntityPage` component (`components/shared/entity-page.tsx`) is the standard wrapper for all show pages. It provides:
+- **Editable title**: Click-to-edit inline title with save/cancel controls
+- **Header**: Back button + title + `ArchiveBadge`
+- **Body**: Main content area with optional right panel (default 300px width)
+- **Footer**: `ArchiveButton` with confirmation, separated by a divider
+- **States**: Loading spinner, not-found message
+- **Modals slot**: For any extra modals rendered after the layout
+
+### ImageUpload Component
+The `ImageUpload` component (`components/shared/image-upload.tsx`) combines image preview and click-to-upload in one widget. Shows the current image or a placeholder with upload icon. Clicking opens a file picker, uploads via `POST /api/upload`, and calls `onUpload` with the new storage path. Used in the right panel of show pages for cover art.
+
+### Enhanced MediaEmbeds
+The `MediaEmbeds` component (`components/shared/media-embeds.tsx`) renders Spotify, Apple Music, and YouTube iframe embeds. When an `onSave` callback is provided, each platform ID becomes inline-editable (click to add/edit). Supports a `type` prop (`"track"` or `"album"`) to generate correct embed URLs. Empty slots show a "Click to add" placeholder.
 
 ### Layout
 The `Layout` component (`components/layout/index.tsx`) wraps all authenticated pages using Refine's `ThemedLayoutV2` with a custom `Sider` component.
@@ -186,48 +182,36 @@ export const theme = createTheme({
 
 ## Page Conventions
 
-Each resource follows a standard four-page pattern inside its own directory:
+Each resource has two pages inside its own directory:
 
 ```
 pages/{section}/{resource}/
-├── list.tsx     # Table/list view with pagination, sorting, search, archive filter
-├── create.tsx   # Form to create a new record
-├── edit.tsx     # Form to edit an existing record (pre-populated)
-└── show.tsx     # Read-only detail view of a single record
+├── list.tsx     # Table/list view with pagination, sorting, search, archive filter + create modal
+└── show.tsx     # Detail view with inline editing via EntityPage component
 ```
 
+There are no separate create or edit pages. Create functionality lives in a modal on the list page, and all editing is done inline on the show page.
+
 ### List Pages
-- Use `useTable` hook for server-side data fetching
+- Use `useList` hook for server-side data fetching
 - Default `pageSize: 20` on all list pages
 - Include search input for text filtering via `ListToolbar` component
 - Include archive status segmented control (Active/All/Archived)
 - Paginate with Refine's built-in pagination
 - Clickable name column navigates to show page (`cursor: pointer`, `onClick → show(resource, id)`)
-- Row actions: Edit button only (no View button) + PlatformLinks for songs -- never Delete
+- Row actions: PlatformLinks for songs -- never Delete or Edit buttons
 - Use `ArchiveBadge` in Status column (shows green "Active" or red "Archived")
-
-### Create Pages
-- Use `useForm` hook with validation
-- Match the Zod schema from the API for field requirements
-- Submit via POST to the resource endpoint
-- Redirect to show page on success
-
-### Edit Pages
-- Use `useForm` hook with `refineCoreProps: { action: "edit" }`
-- Pre-populate fields from existing record
-- Use `FileUpload` + `ImagePreview` for image fields (not TextInput)
-- Button layout: `[ArchiveButton]` on left, `[Save] [Cancel]` on right (`Group justify="space-between"`)
-- `ArchiveButton` calls `onFinish({ archived: newValue })` directly with confirmation modal
-- Submit via PUT to the resource endpoint
-- Redirect to show page on success
+- **Create modal**: Use `useDisclosure` from Mantine hooks + `useCreate` from Refine. A "+" button in the header opens a modal with a name field. On success, navigates to the new record's show page.
 
 ### Show Pages
-- Use `useShow` hook to fetch record by ID
-- Display all fields in a readable layout
-- Include navigation to edit page
-- Show archive status prominently with `ArchiveBadge`
-- Song show pages use two-column layout: main content (flex:1) + right panel (300px) with `MediaEmbeds`
-- Platform IDs (Spotify, Apple Music, YouTube) displayed as clickable links to external URLs
+- Use the `EntityPage` component for consistent layout and behavior
+- `EntityPage` provides: editable title (click-to-edit inline), `ArchiveBadge` in header, `ArchiveButton` in footer, optional right panel, loading/not-found states
+- Use `useShow` hook to fetch record by ID, `useUpdate` for inline saves
+- **Right panel** (300px): `ImageUpload` for cover art + `MediaEmbeds` for platform embeds (Spotify, Apple Music, YouTube). Both support inline editing via `onSave`/`onUpload` callbacks.
+- Use `EditableField` for simple text metadata fields (ISRC, dates, platform IDs, URLs). Click-to-edit with hover edit icon.
+- Use `RatingField` with `onChange` for interactive inline ratings
+- Use `SectionCard` for grouping related fields within the main content area
+- Platform IDs are editable directly within `MediaEmbeds` (click to add/edit)
 
 ## Validation
 
@@ -238,7 +222,7 @@ Client-side validation mirrors the Zod schemas defined on the API side. Use Mant
 
 ## No Delete Buttons
 
-There are no delete buttons, delete actions, or delete confirmation dialogs anywhere in the UI. To archive a record, use the archive toggle on the edit page (sets `archived = true` via PUT). List pages can filter by archive status to show/hide archived records.
+There are no delete buttons, delete actions, or delete confirmation dialogs anywhere in the UI. To archive a record, use the `ArchiveButton` in the footer of the show page's `EntityPage` component (sets `archived = true` via PUT). List pages can filter by archive status to show/hide archived records.
 
 ## Icons
 

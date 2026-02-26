@@ -7,6 +7,7 @@ import { App } from "./App";
 import { theme } from "./theme";
 
 import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
 import "./global.css";
 

@@ -1,18 +1,18 @@
 import { useShow, useNavigation, useUpdate } from "@refinedev/core";
 import {
+  Code,
   Text,
   Table,
-  Code,
   Loader,
   Center,
 } from "@mantine/core";
-import { RatingField } from "../../../components/shared/rating-field.js";
-import { RatingDisplay } from "../../../components/shared/rating-field.js";
+import { RatingField, RatingDisplay } from "../../../components/shared/rating-field.js";
 import { ImageUpload } from "../../../components/shared/image-upload.js";
+import { MediaEmbeds } from "../../../components/shared/media-embeds.js";
 import { EditableField } from "../../../components/shared/editable-field.js";
 import { EntityPage, SectionCard } from "../../../components/shared/entity-page.js";
 
-interface AnatomySong {
+interface AnatomyAlbumSong {
   id: string;
   name: string;
   isrc: string;
@@ -21,23 +21,27 @@ interface AnatomySong {
   archived: boolean;
 }
 
-interface AnatomyArtistDetail {
+interface AnatomyAlbumDetail {
   id: string;
   name: string;
-  isni: string;
+  ean: string | null;
+  releaseDate: string | null;
   rating: number;
   archived: boolean;
   imagePath: string | null;
+  spotifyId: string | null;
+  appleMusicId: string | null;
+  youtubeId: string | null;
   createdAt: string;
   updatedAt: string;
-  songs: AnatomySong[];
+  songs: AnatomyAlbumSong[];
 }
 
-const isniRegex = /^\d{15}[\dX]$/;
+const eanRegex = /^\d{13}$/;
 
-export const AnatomyArtistShow = () => {
-  const { query: showQuery } = useShow<AnatomyArtistDetail>({
-    resource: "anatomy/artists",
+export const AnatomyAlbumShow = () => {
+  const { query: showQuery } = useShow<AnatomyAlbumDetail>({
+    resource: "anatomy/albums",
   });
   const { list, show } = useNavigation();
   const { mutateAsync: updateRecord } = useUpdate();
@@ -48,7 +52,7 @@ export const AnatomyArtistShow = () => {
   // Inline save helper
   const saveField = async (field: string, value: string) => {
     await updateRecord({
-      resource: "anatomy/artists",
+      resource: "anatomy/albums",
       id: record!.id,
       values: { [field]: value || null },
     });
@@ -57,7 +61,7 @@ export const AnatomyArtistShow = () => {
 
   const handleRatingChange = async (newRating: number) => {
     await updateRecord({
-      resource: "anatomy/artists",
+      resource: "anatomy/albums",
       id: record!.id,
       values: { rating: newRating },
     });
@@ -75,7 +79,7 @@ export const AnatomyArtistShow = () => {
   if (!record) {
     return (
       <Text c="dimmed" ta="center" py="xl">
-        Artist not found.
+        Album not found.
       </Text>
     );
   }
@@ -83,49 +87,68 @@ export const AnatomyArtistShow = () => {
   return (
     <EntityPage
       title={record.name}
-      onBack={() => list("anatomy/artists")}
-      onTitleSave={async (newTitle) => {
+      onBack={() => list("anatomy/albums")}
+      onTitleSave={async (newName) => {
         await updateRecord({
-          resource: "anatomy/artists",
+          resource: "anatomy/albums",
           id: record.id,
-          values: { name: newTitle },
+          values: { name: newName },
         });
         showQuery.refetch();
       }}
       archived={record.archived}
       onArchiveToggle={async (val) => {
         await updateRecord({
-          resource: "anatomy/artists",
+          resource: "anatomy/albums",
           id: record.id,
           values: { archived: val },
         });
         showQuery.refetch();
       }}
       rightPanel={
-        <ImageUpload
-          path={record.imagePath}
-          onUpload={(path) => saveField("imagePath", path)}
-          alt={record.name}
-          size={300}
-          directory="artists"
-        />
+        <>
+          <ImageUpload
+            path={record.imagePath}
+            onUpload={(path) => saveField("imagePath", path)}
+            alt={record.name}
+            size={300}
+            directory="albums"
+          />
+          <MediaEmbeds
+            spotifyId={record.spotifyId}
+            appleMusicId={record.appleMusicId}
+            youtubeId={record.youtubeId}
+            onSave={saveField}
+          />
+        </>
       }
     >
-      {/* Artist details */}
-      <SectionCard title="Artist Details">
+      {/* Album details */}
+      <SectionCard title="Album Details">
         <Table>
           <Table.Tbody>
             <Table.Tr>
-              <Table.Td fw={600} w={180}>ISNI</Table.Td>
+              <Table.Td fw={600} w={180}>EAN</Table.Td>
               <Table.Td>
                 <EditableField
-                  value={record.isni}
-                  onSave={(v) => saveField("isni", v)}
-                  placeholder="e.g. 0000000012345678"
+                  value={record.ean}
+                  onSave={(v) => saveField("ean", v)}
+                  placeholder="e.g. 1234567890123"
                   renderDisplay={(v) => <Code>{v}</Code>}
                   validate={(v) =>
-                    v && !isniRegex.test(v) ? "Invalid ISNI format" : null
+                    v && !eanRegex.test(v) ? "EAN must be exactly 13 digits" : null
                   }
+                />
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={600}>Release Date</Table.Td>
+              <Table.Td>
+                <EditableField
+                  value={record.releaseDate}
+                  onSave={(v) => saveField("releaseDate", v)}
+                  placeholder="YYYY-MM-DD"
+                  type="date"
                 />
               </Table.Td>
             </Table.Tr>
@@ -173,9 +196,9 @@ export const AnatomyArtistShow = () => {
                 onClick={() => show("anatomy/songs", song.id)}
               >
                 <Table.Td><Text fw={500}>{song.name}</Text></Table.Td>
-                <Table.Td><Code>{song.isrc}</Code></Table.Td>
-                <Table.Td>{song.releaseDate}</Table.Td>
-                <Table.Td><RatingDisplay value={song.rating} /></Table.Td>
+                <Table.Td><Code>{song.isrc || "-"}</Code></Table.Td>
+                <Table.Td>{song.releaseDate || "-"}</Table.Td>
+                <Table.Td><RatingDisplay value={song.rating ?? 0} /></Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>

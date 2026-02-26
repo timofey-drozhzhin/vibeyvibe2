@@ -1,13 +1,10 @@
 import { useState, useRef } from "react";
 import {
   FileInput,
-  Group,
-  Text,
   Loader,
-  ActionIcon,
   Box,
 } from "@mantine/core";
-import { IconUpload, IconX } from "@tabler/icons-react";
+import { IconUpload } from "@tabler/icons-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -101,22 +98,6 @@ export const FileUpload = ({
         clearable={false}
         resetRef={resetRef}
       />
-      {value && (
-        <Group gap="xs" mt={4}>
-          <Text size="xs" c="dimmed" style={{ wordBreak: "break-all" }}>
-            Uploaded: {value}
-          </Text>
-          <ActionIcon
-            size="xs"
-            variant="subtle"
-            color="red"
-            onClick={handleClear}
-            title="Clear file"
-          >
-            <IconX size={12} />
-          </ActionIcon>
-        </Group>
-      )}
     </Box>
   );
 };

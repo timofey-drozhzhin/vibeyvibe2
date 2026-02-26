@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useList, useNavigation } from "@refinedev/core";
+import { useList, useNavigation, useCreate } from "@refinedev/core";
 import {
   Table,
   Group,
@@ -7,13 +7,14 @@ import {
   Title,
   Stack,
   Pagination,
-  ActionIcon,
-  Tooltip,
   Text,
   LoadingOverlay,
   Avatar,
+  Modal,
+  TextInput,
 } from "@mantine/core";
-import { IconEdit, IconPlus } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
@@ -25,7 +26,10 @@ export const ArtistList = () => {
   const [archiveFilter, setArchiveFilter] = useState("active");
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const { show, edit, create } = useNavigation();
+  const { show } = useNavigation();
+  const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
+  const [newName, setNewName] = useState("");
+  const { mutate: createRecord, mutation: createMutation } = useCreate();
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -34,6 +38,18 @@ export const ArtistList = () => {
       setSortField(field);
       setSortOrder("asc");
     }
+  };
+
+  const handleCreate = () => {
+    createRecord(
+      { resource: "my-music/artists", values: { name: newName } },
+      {
+        onSuccess: (data) => {
+          closeCreate(); setNewName("");
+          show("my-music/artists", data.data.id!);
+        },
+      },
+    );
   };
 
   const archivedValue =
@@ -64,9 +80,9 @@ export const ArtistList = () => {
         <Title order={3}>Artists</Title>
         <Button
           leftSection={<IconPlus size={16} />}
-          onClick={() => create("my-music/artists")}
+          onClick={openCreate}
         >
-          Create
+          New
         </Button>
       </Group>
 
@@ -94,13 +110,12 @@ export const ArtistList = () => {
               <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Status</Table.Th>
               <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-              <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {artists.length === 0 && !loading && (
               <Table.Tr>
-                <Table.Td colSpan={7}>
+                <Table.Td colSpan={6}>
                   <Text c="dimmed" ta="center" py="md">
                     No artists found.
                   </Text>
@@ -131,18 +146,6 @@ export const ArtistList = () => {
                       : "-"}
                   </Text>
                 </Table.Td>
-                <Table.Td>
-                  <Group gap="xs">
-                    <Tooltip label="Edit">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => edit("my-music/artists", artist.id)}
-                      >
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -154,6 +157,16 @@ export const ArtistList = () => {
           <Pagination value={page} onChange={setPage} total={pageCount} />
         </Group>
       )}
+
+      <Modal opened={createOpened} onClose={closeCreate} title="New Artist">
+        <Stack gap="md">
+          <TextInput label="Name" required value={newName} onChange={(e) => setNewName(e.currentTarget.value)} placeholder="Artist name" onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) handleCreate(); }} />
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={closeCreate}>Cancel</Button>
+            <Button onClick={handleCreate} loading={createMutation.isPending} disabled={!newName.trim()}>Create</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 };

@@ -1,32 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useShow, useNavigation, useUpdate } from "@refinedev/core";
 import {
   ActionIcon,
-  Anchor,
   Code,
-  Group,
-  Stack,
   Text,
-  Button,
   Table,
-  Loader,
-  Center,
-  Modal,
   Tooltip,
-  TextInput,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useSearchParams } from "react-router";
 import { notifications } from "@mantine/notifications";
 import { IconUnlink } from "@tabler/icons-react";
 import { RatingField, RatingDisplay } from "../../../components/shared/rating-field.js";
-import { ArchiveBadge, ArchiveButton } from "../../../components/shared/archive-toggle.js";
 import { AssignModal } from "../../../components/shared/assign-modal.js";
-import { ImagePreview } from "../../../components/shared/image-preview.js";
+import { ImageUpload } from "../../../components/shared/image-upload.js";
 import { MediaEmbeds } from "../../../components/shared/media-embeds.js";
 import { EditableField } from "../../../components/shared/editable-field.js";
-import { ShowPageHeader, SectionCard } from "../../../components/shared/show-page.js";
-import { FileUpload } from "../../../components/shared/file-upload.js";
+import { EntityPage, SectionCard } from "../../../components/shared/entity-page.js";
 
 interface MySongArtist {
   id: string;
@@ -74,18 +63,6 @@ export const SongShow = () => {
 
   const record = showQuery?.data?.data;
   const isLoading = showQuery?.isPending;
-
-  // Edit modal
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [editModalOpened, { open: openEditModal, close: closeEditModal }] =
-    useDisclosure(false);
-
-  useEffect(() => {
-    if (searchParams.get("edit") === "true" && record) {
-      openEditModal();
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, record]);
 
   // Artist assign modal
   const [artistModalOpened, { open: openArtistModal, close: closeArtistModal }] =
@@ -159,354 +136,222 @@ export const SongShow = () => {
 
   if (isLoading) {
     return (
-      <Center py="xl">
-        <Loader />
-      </Center>
+      <EntityPage
+        title=""
+        onBack={() => list("my-music/songs")}
+        isLoading
+      >
+        <div />
+      </EntityPage>
     );
   }
 
   if (!record) {
     return (
-      <Text c="dimmed" ta="center" py="xl">
-        Song not found.
-      </Text>
+      <EntityPage
+        title=""
+        onBack={() => list("my-music/songs")}
+        notFound
+        notFoundMessage="Song not found."
+      >
+        <div />
+      </EntityPage>
     );
   }
 
   return (
-    <Stack gap="md">
-      <ShowPageHeader
-        title={record.name}
-        onBack={() => list("my-music/songs")}
-        onEdit={openEditModal}
-        badges={<ArchiveBadge archived={record.archived} />}
-      />
-
-      {/* Two column layout */}
-      <Group align="flex-start" gap="lg" wrap="nowrap">
-        {/* Left column - main content */}
-        <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
-          {/* Song details */}
-          <SectionCard title="Song Details">
-            <Table>
-              <Table.Tbody>
-                <Table.Tr>
-                  <Table.Td fw={600} w={180}>ISRC</Table.Td>
-                  <Table.Td>
-                    <EditableField
-                      value={record.isrc}
-                      onSave={(v) => saveField("isrc", v)}
-                      placeholder="e.g. USRC11234567"
-                      renderDisplay={(v) => <Code>{v}</Code>}
-                      validate={(v) =>
-                        v && !isrcRegex.test(v) ? "Invalid ISRC format" : null
-                      }
-                    />
-                  </Table.Td>
-                </Table.Tr>
-                <Table.Tr>
-                  <Table.Td fw={600}>Release Date</Table.Td>
-                  <Table.Td>
-                    <EditableField
-                      value={record.releaseDate}
-                      onSave={(v) => saveField("releaseDate", v)}
-                      placeholder="YYYY-MM-DD"
-                    />
-                  </Table.Td>
-                </Table.Tr>
-                <Table.Tr>
-                  <Table.Td fw={600}>Rating</Table.Td>
-                  <Table.Td>
-                    <RatingField value={record.rating} onChange={handleRatingChange} />
-                  </Table.Td>
-                </Table.Tr>
-                <Table.Tr>
-                  <Table.Td fw={600}>Spotify ID</Table.Td>
-                  <Table.Td>
-                    <EditableField
-                      value={record.spotifyId}
-                      onSave={(v) => saveField("spotifyId", v)}
-                      placeholder="Spotify track ID"
-                      emptyText="Click to add"
-                      renderDisplay={(v) => (
-                        <Anchor
-                          href={`https://open.spotify.com/track/${v}`}
-                          target="_blank"
-                          size="sm"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Code>{v}</Code>
-                        </Anchor>
-                      )}
-                    />
-                  </Table.Td>
-                </Table.Tr>
-                <Table.Tr>
-                  <Table.Td fw={600}>Apple Music ID</Table.Td>
-                  <Table.Td>
-                    <EditableField
-                      value={record.appleMusicId}
-                      onSave={(v) => saveField("appleMusicId", v)}
-                      placeholder="Apple Music track ID"
-                      emptyText="Click to add"
-                      renderDisplay={(v) => (
-                        <Anchor
-                          href={`https://music.apple.com/song/${v}`}
-                          target="_blank"
-                          size="sm"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Code>{v}</Code>
-                        </Anchor>
-                      )}
-                    />
-                  </Table.Td>
-                </Table.Tr>
-                <Table.Tr>
-                  <Table.Td fw={600}>YouTube ID</Table.Td>
-                  <Table.Td>
-                    <EditableField
-                      value={record.youtubeId}
-                      onSave={(v) => saveField("youtubeId", v)}
-                      placeholder="YouTube video ID"
-                      emptyText="Click to add"
-                      renderDisplay={(v) => (
-                        <Anchor
-                          href={`https://www.youtube.com/watch?v=${v}`}
-                          target="_blank"
-                          size="sm"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Code>{v}</Code>
-                        </Anchor>
-                      )}
-                    />
-                  </Table.Td>
-                </Table.Tr>
-                <Table.Tr>
-                  <Table.Td fw={600}>Created</Table.Td>
-                  <Table.Td>{record.createdAt}</Table.Td>
-                </Table.Tr>
-                <Table.Tr>
-                  <Table.Td fw={600}>Updated</Table.Td>
-                  <Table.Td>{record.updatedAt}</Table.Td>
-                </Table.Tr>
-              </Table.Tbody>
-            </Table>
-          </SectionCard>
-
-          {/* Artists */}
-          <SectionCard title="Artists" action={{ label: "Assign Artist", onClick: openArtistModal }}>
-            <Table striped highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>ISNI</Table.Th>
-                  <Table.Th>Rating</Table.Th>
-                  <Table.Th w={60}>Actions</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {(!record.artists || record.artists.length === 0) && (
-                  <Table.Tr>
-                    <Table.Td colSpan={4}>
-                      <Text c="dimmed" ta="center" py="md">No artists assigned.</Text>
-                    </Table.Td>
-                  </Table.Tr>
-                )}
-                {record.artists?.map((artist) => (
-                  <Table.Tr
-                    key={artist.id}
-                    className="clickable-name"
-                    onClick={() => show("my-music/artists", artist.id)}
-                  >
-                    <Table.Td><Text fw={500}>{artist.name}</Text></Table.Td>
-                    <Table.Td><Code>{artist.isni || "-"}</Code></Table.Td>
-                    <Table.Td><RatingDisplay value={artist.rating ?? 0} /></Table.Td>
-                    <Table.Td>
-                      <Tooltip label="Remove artist from song">
-                        <ActionIcon variant="subtle" color="red" loading={removingId === artist.id} onClick={(e) => { e.stopPropagation(); handleRemoveArtist(artist.id); }}>
-                          <IconUnlink size={16} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </SectionCard>
-
-          {/* Albums */}
-          <SectionCard title="Albums" action={{ label: "Assign Album", onClick: openAlbumModal }}>
-            <Table striped highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>EAN</Table.Th>
-                  <Table.Th>Release Date</Table.Th>
-                  <Table.Th>Rating</Table.Th>
-                  <Table.Th w={60}>Actions</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {(!record.albums || record.albums.length === 0) && (
-                  <Table.Tr>
-                    <Table.Td colSpan={5}>
-                      <Text c="dimmed" ta="center" py="md">No albums assigned.</Text>
-                    </Table.Td>
-                  </Table.Tr>
-                )}
-                {record.albums?.map((album) => (
-                  <Table.Tr
-                    key={album.id}
-                    className="clickable-name"
-                    onClick={() => show("my-music/albums", album.id)}
-                  >
-                    <Table.Td><Text fw={500}>{album.name}</Text></Table.Td>
-                    <Table.Td><Code>{album.ean || "-"}</Code></Table.Td>
-                    <Table.Td>{album.releaseDate || "-"}</Table.Td>
-                    <Table.Td><RatingDisplay value={album.rating ?? 0} /></Table.Td>
-                    <Table.Td>
-                      <Tooltip label="Remove album from song">
-                        <ActionIcon variant="subtle" color="red" loading={removingId === album.id} onClick={(e) => { e.stopPropagation(); handleRemoveAlbum(album.id); }}>
-                          <IconUnlink size={16} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </SectionCard>
-        </Stack>
-
-        {/* Right column - media panel */}
-        {(record.imagePath || record.spotifyId || record.appleMusicId || record.youtubeId) && (
-          <Stack w={300} style={{ flexShrink: 0 }}>
-            {record.imagePath && (
-              <ImagePreview path={record.imagePath} alt={record.name} size={300} />
-            )}
-            <MediaEmbeds
-              spotifyId={record.spotifyId}
-              appleMusicId={record.appleMusicId}
-              youtubeId={record.youtubeId}
-            />
-          </Stack>
-        )}
-      </Group>
-
-      {/* Edit Modal */}
-      <EditModal
-        opened={editModalOpened}
-        onClose={closeEditModal}
-        record={record}
-        onSaved={() => { closeEditModal(); showQuery.refetch(); }}
-      />
-
-      {/* Assign Artist Modal */}
-      {record.id && (
-        <AssignModal
-          opened={artistModalOpened}
-          onClose={closeArtistModal}
-          title="Assign Artist"
-          resource="my-music/artists"
-          assignUrl={`/api/my-music/songs/${record.id}/artists`}
-          fieldName="artistId"
-          labelField="name"
-          onSuccess={() => showQuery.refetch()}
-        />
-      )}
-
-      {/* Assign Album Modal */}
-      {record.id && (
-        <AssignModal
-          opened={albumModalOpened}
-          onClose={closeAlbumModal}
-          title="Assign Album"
-          resource="my-music/albums"
-          assignUrl={`/api/my-music/songs/${record.id}/albums`}
-          fieldName="albumId"
-          labelField="name"
-          onSuccess={() => showQuery.refetch()}
-        />
-      )}
-    </Stack>
-  );
-};
-
-// Edit Modal - name, image, archive
-const EditModal = ({
-  opened,
-  onClose,
-  record,
-  onSaved,
-}: {
-  opened: boolean;
-  onClose: () => void;
-  record: MySongDetail;
-  onSaved: () => void;
-}) => {
-  const [name, setName] = useState(record.name);
-  const [imagePath, setImagePath] = useState(record.imagePath ?? "");
-  const { mutateAsync: updateRecord, mutation } = useUpdate();
-
-  useEffect(() => {
-    if (opened) {
-      setName(record.name);
-      setImagePath(record.imagePath ?? "");
-    }
-  }, [opened, record]);
-
-  const handleSubmit = async () => {
-    await updateRecord({
-      resource: "my-music/songs",
-      id: record.id,
-      values: { name, imagePath: imagePath || null },
-    });
-    onSaved();
-  };
-
-  return (
-    <Modal opened={opened} onClose={onClose} title="Edit Song">
-      <Stack gap="md">
-        <TextInput
-          label="Name"
-          required
-          value={name}
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Song name"
-        />
-        <FileUpload
-          label="Image"
-          value={imagePath}
-          onChange={setImagePath}
-          accept="image/*"
-          directory="songs"
-          placeholder="Upload song image"
-        />
-        {imagePath && <ImagePreview path={imagePath} alt={name} size={80} />}
-        <Group justify="space-between" mt="md">
-          <ArchiveButton
-            archived={record.archived}
-            onToggle={async (val) => {
-              await updateRecord({
-                resource: "my-music/songs",
-                id: record.id,
-                values: { archived: val },
-              });
-              onSaved();
-            }}
+    <EntityPage
+      title={record.name}
+      onBack={() => list("my-music/songs")}
+      onTitleSave={async (newName) => {
+        await updateRecord({
+          resource: "my-music/songs",
+          id: record.id,
+          values: { name: newName },
+        });
+        showQuery.refetch();
+      }}
+      archived={record.archived}
+      onArchiveToggle={async (val) => {
+        await updateRecord({
+          resource: "my-music/songs",
+          id: record.id,
+          values: { archived: val },
+        });
+        showQuery.refetch();
+      }}
+      rightPanel={
+        <>
+          <ImageUpload
+            path={record.imagePath}
+            onUpload={(path) => saveField("imagePath", path)}
+            alt={record.name}
+            size={300}
+            directory="songs"
           />
-          <Group>
-            <Button onClick={handleSubmit} loading={mutation.isPending} disabled={!name.trim()}>
-              Save
-            </Button>
-            <Button variant="subtle" onClick={onClose}>
-              Cancel
-            </Button>
-          </Group>
-        </Group>
-      </Stack>
-    </Modal>
+          <MediaEmbeds
+            spotifyId={record.spotifyId}
+            appleMusicId={record.appleMusicId}
+            youtubeId={record.youtubeId}
+            onSave={saveField}
+          />
+        </>
+      }
+      modals={
+        <>
+          {record.id && (
+            <AssignModal
+              opened={artistModalOpened}
+              onClose={closeArtistModal}
+              title="Assign Artist"
+              resource="my-music/artists"
+              assignUrl={`/api/my-music/songs/${record.id}/artists`}
+              fieldName="artistId"
+              labelField="name"
+              onSuccess={() => showQuery.refetch()}
+            />
+          )}
+          {record.id && (
+            <AssignModal
+              opened={albumModalOpened}
+              onClose={closeAlbumModal}
+              title="Assign Album"
+              resource="my-music/albums"
+              assignUrl={`/api/my-music/songs/${record.id}/albums`}
+              fieldName="albumId"
+              labelField="name"
+              onSuccess={() => showQuery.refetch()}
+            />
+          )}
+        </>
+      }
+    >
+      {/* Song details */}
+      <SectionCard title="Song Details">
+        <Table>
+          <Table.Tbody>
+            <Table.Tr>
+              <Table.Td fw={600} w={180}>ISRC</Table.Td>
+              <Table.Td>
+                <EditableField
+                  value={record.isrc}
+                  onSave={(v) => saveField("isrc", v)}
+                  placeholder="e.g. USRC11234567"
+                  renderDisplay={(v) => <Code>{v}</Code>}
+                  validate={(v) =>
+                    v && !isrcRegex.test(v) ? "Invalid ISRC format" : null
+                  }
+                />
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={600}>Release Date</Table.Td>
+              <Table.Td>
+                <EditableField
+                  value={record.releaseDate}
+                  onSave={(v) => saveField("releaseDate", v)}
+                  placeholder="YYYY-MM-DD"
+                  type="date"
+                />
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={600}>Rating</Table.Td>
+              <Table.Td>
+                <RatingField value={record.rating} onChange={handleRatingChange} />
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={600}>Created</Table.Td>
+              <Table.Td>{record.createdAt}</Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={600}>Updated</Table.Td>
+              <Table.Td>{record.updatedAt}</Table.Td>
+            </Table.Tr>
+          </Table.Tbody>
+        </Table>
+      </SectionCard>
+
+      {/* Artists */}
+      <SectionCard title="Artists" action={{ label: "Assign Artist", onClick: openArtistModal }}>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Name</Table.Th>
+              <Table.Th>Rating</Table.Th>
+              <Table.Th w={60}>Actions</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {(!record.artists || record.artists.length === 0) && (
+              <Table.Tr>
+                <Table.Td colSpan={3}>
+                  <Text c="dimmed" ta="center" py="md">No artists assigned.</Text>
+                </Table.Td>
+              </Table.Tr>
+            )}
+            {record.artists?.map((artist) => (
+              <Table.Tr
+                key={artist.id}
+                className="clickable-name"
+                onClick={() => show("my-music/artists", artist.id)}
+              >
+                <Table.Td><Text fw={500}>{artist.name}</Text></Table.Td>
+                <Table.Td><RatingDisplay value={artist.rating ?? 0} /></Table.Td>
+                <Table.Td>
+                  <Tooltip label="Remove artist from song">
+                    <ActionIcon variant="subtle" color="red" loading={removingId === artist.id} onClick={(e) => { e.stopPropagation(); handleRemoveArtist(artist.id); }}>
+                      <IconUnlink size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </SectionCard>
+
+      {/* Albums */}
+      <SectionCard title="Albums" action={{ label: "Assign Album", onClick: openAlbumModal }}>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Name</Table.Th>
+              <Table.Th>Release Date</Table.Th>
+              <Table.Th>Rating</Table.Th>
+              <Table.Th w={60}>Actions</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {(!record.albums || record.albums.length === 0) && (
+              <Table.Tr>
+                <Table.Td colSpan={4}>
+                  <Text c="dimmed" ta="center" py="md">No albums assigned.</Text>
+                </Table.Td>
+              </Table.Tr>
+            )}
+            {record.albums?.map((album) => (
+              <Table.Tr
+                key={album.id}
+                className="clickable-name"
+                onClick={() => show("my-music/albums", album.id)}
+              >
+                <Table.Td><Text fw={500}>{album.name}</Text></Table.Td>
+                <Table.Td>{album.releaseDate || "-"}</Table.Td>
+                <Table.Td><RatingDisplay value={album.rating ?? 0} /></Table.Td>
+                <Table.Td>
+                  <Tooltip label="Remove album from song">
+                    <ActionIcon variant="subtle" color="red" loading={removingId === album.id} onClick={(e) => { e.stopPropagation(); handleRemoveAlbum(album.id); }}>
+                      <IconUnlink size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </SectionCard>
+    </EntityPage>
   );
 };

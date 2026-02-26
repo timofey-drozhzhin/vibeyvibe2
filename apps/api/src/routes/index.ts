@@ -4,6 +4,7 @@ import { myMusicArtistsRoutes } from "./my-music/artists.js";
 import { myMusicAlbumsRoutes } from "./my-music/albums.js";
 import { anatomySongsRoutes } from "./anatomy/songs.js";
 import { anatomyArtistsRoutes } from "./anatomy/artists.js";
+import { anatomyAlbumsRoutes } from "./anatomy/albums.js";
 import { anatomyAttributesRoutes } from "./anatomy/attributes.js";
 import { anatomyProfilesRoutes } from "./anatomy/profiles.js";
 import { anatomyImportRoutes } from "./anatomy/import.js";
@@ -25,6 +26,7 @@ routes.route("/my-music/albums", myMusicAlbumsRoutes);
 // Anatomy
 routes.route("/anatomy/songs", anatomySongsRoutes);
 routes.route("/anatomy/artists", anatomyArtistsRoutes);
+routes.route("/anatomy/albums", anatomyAlbumsRoutes);
 routes.route("/anatomy/attributes", anatomyAttributesRoutes);
 routes.route("/anatomy/profiles", anatomyProfilesRoutes);
 routes.route("/anatomy", anatomyImportRoutes);

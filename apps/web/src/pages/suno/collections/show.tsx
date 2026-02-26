@@ -1,27 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useShow, useNavigation, useUpdate } from "@refinedev/core";
 import {
   Group,
-  Stack,
   Text,
   Table,
   Badge,
-  Loader,
-  Center,
   ActionIcon,
   Tooltip,
-  Modal,
-  TextInput,
-  Textarea,
-  Button,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useSearchParams } from "react-router";
 import { notifications } from "@mantine/notifications";
 import { IconEye, IconUnlink } from "@tabler/icons-react";
-import { ArchiveBadge, ArchiveButton } from "../../../components/shared/archive-toggle.js";
 import { AssignModal } from "../../../components/shared/assign-modal.js";
-import { ShowPageHeader, SectionCard } from "../../../components/shared/show-page.js";
+import { EditableField } from "../../../components/shared/editable-field.js";
+import { EntityPage, SectionCard } from "../../../components/shared/entity-page.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -43,22 +35,11 @@ interface SunoCollectionDetail {
 export const SunoCollectionShow = () => {
   const { query } = useShow<SunoCollectionDetail>({ resource: "suno/collections" });
   const { list, show } = useNavigation();
+  const { mutateAsync: updateRecord } = useUpdate();
 
   const record = query?.data?.data;
   const isLoading = query?.isLoading ?? false;
   const prompts = record?.prompts ?? [];
-
-  // Edit modal
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [editModalOpened, { open: openEditModal, close: closeEditModal }] =
-    useDisclosure(false);
-
-  useEffect(() => {
-    if (searchParams.get("edit") === "true" && record) {
-      openEditModal();
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, record]);
 
   // Prompt assign modal
   const [promptModalOpened, { open: openPromptModal, close: closePromptModal }] =
@@ -95,44 +76,68 @@ export const SunoCollectionShow = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <Center py="xl">
-        <Loader />
-      </Center>
-    );
-  }
-
-  if (!record) {
-    return (
-      <Text c="dimmed" ta="center" py="xl">
-        Collection not found.
-      </Text>
-    );
-  }
-
   return (
-    <Stack gap="md">
-      <ShowPageHeader
-        title={record.name}
-        onBack={() => list("suno/collections")}
-        onEdit={openEditModal}
-        badges={<ArchiveBadge archived={record.archived} />}
-      />
-
+    <EntityPage
+      title={record?.name ?? ""}
+      onBack={() => list("suno/collections")}
+      onTitleSave={async (newName) => {
+        await updateRecord({
+          resource: "suno/collections",
+          id: record!.id,
+          values: { name: newName },
+        });
+        query.refetch();
+      }}
+      archived={record?.archived}
+      onArchiveToggle={async (val) => {
+        await updateRecord({
+          resource: "suno/collections",
+          id: record!.id,
+          values: { archived: val },
+        });
+        query.refetch();
+      }}
+      isLoading={isLoading}
+      notFound={!isLoading && !record}
+      notFoundMessage="Collection not found."
+      modals={
+        record?.id ? (
+          <AssignModal
+            opened={promptModalOpened}
+            onClose={closePromptModal}
+            title="Assign Prompt"
+            resource="suno/prompts"
+            assignUrl={`/api/suno/collections/${record.id}/prompts`}
+            fieldName="promptId"
+            labelField="style"
+            onSuccess={() => query.refetch()}
+          />
+        ) : undefined
+      }
+    >
       <SectionCard title="Details">
-        <Stack gap="sm">
-          <div>
-            <Text size="sm" fw={500} c="dimmed">Description</Text>
-            <Text>{record.description || "-"}</Text>
-          </div>
-          <div>
-            <Text size="sm" fw={500} c="dimmed">Created</Text>
-            <Text size="sm">
-              {record.createdAt ? new Date(record.createdAt).toLocaleString() : "-"}
-            </Text>
-          </div>
-        </Stack>
+        <div>
+          <Text size="sm" fw={500} c="dimmed">Description</Text>
+          <EditableField
+            value={record?.description ?? null}
+            onSave={async (v) => {
+              await updateRecord({
+                resource: "suno/collections",
+                id: record!.id,
+                values: { description: v || null },
+              });
+              query.refetch();
+            }}
+            placeholder="Add a description..."
+            emptyText="Click to add description"
+          />
+        </div>
+        <div>
+          <Text size="sm" fw={500} c="dimmed">Created</Text>
+          <Text size="sm">
+            {record?.createdAt ? new Date(record.createdAt).toLocaleString() : "-"}
+          </Text>
+        </div>
       </SectionCard>
 
       <SectionCard
@@ -206,104 +211,6 @@ export const SunoCollectionShow = () => {
           </Table.Tbody>
         </Table>
       </SectionCard>
-
-      {/* Edit Modal */}
-      <EditModal
-        opened={editModalOpened}
-        onClose={closeEditModal}
-        record={record}
-        onSaved={() => { closeEditModal(); query.refetch(); }}
-      />
-
-      {/* Assign Prompt Modal */}
-      {record.id && (
-        <AssignModal
-          opened={promptModalOpened}
-          onClose={closePromptModal}
-          title="Assign Prompt"
-          resource="suno/prompts"
-          assignUrl={`/api/suno/collections/${record.id}/prompts`}
-          fieldName="promptId"
-          labelField="style"
-          onSuccess={() => query.refetch()}
-        />
-      )}
-    </Stack>
-  );
-};
-
-// Edit Modal - name, description, archive
-const EditModal = ({
-  opened,
-  onClose,
-  record,
-  onSaved,
-}: {
-  opened: boolean;
-  onClose: () => void;
-  record: SunoCollectionDetail;
-  onSaved: () => void;
-}) => {
-  const [name, setName] = useState(record.name);
-  const [description, setDescription] = useState(record.description ?? "");
-  const { mutateAsync: updateRecord, mutation } = useUpdate();
-
-  useEffect(() => {
-    if (opened) {
-      setName(record.name);
-      setDescription(record.description ?? "");
-    }
-  }, [opened, record]);
-
-  const handleSubmit = async () => {
-    await updateRecord({
-      resource: "suno/collections",
-      id: record.id,
-      values: { name, description: description || null },
-    });
-    onSaved();
-  };
-
-  return (
-    <Modal opened={opened} onClose={onClose} title="Edit Collection">
-      <Stack gap="md">
-        <TextInput
-          label="Name"
-          required
-          value={name}
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Collection name"
-        />
-        <Textarea
-          label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.currentTarget.value)}
-          placeholder="Collection description"
-          minRows={3}
-          autosize
-        />
-        <Group justify="space-between" mt="md">
-          <ArchiveButton
-            archived={record.archived}
-            onToggle={async (val) => {
-              await updateRecord({
-                resource: "suno/collections",
-                id: record.id,
-                values: { archived: val },
-              });
-              onSaved();
-            }}
-          />
-          <Group>
-            <Button onClick={handleSubmit} loading={mutation.isPending} disabled={!name.trim()}>
-              Save
-            </Button>
-            <Button variant="subtle" onClick={onClose}>
-              Cancel
-            </Button>
-          </Group>
-        </Group>
-      </Stack>
-    </Modal>
+    </EntityPage>
   );
 };

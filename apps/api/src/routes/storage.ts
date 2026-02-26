@@ -5,7 +5,7 @@ export const storageRoutes = new Hono();
 
 // GET /* - Serve files from storage
 storageRoutes.get("/*", async (c) => {
-  const path = c.req.path.replace(/^\//, "");
+  const path = c.req.param("*");
 
   if (!path) {
     return c.json({ error: "No file path specified" }, 400);

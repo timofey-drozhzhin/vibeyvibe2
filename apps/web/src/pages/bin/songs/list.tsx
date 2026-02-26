@@ -1,19 +1,22 @@
 import { useState } from "react";
 import type { CrudFilter } from "@refinedev/core";
-import { useList, useNavigation } from "@refinedev/core";
+import { useList, useNavigation, useCreate } from "@refinedev/core";
 import {
   Table,
   Card,
   Group,
   Title,
   Text,
-  ActionIcon,
   Pagination,
   Button,
   Badge,
   Select,
+  Modal,
+  TextInput,
+  Stack,
 } from "@mantine/core";
-import { IconEdit, IconPlus, IconMusic } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { IconPlus, IconMusic } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
@@ -36,13 +39,18 @@ interface BinSource {
 }
 
 export const BinSongList = () => {
-  const { show, edit, create } = useNavigation();
+  const { show } = useNavigation();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [archiveFilter, setArchiveFilter] = useState("active");
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
+  const [newName, setNewName] = useState("");
+  const createMutation = useCreate();
+  const { mutateAsync: createRecord } = createMutation;
+  const creating = createMutation.mutation.isPending;
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -51,6 +59,12 @@ export const BinSongList = () => {
       setSortField(field);
       setSortOrder("asc");
     }
+  };
+
+  const handleCreate = async () => {
+    const result = await createRecord({ resource: "bin/songs", values: { name: newName } });
+    closeCreate(); setNewName("");
+    show("bin/songs", (result as any).data.id);
   };
 
   // Fetch sources for the filter dropdown
@@ -91,9 +105,9 @@ export const BinSongList = () => {
         <Title order={3}>Bin Songs</Title>
         <Button
           leftSection={<IconPlus size={16} />}
-          onClick={() => create("bin/songs")}
+          onClick={openCreate}
         >
-          Add Song
+          New
         </Button>
       </Group>
 
@@ -132,13 +146,12 @@ export const BinSongList = () => {
               <Table.Th>Asset</Table.Th>
               <Table.Th>Status</Table.Th>
               <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-              <Table.Th style={{ width: 100 }}>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {listQuery.isPending ? (
               <Table.Tr>
-                <Table.Td colSpan={6}>
+                <Table.Td colSpan={5}>
                   <Text ta="center" c="dimmed" py="md">
                     Loading...
                   </Text>
@@ -146,7 +159,7 @@ export const BinSongList = () => {
               </Table.Tr>
             ) : records.length === 0 ? (
               <Table.Tr>
-                <Table.Td colSpan={6}>
+                <Table.Td colSpan={5}>
                   <Text ta="center" c="dimmed" py="md">
                     No songs found
                   </Text>
@@ -192,16 +205,6 @@ export const BinSongList = () => {
                         : "-"}
                     </Text>
                   </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => edit("bin/songs", song.id)}
-                      >
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
                 </Table.Tr>
               ))
             )}
@@ -214,6 +217,16 @@ export const BinSongList = () => {
           </Group>
         )}
       </Card>
+
+      <Modal opened={createOpened} onClose={closeCreate} title="New Song">
+        <Stack gap="md">
+          <TextInput label="Name" required value={newName} onChange={(e) => setNewName(e.currentTarget.value)} placeholder="Song name" onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) handleCreate(); }} />
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={closeCreate}>Cancel</Button>
+            <Button onClick={handleCreate} loading={creating} disabled={!newName.trim()}>Create</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </>
   );
 };

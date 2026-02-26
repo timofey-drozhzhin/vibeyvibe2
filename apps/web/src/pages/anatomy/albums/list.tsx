@@ -5,69 +5,58 @@ import {
   Group,
   Text,
   Title,
-  Pagination,
-  ActionIcon,
-  Tooltip,
-  Card,
   Button,
+  Pagination,
+  Card,
   Loader,
   Center,
-  Avatar,
   Modal,
   TextInput,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconPlus, IconDna } from "@tabler/icons-react";
+import { IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
-import { PlatformLinks } from "../../../components/shared/platform-links.js";
 
-interface AnatomySong {
+interface AnatomyAlbum {
   id: string;
   name: string;
-  isrc: string;
-  releaseDate: string;
+  ean: string | null;
+  releaseDate: string | null;
   rating: number;
   archived: boolean;
   imagePath: string | null;
-  spotifyId: string | null;
-  appleMusicId: string | null;
-  youtubeId: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export const AnatomySongList = () => {
+export const AnatomyAlbumList = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [archiveFilter, setArchiveFilter] = useState("active");
-  const [sortField, setSortField] = useState("releaseDate");
+  const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { show } = useNavigation();
   const { mutate: createRecord } = useCreate();
 
   const [opened, { open, close }] = useDisclosure(false);
   const [newName, setNewName] = useState("");
-  const [newIsrc, setNewIsrc] = useState("");
-  const [newReleaseDate, setNewReleaseDate] = useState("");
-
-  const isrcValid = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/.test(newIsrc);
-  const canCreate = newName.trim() !== "" && isrcValid && newReleaseDate.trim() !== "";
 
   const handleCreate = () => {
     createRecord(
       {
-        resource: "anatomy/songs",
-        values: { name: newName, isrc: newIsrc, releaseDate: newReleaseDate },
+        resource: "anatomy/albums",
+        values: { name: newName },
       },
       {
-        onSuccess: () => {
-          setNewName("");
-          setNewIsrc("");
-          setNewReleaseDate("");
+        onSuccess: (data) => {
           close();
+          setNewName("");
+          if (data?.data?.id) {
+            show("anatomy/albums", data.data.id);
+          }
         },
       },
     );
@@ -85,8 +74,8 @@ export const AnatomySongList = () => {
   const archivedValue =
     archiveFilter === "active" ? false : archiveFilter === "archived" ? true : undefined;
 
-  const { query: listQuery, result } = useList<AnatomySong>({
-    resource: "anatomy/songs",
+  const { query: listQuery, result } = useList<AnatomyAlbum>({
+    resource: "anatomy/albums",
     pagination: { currentPage: page, pageSize: 20 },
     filters: [
       { field: "search", operator: "contains", value: search || undefined },
@@ -104,7 +93,7 @@ export const AnatomySongList = () => {
   return (
     <>
       <Group justify="space-between" mb="md">
-        <Title order={2}>Anatomy Songs</Title>
+        <Title order={2}>Anatomy Albums</Title>
         <Button
           leftSection={<IconPlus size={16} />}
           onClick={open}
@@ -133,77 +122,44 @@ export const AnatomySongList = () => {
           </Center>
         ) : records.length === 0 ? (
           <Text c="dimmed" ta="center" py="xl">
-            No songs found.
+            No albums found.
           </Text>
         ) : (
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th w={50}></Table.Th>
                 <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-                <Table.Th>Artists</Table.Th>
+                <Table.Th>EAN</Table.Th>
                 <SortableHeader field="releaseDate" label="Release Date" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
                 <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
                 <Table.Th>Status</Table.Th>
                 <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-                <Table.Th>Actions</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {records.map((song) => (
-                <Table.Tr key={song.id}>
-                  <Table.Td>
-                    <Avatar size={32} radius="sm" src={song.imagePath ? `/api/storage/${song.imagePath}` : null} />
-                  </Table.Td>
-                  <Table.Td className="clickable-name" onClick={() => show("anatomy/songs", song.id)}>
-                    <Text fw={500}>{song.name}</Text>
+              {records.map((album) => (
+                <Table.Tr key={album.id}>
+                  <Table.Td className="clickable-name" onClick={() => show("anatomy/albums", album.id)}>
+                    <Text fw={500}>{album.name}</Text>
                   </Table.Td>
                   <Table.Td>
-                    {(song as any).artists?.length > 0 ? (
-                      <Group gap={0} wrap="wrap">
-                        {(song as any).artists.map((a: any, i: number) => (
-                          <span key={a.id}>
-                            <Text
-                              component="span"
-                              size="sm"
-                              className="clickable-name"
-                              onClick={(e: React.MouseEvent) => { e.stopPropagation(); show("anatomy/artists", a.id); }}
-                            >
-                              {a.name}
-                            </Text>
-                            {i < (song as any).artists.length - 1 && <Text component="span" size="sm" c="dimmed">,&nbsp;</Text>}
-                          </span>
-                        ))}
-                      </Group>
-                    ) : (
-                      <Text size="sm" c="dimmed">-</Text>
-                    )}
+                    <Text size="sm" c="dimmed">{album.ean || "-"}</Text>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="sm">{song.releaseDate}</Text>
+                    <Text size="sm">{album.releaseDate || "-"}</Text>
                   </Table.Td>
                   <Table.Td>
-                    <RatingDisplay value={song.rating} />
+                    <RatingDisplay value={album.rating} />
                   </Table.Td>
                   <Table.Td>
-                    <ArchiveBadge archived={song.archived} />
+                    <ArchiveBadge archived={album.archived} />
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed">
-                      {song.createdAt
-                        ? new Date(song.createdAt).toLocaleDateString()
+                      {album.createdAt
+                        ? new Date(album.createdAt).toLocaleDateString()
                         : "-"}
                     </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <PlatformLinks spotifyId={song.spotifyId} appleMusicId={song.appleMusicId} youtubeId={song.youtubeId} />
-                      <Tooltip label="Create Profile">
-                        <ActionIcon variant="subtle" color="teal" onClick={() => show("anatomy/songs", song.id)}>
-                          <IconDna size={16} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </Group>
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -218,32 +174,17 @@ export const AnatomySongList = () => {
         )}
       </Card>
 
-      <Modal opened={opened} onClose={close} title="New Song">
+      <Modal opened={opened} onClose={close} title="New Album">
         <TextInput
           label="Name"
-          placeholder="Song name"
+          placeholder="Album name"
           value={newName}
           onChange={(e) => setNewName(e.currentTarget.value)}
-          mb="sm"
-        />
-        <TextInput
-          label="ISRC"
-          placeholder="e.g. USAT21234567"
-          value={newIsrc}
-          onChange={(e) => setNewIsrc(e.currentTarget.value.toUpperCase())}
-          error={newIsrc && !isrcValid ? "Invalid ISRC format" : undefined}
-          mb="sm"
-        />
-        <TextInput
-          label="Release Date"
-          placeholder="YYYY-MM-DD"
-          value={newReleaseDate}
-          onChange={(e) => setNewReleaseDate(e.currentTarget.value)}
           mb="md"
         />
         <Group justify="flex-end">
           <Button variant="default" onClick={close}>Cancel</Button>
-          <Button onClick={handleCreate} disabled={!canCreate}>Create</Button>
+          <Button onClick={handleCreate} disabled={newName.trim() === ""}>Create</Button>
         </Group>
       </Modal>
     </>

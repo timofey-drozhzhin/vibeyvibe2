@@ -8,6 +8,8 @@ import {
   anatomySongs,
   anatomyArtists,
   anatomySongArtists,
+  anatomyAlbums,
+  anatomySongAlbums,
 } from "../../db/schema/anatomy.js";
 import { importUrlSchema } from "../../validators/anatomy.js";
 import {
@@ -260,6 +262,60 @@ anatomyImportRoutes.post(
             id: nanoid(),
             songId,
             artistId,
+          });
+        } catch {
+          // Unique constraint violation — link already exists
+        }
+      }
+
+      // Resolve or create album and link it
+      if (track.album?.name) {
+        const albumName = track.album.name;
+
+        // Look for an existing album by name (case-insensitive)
+        const existingAlbum = await db
+          .select()
+          .from(anatomyAlbums)
+          .where(
+            sql`LOWER(${anatomyAlbums.name}) = LOWER(${albumName})`
+          )
+          .limit(1);
+
+        let albumId: string;
+
+        if (existingAlbum.length > 0) {
+          albumId = existingAlbum[0].id;
+        } else {
+          // Create a new album
+          albumId = nanoid();
+          await db.insert(anatomyAlbums).values({
+            id: albumId,
+            name: albumName,
+            releaseDate: track.releaseDate || null,
+          });
+
+          // Download and store album image (use song cover as best available)
+          if (track.imageUrl) {
+            const albumImagePath = await downloadAndStoreImage(
+              track.imageUrl,
+              "songs", // reuse songs directory for album covers
+              imageCache
+            );
+            if (albumImagePath) {
+              await db
+                .update(anatomyAlbums)
+                .set({ imagePath: albumImagePath })
+                .where(eq(anatomyAlbums.id, albumId));
+            }
+          }
+        }
+
+        // Link album to song (ignore duplicates via unique constraint)
+        try {
+          await db.insert(anatomySongAlbums).values({
+            id: nanoid(),
+            songId,
+            albumId,
           });
         } catch {
           // Unique constraint violation — link already exists

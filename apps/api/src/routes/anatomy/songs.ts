@@ -9,12 +9,15 @@ import {
   anatomyArtists,
   anatomySongArtists,
   anatomyProfiles,
+  anatomyAlbums,
+  anatomySongAlbums,
 } from "../../db/schema/anatomy.js";
 import {
   createAnatomySongSchema,
   updateAnatomySongSchema,
   createProfileSchema,
   assignArtistSchema,
+  assignAlbumSchema,
 } from "../../validators/anatomy.js";
 
 const isrcRegex = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/;
@@ -267,11 +270,46 @@ anatomySongsRoutes.get("/:id", async (c) => {
       );
   }
 
+  // Get albums linked to this song
+  const songAlbumLinks = await db
+    .select()
+    .from(anatomySongAlbums)
+    .where(eq(anatomySongAlbums.songId, id));
+
+  let albums: {
+    id: string;
+    name: string;
+    ean: string | null;
+    releaseDate: string | null;
+    rating: number;
+    archived: boolean;
+  }[] = [];
+  if (songAlbumLinks.length > 0) {
+    const albumIds = songAlbumLinks.map((sa) => sa.albumId);
+    albums = await db
+      .select({
+        id: anatomyAlbums.id,
+        name: anatomyAlbums.name,
+        ean: anatomyAlbums.ean,
+        releaseDate: anatomyAlbums.releaseDate,
+        rating: anatomyAlbums.rating,
+        archived: anatomyAlbums.archived,
+      })
+      .from(anatomyAlbums)
+      .where(
+        sql`${anatomyAlbums.id} IN (${sql.join(
+          albumIds.map((aid) => sql`${aid}`),
+          sql`, `
+        )})`
+      );
+  }
+
   return c.json({
     data: {
       ...song[0],
       activeProfile: activeProfile[0] || null,
       artists,
+      albums,
     },
   });
 });
@@ -456,4 +494,91 @@ anatomySongsRoutes.put("/:id/artists/:artistId", async (c) => {
     );
 
   return c.json({ message: "Artist assignment removed" });
+});
+
+// POST /:id/albums - Assign album to song
+anatomySongsRoutes.post(
+  "/:id/albums",
+  zValidator("json", assignAlbumSchema),
+  async (c) => {
+    const songId = c.req.param("id");
+    const { albumId } = c.req.valid("json");
+    const db = getDb();
+
+    const song = await db
+      .select()
+      .from(anatomySongs)
+      .where(eq(anatomySongs.id, songId))
+      .limit(1);
+
+    if (song.length === 0) {
+      return c.json({ error: "Song not found" }, 404);
+    }
+
+    const album = await db
+      .select()
+      .from(anatomyAlbums)
+      .where(eq(anatomyAlbums.id, albumId))
+      .limit(1);
+
+    if (album.length === 0) {
+      return c.json({ error: "Album not found" }, 404);
+    }
+
+    const existing = await db
+      .select()
+      .from(anatomySongAlbums)
+      .where(
+        and(
+          eq(anatomySongAlbums.songId, songId),
+          eq(anatomySongAlbums.albumId, albumId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      return c.json({ error: "Album already assigned" }, 409);
+    }
+
+    const id = nanoid();
+    const assignment = await db
+      .insert(anatomySongAlbums)
+      .values({ id, songId, albumId })
+      .returning();
+
+    return c.json({ data: assignment[0] }, 201);
+  }
+);
+
+// PUT /:id/albums/:albumId - Remove album assignment
+anatomySongsRoutes.put("/:id/albums/:albumId", async (c) => {
+  const songId = c.req.param("id");
+  const albumId = c.req.param("albumId");
+  const db = getDb();
+
+  const existing = await db
+    .select()
+    .from(anatomySongAlbums)
+    .where(
+      and(
+        eq(anatomySongAlbums.songId, songId),
+        eq(anatomySongAlbums.albumId, albumId)
+      )
+    )
+    .limit(1);
+
+  if (existing.length === 0) {
+    return c.json({ error: "Song-album assignment not found" }, 404);
+  }
+
+  await db
+    .delete(anatomySongAlbums)
+    .where(
+      and(
+        eq(anatomySongAlbums.songId, songId),
+        eq(anatomySongAlbums.albumId, albumId)
+      )
+    );
+
+  return c.json({ message: "Album assignment removed" });
 });

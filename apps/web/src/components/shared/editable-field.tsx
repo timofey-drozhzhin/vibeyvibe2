@@ -7,6 +7,7 @@ import {
   Loader,
   Box,
 } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import { IconCheck, IconX, IconEdit } from "@tabler/icons-react";
 
 interface EditableFieldProps {
@@ -16,6 +17,8 @@ interface EditableFieldProps {
   emptyText?: string;
   renderDisplay?: (value: string) => React.ReactNode;
   validate?: (value: string) => string | null;
+  /** Field type. "date" renders a calendar date picker. Default is "text". */
+  type?: "text" | "date";
 }
 
 export const EditableField = ({
@@ -25,6 +28,7 @@ export const EditableField = ({
   emptyText = "Click to add",
   renderDisplay,
   validate,
+  type = "text",
 }: EditableFieldProps) => {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(value ?? "");
@@ -33,11 +37,11 @@ export const EditableField = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (editing && inputRef.current) {
+    if (editing && inputRef.current && type === "text") {
       inputRef.current.focus();
       inputRef.current.select();
     }
-  }, [editing]);
+  }, [editing, type]);
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -53,8 +57,9 @@ export const EditableField = ({
   };
 
   const handleSave = async () => {
+    const saveValue = editValue;
     if (validate) {
-      const err = validate(editValue);
+      const err = validate(saveValue);
       if (err) {
         setError(err);
         return;
@@ -62,7 +67,7 @@ export const EditableField = ({
     }
     setSaving(true);
     try {
-      await onSave(editValue);
+      await onSave(saveValue);
       setEditing(false);
       setError(null);
     } catch {
@@ -83,20 +88,38 @@ export const EditableField = ({
   if (editing) {
     return (
       <Group gap="xs" wrap="nowrap">
-        <TextInput
-          ref={inputRef}
-          size="xs"
-          value={editValue}
-          onChange={(e) => {
-            setEditValue(e.currentTarget.value);
-            setError(null);
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          error={error}
-          style={{ flex: 1 }}
-          disabled={saving}
-        />
+        {type === "date" ? (
+          <DateInput
+            size="xs"
+            value={editValue || null}
+            onChange={(v: string | null) => {
+              setEditValue(v ?? "");
+              setError(null);
+            }}
+            placeholder={placeholder || "Select date"}
+            error={error}
+            style={{ flex: 1 }}
+            disabled={saving}
+            clearable
+            valueFormat="YYYY-MM-DD"
+            popoverProps={{ withinPortal: true }}
+          />
+        ) : (
+          <TextInput
+            ref={inputRef}
+            size="xs"
+            value={editValue}
+            onChange={(e) => {
+              setEditValue(e.currentTarget.value);
+              setError(null);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            error={error}
+            style={{ flex: 1 }}
+            disabled={saving}
+          />
+        )}
         {saving ? (
           <Loader size={16} />
         ) : (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useList, useNavigation, type CrudFilter } from "@refinedev/core";
+import { useList, useNavigation, useCreate, type CrudFilter } from "@refinedev/core";
 import {
   Table,
   Group,
@@ -7,12 +7,13 @@ import {
   Title,
   Stack,
   Pagination,
-  ActionIcon,
-  Tooltip,
   Text,
   LoadingOverlay,
+  Modal,
+  TextInput,
 } from "@mantine/core";
-import { IconEdit, IconPlus } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 
@@ -22,7 +23,12 @@ export const SunoCollectionList = () => {
   const [archiveFilter, setArchiveFilter] = useState("active");
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const { show, edit, create } = useNavigation();
+  const { show } = useNavigation();
+  const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
+  const [newName, setNewName] = useState("");
+  const createMutation = useCreate();
+  const { mutateAsync: createRecord } = createMutation;
+  const creating = createMutation.mutation.isPending;
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -31,6 +37,12 @@ export const SunoCollectionList = () => {
       setSortField(field);
       setSortOrder("asc");
     }
+  };
+
+  const handleCreate = async () => {
+    const result = await createRecord({ resource: "suno/collections", values: { name: newName } });
+    closeCreate(); setNewName("");
+    show("suno/collections", (result as any).data.id);
   };
 
   const archivedValue =
@@ -70,9 +82,9 @@ export const SunoCollectionList = () => {
         <Title order={3}>Collections</Title>
         <Button
           leftSection={<IconPlus size={16} />}
-          onClick={() => create("suno/collections")}
+          onClick={openCreate}
         >
-          Create
+          New
         </Button>
       </Group>
 
@@ -97,13 +109,12 @@ export const SunoCollectionList = () => {
               <SortableHeader field="name" label="Name" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
               <Table.Th>Description</Table.Th>
               <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-              <Table.Th>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {collections.length === 0 && !listQuery.isPending && (
               <Table.Tr>
-                <Table.Td colSpan={4}>
+                <Table.Td colSpan={3}>
                   <Text c="dimmed" ta="center" py="md">
                     No collections found.
                   </Text>
@@ -129,18 +140,6 @@ export const SunoCollectionList = () => {
                       : "-"}
                   </Text>
                 </Table.Td>
-                <Table.Td>
-                  <Group gap="xs">
-                    <Tooltip label="Edit">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => edit("suno/collections", collection.id)}
-                      >
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -152,6 +151,16 @@ export const SunoCollectionList = () => {
           <Pagination value={page} onChange={setPage} total={pageCount} />
         </Group>
       )}
+
+      <Modal opened={createOpened} onClose={closeCreate} title="New Collection">
+        <Stack gap="md">
+          <TextInput label="Name" required value={newName} onChange={(e) => setNewName(e.currentTarget.value)} placeholder="Collection name" onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) handleCreate(); }} />
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={closeCreate}>Cancel</Button>
+            <Button onClick={handleCreate} loading={creating} disabled={!newName.trim()}>Create</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 };

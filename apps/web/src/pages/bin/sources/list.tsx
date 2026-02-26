@@ -1,19 +1,21 @@
 import { useState } from "react";
 import type { CrudFilter } from "@refinedev/core";
-import { useList, useNavigation } from "@refinedev/core";
+import { useList, useNavigation, useCreate } from "@refinedev/core";
 import {
   Table,
   Card,
   Group,
   Title,
   Text,
-  ActionIcon,
   Pagination,
   Button,
   Anchor,
+  Modal,
+  TextInput,
+  Stack,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import {
-  IconEdit,
   IconPlus,
   IconExternalLink,
 } from "@tabler/icons-react";
@@ -31,12 +33,17 @@ interface BinSource {
 }
 
 export const BinSourceList = () => {
-  const { show, edit, create } = useNavigation();
+  const { show } = useNavigation();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [archiveFilter, setArchiveFilter] = useState("active");
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
+  const [newName, setNewName] = useState("");
+  const createMutation = useCreate();
+  const { mutateAsync: createRecord } = createMutation;
+  const creating = createMutation.mutation.isPending;
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -45,6 +52,12 @@ export const BinSourceList = () => {
       setSortField(field);
       setSortOrder("asc");
     }
+  };
+
+  const handleCreate = async () => {
+    const result = await createRecord({ resource: "bin/sources", values: { name: newName } });
+    closeCreate(); setNewName("");
+    show("bin/sources", (result as any).data.id);
   };
 
   const filters: CrudFilter[] = [];
@@ -74,9 +87,9 @@ export const BinSourceList = () => {
         <Title order={3}>Bin Sources</Title>
         <Button
           leftSection={<IconPlus size={16} />}
-          onClick={() => create("bin/sources")}
+          onClick={openCreate}
         >
-          Add Source
+          New
         </Button>
       </Group>
 
@@ -101,13 +114,12 @@ export const BinSourceList = () => {
               <Table.Th>URL</Table.Th>
               <Table.Th>Status</Table.Th>
               <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-              <Table.Th style={{ width: 100 }}>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {listQuery.isPending ? (
               <Table.Tr>
-                <Table.Td colSpan={5}>
+                <Table.Td colSpan={4}>
                   <Text ta="center" c="dimmed" py="md">
                     Loading...
                   </Text>
@@ -115,7 +127,7 @@ export const BinSourceList = () => {
               </Table.Tr>
             ) : records.length === 0 ? (
               <Table.Tr>
-                <Table.Td colSpan={5}>
+                <Table.Td colSpan={4}>
                   <Text ta="center" c="dimmed" py="md">
                     No sources found
                   </Text>
@@ -157,16 +169,6 @@ export const BinSourceList = () => {
                         : "-"}
                     </Text>
                   </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => edit("bin/sources", source.id)}
-                      >
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
                 </Table.Tr>
               ))
             )}
@@ -179,6 +181,16 @@ export const BinSourceList = () => {
           </Group>
         )}
       </Card>
+
+      <Modal opened={createOpened} onClose={closeCreate} title="New Source">
+        <Stack gap="md">
+          <TextInput label="Name" required value={newName} onChange={(e) => setNewName(e.currentTarget.value)} placeholder="Source name" onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) handleCreate(); }} />
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={closeCreate}>Cancel</Button>
+            <Button onClick={handleCreate} loading={creating} disabled={!newName.trim()}>Create</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </>
   );
 };

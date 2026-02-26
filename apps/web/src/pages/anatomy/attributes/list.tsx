@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useList, useNavigation } from "@refinedev/core";
+import { useList, useNavigation, useCreate } from "@refinedev/core";
 import {
   Table,
   Group,
@@ -7,15 +7,16 @@ import {
   Title,
   Badge,
   Pagination,
-  ActionIcon,
-  Tooltip,
   Card,
   Button,
   Loader,
   Center,
   Select,
+  Modal,
+  TextInput,
 } from "@mantine/core";
-import { IconEdit, IconPlus } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
@@ -39,7 +40,28 @@ export const AnatomyAttributeList = () => {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const { show, edit, create } = useNavigation();
+  const { show } = useNavigation();
+  const { mutate: createRecord } = useCreate();
+
+  const [opened, { open, close }] = useDisclosure(false);
+  const [newName, setNewName] = useState("");
+
+  const canCreate = newName.trim() !== "";
+
+  const handleCreate = () => {
+    createRecord(
+      {
+        resource: "anatomy/attributes",
+        values: { name: newName },
+      },
+      {
+        onSuccess: () => {
+          setNewName("");
+          close();
+        },
+      },
+    );
+  };
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -83,9 +105,9 @@ export const AnatomyAttributeList = () => {
         <Title order={2}>Anatomy Attributes</Title>
         <Button
           leftSection={<IconPlus size={16} />}
-          onClick={() => create("anatomy/attributes")}
+          onClick={open}
         >
-          Add Attribute
+          New
         </Button>
       </Group>
 
@@ -145,7 +167,6 @@ export const AnatomyAttributeList = () => {
                 <Table.Th>Description</Table.Th>
                 <Table.Th>Status</Table.Th>
                 <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-                <Table.Th>Actions</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -178,18 +199,6 @@ export const AnatomyAttributeList = () => {
                         : "-"}
                     </Text>
                   </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <Tooltip label="Edit">
-                        <ActionIcon
-                          variant="subtle"
-                          onClick={() => edit("anatomy/attributes", attr.id)}
-                        >
-                          <IconEdit size={16} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </Group>
-                  </Table.Td>
                 </Table.Tr>
               ))}
             </Table.Tbody>
@@ -202,6 +211,20 @@ export const AnatomyAttributeList = () => {
           </Group>
         )}
       </Card>
+
+      <Modal opened={opened} onClose={close} title="New Attribute">
+        <TextInput
+          label="Name"
+          placeholder="Attribute name"
+          value={newName}
+          onChange={(e) => setNewName(e.currentTarget.value)}
+          mb="md"
+        />
+        <Group justify="flex-end">
+          <Button variant="default" onClick={close}>Cancel</Button>
+          <Button onClick={handleCreate} disabled={!canCreate}>Create</Button>
+        </Group>
+      </Modal>
     </>
   );
 };

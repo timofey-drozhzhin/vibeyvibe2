@@ -65,8 +65,22 @@ binSongsRoutes.get(
 
     const [data, totalResult] = await Promise.all([
       db
-        .select()
+        .select({
+          id: binSongs.id,
+          name: binSongs.name,
+          sourceId: binSongs.sourceId,
+          assetPath: binSongs.assetPath,
+          sourceUrl: binSongs.sourceUrl,
+          archived: binSongs.archived,
+          createdAt: binSongs.createdAt,
+          updatedAt: binSongs.updatedAt,
+          source: {
+            id: binSources.id,
+            name: binSources.name,
+          },
+        })
         .from(binSongs)
+        .leftJoin(binSources, eq(binSongs.sourceId, binSources.id))
         .where(where)
         .orderBy(orderByDir)
         .limit(pageSize)
@@ -77,8 +91,20 @@ binSongsRoutes.get(
         .where(where),
     ]);
 
+    const enrichedData = data.map((row) => ({
+      id: row.id,
+      name: row.name,
+      sourceId: row.sourceId,
+      assetPath: row.assetPath,
+      sourceUrl: row.sourceUrl,
+      archived: row.archived,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      source: row.source?.id ? { id: row.source.id, name: row.source.name } : null,
+    }));
+
     return c.json({
-      data,
+      data: enrichedData,
       total: totalResult[0].count,
       page,
       pageSize,

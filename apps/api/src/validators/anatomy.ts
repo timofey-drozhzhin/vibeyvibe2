@@ -78,6 +78,25 @@ export const assignArtistSchema = z.object({
   artistId: z.string().min(1),
 });
 
+export const createAnatomyAlbumSchema = z.object({
+  name: z.string().min(1),
+  ean: z.string().optional(),
+  imagePath: z.string().optional(),
+  releaseDate: z.string().optional(),
+  rating: z.number().int().min(0).max(5).optional(),
+  spotifyId: z.string().optional(),
+  appleMusicId: z.string().optional(),
+  youtubeId: z.string().optional(),
+});
+
+export const updateAnatomyAlbumSchema = createAnatomyAlbumSchema.partial().extend({
+  archived: z.boolean().optional(),
+});
+
+export const assignAlbumSchema = z.object({
+  albumId: z.string().min(1),
+});
+
 export const smartSearchSchema = z.object({
   q: z.string().min(1),
   page: z.coerce.number().int().positive().default(1),

@@ -86,8 +86,7 @@ function normalizeTrack(raw: any, fallback?: { imageUrl?: string; album?: string
     artists = raw.artist.split(/, | & /).map((n: string) => ({ name: n.trim() }));
   }
 
-  // Extract image URL.  `coverArt.sources` is the most reliable field on
-  // the raw getData response, but `images` also appears sometimes.
+  // Extract image URL from various possible locations in the raw data.
   let imageUrl = fallback?.imageUrl;
   if (raw.coverArt?.sources?.length) {
     imageUrl = raw.coverArt.sources.reduce((a: any, b: any) =>
@@ -96,6 +95,12 @@ function normalizeTrack(raw: any, fallback?: { imageUrl?: string; album?: string
   } else if (raw.images?.length) {
     imageUrl = raw.images.reduce((a: any, b: any) =>
       (a.width ?? 0) > (b.width ?? 0) ? a : b
+    ).url;
+  } else if (raw.visualIdentity?.image?.length) {
+    // Modern Spotify embeds store images under visualIdentity.image
+    // with maxWidth/maxHeight instead of width/height
+    imageUrl = raw.visualIdentity.image.reduce((a: any, b: any) =>
+      (a.maxWidth ?? 0) > (b.maxWidth ?? 0) ? a : b
     ).url;
   }
 
@@ -107,8 +112,14 @@ function normalizeTrack(raw: any, fallback?: { imageUrl?: string; album?: string
     fallback?.releaseDate ??
     undefined;
 
-  // Album name — only present on individual track getData responses
-  const albumName = raw.album?.name ?? fallback?.album ?? undefined;
+  // Album name — only present on individual track getData responses.
+  // Spotify embed pages may use `albumOfTrack` or `album` depending on version.
+  const albumName =
+    raw.albumOfTrack?.name ??
+    raw.album?.name ??
+    (typeof raw.album === "string" ? raw.album : undefined) ??
+    fallback?.album ??
+    undefined;
 
   return {
     name: raw.name ?? raw.title ?? "Unknown",
@@ -159,15 +170,59 @@ export async function fetchSpotifyData(
       : undefined;
     const containerTitle = details.preview?.title;
 
-    const tracks: SpotifyTrack[] = (details.tracks ?? []).map((t: any) =>
-      normalizeTrack(t, {
-        imageUrl: containerImage,
-        album: type === "album" ? containerTitle : undefined,
-        releaseDate: containerDate,
-      })
+    // First pass: normalize tracks from the container response
+    const initialTracks: SpotifyTrack[] = (details.tracks ?? []).map(
+      (t: any) =>
+        normalizeTrack(t, {
+          imageUrl: containerImage,
+          album: type === "album" ? containerTitle : undefined,
+          releaseDate: containerDate,
+        })
     );
 
-    return { type, tracks };
+    // Second pass: enrich tracks that are missing ISRC, album, or
+    // release date by fetching individual track data via getData.
+    // Process in batches of 5 to avoid overwhelming the endpoint.
+    const enriched: SpotifyTrack[] = [];
+    const BATCH_SIZE = 5;
+
+    for (let i = 0; i < initialTracks.length; i += BATCH_SIZE) {
+      const batch = initialTracks.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(async (track) => {
+          const needsEnrichment =
+            !track.isrc || !track.album || !track.releaseDate;
+          if (!needsEnrichment || !track.spotifyId) return track;
+
+          try {
+            const trackUrl = `https://open.spotify.com/track/${track.spotifyId}`;
+            const richData = await getData(trackUrl);
+            const rich = normalizeTrack(richData, {
+              imageUrl: track.imageUrl,
+            });
+            // Merge: prefer rich data, fall back to initial
+            return {
+              ...track,
+              isrc: rich.isrc || track.isrc,
+              album: rich.album || track.album,
+              releaseDate: rich.releaseDate || track.releaseDate,
+              imageUrl: rich.imageUrl || track.imageUrl,
+            };
+          } catch {
+            // If individual fetch fails, keep what we have
+            return track;
+          }
+        })
+      );
+
+      for (const r of results) {
+        enriched.push(
+          r.status === "fulfilled" ? r.value : batch[enriched.length % batch.length]
+        );
+      }
+    }
+
+    return { type, tracks: enriched };
   } catch (err: any) {
     // Re-throw with a friendlier message
     const message =

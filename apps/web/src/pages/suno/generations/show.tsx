@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { useShow, useNavigation } from "@refinedev/core";
 import {
-  Stack,
   Text,
   Table,
   Badge,
-  Loader,
-  Center,
   Group,
   ActionIcon,
   Tooltip,
@@ -15,7 +12,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconEye, IconUnlink } from "@tabler/icons-react";
 import { AssignModal } from "../../../components/shared/assign-modal.js";
-import { ShowPageHeader, SectionCard } from "../../../components/shared/show-page.js";
+import { EntityPage, SectionCard } from "../../../components/shared/entity-page.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -61,52 +58,49 @@ export const SunoGenerationShow = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <Center py="xl">
-        <Loader />
-      </Center>
-    );
-  }
-
-  if (!record) {
-    return (
-      <Text c="dimmed" ta="center" py="xl">
-        Generation not found.
-      </Text>
-    );
-  }
-
   return (
-    <Stack gap="md">
-      <ShowPageHeader
-        title="Generation Detail"
-        onBack={() => list("suno/generations")}
-      />
-
+    <EntityPage
+      title="Generation Detail"
+      onBack={() => list("suno/generations")}
+      isLoading={isLoading}
+      notFound={!isLoading && !record}
+      notFoundMessage="Generation not found."
+      modals={
+        record?.id ? (
+          <AssignModal
+            opened={promptModalOpened}
+            onClose={closePromptModal}
+            title="Assign Prompt"
+            resource="suno/prompts"
+            assignUrl={`/api/suno/generations/${record.id}/prompts`}
+            fieldName="promptId"
+            labelField="style"
+            onSuccess={() => query.refetch()}
+          />
+        ) : undefined
+      }
+    >
       <SectionCard title="Details">
-        <Stack gap="sm">
-          <div>
-            <Text size="sm" fw={500} c="dimmed">Suno ID</Text>
-            <Text ff="monospace">{record.sunoId || "-"}</Text>
-          </div>
-          <div>
-            <Text size="sm" fw={500} c="dimmed">Bin Song ID</Text>
-            <Text>{record.binSongId || "-"}</Text>
-          </div>
-          <div>
-            <Text size="sm" fw={500} c="dimmed">Created</Text>
-            <Text size="sm">
-              {record.createdAt ? new Date(record.createdAt).toLocaleString() : "-"}
-            </Text>
-          </div>
-          <div>
-            <Text size="sm" fw={500} c="dimmed">Updated</Text>
-            <Text size="sm">
-              {record.updatedAt ? new Date(record.updatedAt).toLocaleString() : "-"}
-            </Text>
-          </div>
-        </Stack>
+        <div>
+          <Text size="sm" fw={500} c="dimmed">Suno ID</Text>
+          <Text ff="monospace">{record?.sunoId || "-"}</Text>
+        </div>
+        <div>
+          <Text size="sm" fw={500} c="dimmed">Bin Song ID</Text>
+          <Text>{record?.binSongId || "-"}</Text>
+        </div>
+        <div>
+          <Text size="sm" fw={500} c="dimmed">Created</Text>
+          <Text size="sm">
+            {record?.createdAt ? new Date(record.createdAt).toLocaleString() : "-"}
+          </Text>
+        </div>
+        <div>
+          <Text size="sm" fw={500} c="dimmed">Updated</Text>
+          <Text size="sm">
+            {record?.updatedAt ? new Date(record.updatedAt).toLocaleString() : "-"}
+          </Text>
+        </div>
       </SectionCard>
 
       <SectionCard
@@ -180,19 +174,6 @@ export const SunoGenerationShow = () => {
           </Table.Tbody>
         </Table>
       </SectionCard>
-
-      {record.id && (
-        <AssignModal
-          opened={promptModalOpened}
-          onClose={closePromptModal}
-          title="Assign Prompt"
-          resource="suno/prompts"
-          assignUrl={`/api/suno/generations/${record.id}/prompts`}
-          fieldName="promptId"
-          labelField="style"
-          onSuccess={() => query.refetch()}
-        />
-      )}
-    </Stack>
+    </EntityPage>
   );
 };

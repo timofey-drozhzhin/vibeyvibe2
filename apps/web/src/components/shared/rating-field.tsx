@@ -51,23 +51,18 @@ export const RatingField = ({
     }
   }
 
-  return (
-    <Group gap={2}>
-      {stars}
-      {value > 0 && (
-        <Text size="sm" c="dimmed" ml="xs">
-          {value}/5
-        </Text>
-      )}
-    </Group>
-  );
+  return <Group gap={2}>{stars}</Group>;
 };
 
 /**
- * Simple read-only rating display as text.
+ * Simple read-only rating display as star icons.
  */
-export const RatingDisplay = ({ value }: { value: number }) => (
-  <Text size="sm" fw={500}>
-    {value > 0 ? `${value}/5` : "--"}
-  </Text>
-);
+export const RatingDisplay = ({ value, size = 14 }: { value: number; size?: number }) => {
+  if (value === 0) return null;
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    const Icon = value >= i ? IconStarFilled : IconStar;
+    stars.push(<Icon key={i} size={size} color="var(--mantine-color-yellow-5)" />);
+  }
+  return <Group gap={1}>{stars}</Group>;
+};

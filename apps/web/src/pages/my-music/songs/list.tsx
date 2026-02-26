@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useList, useNavigation } from "@refinedev/core";
+import { useList, useNavigation, useCreate } from "@refinedev/core";
 import {
   Table,
   Group,
@@ -7,13 +7,14 @@ import {
   Title,
   Stack,
   Pagination,
-  ActionIcon,
-  Tooltip,
   Text,
   LoadingOverlay,
   Avatar,
+  Modal,
+  TextInput,
 } from "@mantine/core";
-import { IconEdit, IconPlus } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
@@ -26,7 +27,10 @@ export const SongList = () => {
   const [archiveFilter, setArchiveFilter] = useState("active");
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const { show, edit, create } = useNavigation();
+  const { show } = useNavigation();
+  const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
+  const [newName, setNewName] = useState("");
+  const { mutate: createRecord, mutation: createMutation } = useCreate();
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -35,6 +39,18 @@ export const SongList = () => {
       setSortField(field);
       setSortOrder("asc");
     }
+  };
+
+  const handleCreate = () => {
+    createRecord(
+      { resource: "my-music/songs", values: { name: newName } },
+      {
+        onSuccess: (data) => {
+          closeCreate(); setNewName("");
+          show("my-music/songs", data.data.id!);
+        },
+      },
+    );
   };
 
   const archivedValue =
@@ -64,9 +80,9 @@ export const SongList = () => {
         <Title order={3}>Songs</Title>
         <Button
           leftSection={<IconPlus size={16} />}
-          onClick={() => create("my-music/songs")}
+          onClick={openCreate}
         >
-          Create
+          New
         </Button>
       </Group>
 
@@ -154,17 +170,7 @@ export const SongList = () => {
                   </Text>
                 </Table.Td>
                 <Table.Td>
-                  <Group gap="xs">
-                    <PlatformLinks spotifyId={song.spotifyId} appleMusicId={song.appleMusicId} youtubeId={song.youtubeId} />
-                    <Tooltip label="Edit">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => edit("my-music/songs", song.id)}
-                      >
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
+                  <PlatformLinks spotifyId={song.spotifyId} appleMusicId={song.appleMusicId} youtubeId={song.youtubeId} />
                 </Table.Td>
               </Table.Tr>
             ))}
@@ -177,6 +183,16 @@ export const SongList = () => {
           <Pagination value={page} onChange={setPage} total={pageCount} />
         </Group>
       )}
+
+      <Modal opened={createOpened} onClose={closeCreate} title="New Song">
+        <Stack gap="md">
+          <TextInput label="Name" required value={newName} onChange={(e) => setNewName(e.currentTarget.value)} placeholder="Song name" onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) handleCreate(); }} />
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={closeCreate}>Cancel</Button>
+            <Button onClick={handleCreate} loading={createMutation.isPending} disabled={!newName.trim()}>Create</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 };

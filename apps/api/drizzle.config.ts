@@ -1,7 +1,10 @@
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
 
-config();
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: resolve(__dirname, "../../.env") });
 
 const url = process.env.DATABASE_URL || "file:../../tmp/local.db";
 const isLocal = url.startsWith("file:");

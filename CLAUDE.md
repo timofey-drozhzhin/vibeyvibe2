@@ -60,13 +60,13 @@ This is a personal tool. There is no registration flow after initial setup. Only
 ### Database Table Prefixes
 All database tables are prefixed by their section:
 - `my_` -- My Music (my_songs, my_artists, my_albums, my_song_artists, my_song_albums)
-- `anatomy_` -- Anatomy (anatomy_songs, anatomy_artists, anatomy_song_artists, anatomy_attributes, anatomy_profiles)
+- `anatomy_` -- Anatomy (anatomy_songs, anatomy_artists, anatomy_albums, anatomy_song_artists, anatomy_song_albums, anatomy_attributes, anatomy_profiles)
 - `bin_` -- Bin (bin_sources, bin_songs)
 - `suno_` -- Suno Studio (suno_prompts, suno_collections, suno_collection_prompts, suno_generations, suno_generation_prompts)
 - Auth tables (user, session, account, verification) are managed by Better Auth and have no prefix.
 
 ### Temporary Files
-All temporary files go in `./tmp/` (gitignored). Local dev storage lives at `./tmp/storage/`. MCP Playwright outputs (screenshots, PDFs) go in `./tmp/mcp-playwright/screenshots`.
+All temporary files and dev-environment specific go in `./tmp/` (gitignored). Local dev storage lives at `./tmp/storage/`, local dev database lives at `./tmp/local.db`. MCP Playwright outputs (screenshots, PDFs) go in `./tmp/mcp-playwright/screenshots`.
 
 ### Documentation
 Always document structural changes in CLAUDE.md files. Keep these files up to date when adding new routes, schemas, pages, or changing conventions.
@@ -119,6 +119,8 @@ pnpm typecheck        # TypeScript type checking
 ```
 
 ## Environment Setup
+
+**There is exactly one `.env` file for the entire project, located at the workspace root (`/workspace/.env`).** Never create `.env` files inside `apps/api/`, `apps/web/`, or any subdirectory. Both apps load environment variables from the root `.env` file. All paths in `.env` (like `DATABASE_URL`, `STORAGE_LOCAL_PATH`) are relative to `apps/api/` since that's where the API process runs.
 
 1. Copy `.env.example` to `.env` at the workspace root:
    ```bash
@@ -246,6 +248,8 @@ Songs can be assigned to artists and albums through junction tables:
 ### Anatomy
 - `POST /api/anatomy/songs/:id/artists` -- Assign artist (`{ artistId }`)
 - `PUT /api/anatomy/songs/:id/artists/:artistId` -- Remove artist assignment
+- `POST /api/anatomy/songs/:id/albums` -- Assign album (`{ albumId }`)
+- `PUT /api/anatomy/songs/:id/albums/:albumId` -- Remove album assignment
 
 ### Suno Studio
 - `POST /api/suno/collections/:id/prompts` -- Assign prompt (`{ promptId }`)
@@ -253,24 +257,20 @@ Songs can be assigned to artists and albums through junction tables:
 
 ## Show Page Standards
 
-All show pages use shared layout components that enforce consistent styling:
+All show pages use the `EntityPage` component (`components/shared/entity-page.tsx`) for consistent layout:
 
-### Layout Components
-- **`ShowPageHeader`**: Page title (`Title order={2}`), back button (`variant="subtle"`), edit button (`variant="light"`), badge slot for `ArchiveBadge`
-- **`SectionCard`**: Card section with title (`Title order={4}`) and optional action button (`size="xs" variant="light"` with `IconPlus size={14}`)
+### Layout
+- **`EntityPage`** wraps the entire show page with editable title header, archive badge, optional right panel, archive button in footer, and loading/not-found states.
+- **`SectionCard`** (re-exported from `entity-page.tsx`) provides card sections with `Title order={4}` header and optional action button (`size="xs" variant="light"` with `IconPlus size={14}`).
+- **`ImageUpload`** replaces the old `ImagePreview` + `FileUpload` combination. Click-to-upload with hover overlay.
 
 ### Inline Editing
-- Use `EditableField` for simple text metadata fields (ISRC, dates, platform IDs, URLs). Click-to-edit with hover edit icon.
+- Use `EditableField` for simple text metadata fields (ISRC, dates, URLs). Click-to-edit with hover edit icon. Supports `type='date'` for calendar date picker.
 - Use `RatingField` with `onChange` for interactive inline ratings (no `readOnly` prop on show pages).
-- Platform ID fields always render even when null — show "Click to add" placeholder text.
-- Complex fields (file uploads, textareas, select dropdowns) go in the edit modal instead.
+- Use `MediaEmbeds` with `onSave` prop for platform ID editing -- renders editable placeholders and edit links for Spotify/Apple Music/YouTube IDs. No more separate `EditableField` rows for platform IDs.
 
-### Edit Modal Pattern
-- Edit modals live inside the show page component (not on a separate route).
-- Modal contains identity fields: Name, Image/Audio upload, Archive toggle.
-- `?edit=true` URL query param auto-opens the modal (for redirect compatibility from old edit routes).
-- Edit route files (`edit.tsx`) are redirect wrappers that navigate to `../show/:id?edit=true`.
-- Exception: `anatomy/attributes/edit.tsx` remains a full edit page (attributes have no show page).
+### Create Flow
+- There are no separate `create.tsx` or `edit.tsx` page files. List pages include create modals for adding new records inline.
 
 ## Shared UI Components
 
@@ -278,19 +278,21 @@ Located in `apps/web/src/components/shared/`:
 
 | Component | File | Description |
 |-----------|------|-------------|
-| `FileUpload` | `file-upload.tsx` | File upload widget that POSTs to `/api/upload` and returns the storage path. Supports accept filter and directory parameter. |
+| `FileUpload` | `file-upload.tsx` | File upload widget that POSTs to `/api/upload` and returns the storage path. No longer shows 'Uploaded:' text display. |
 | `ImagePreview` | `image-preview.tsx` | Displays an image from storage path, or a placeholder icon when no path is set. Configurable size. |
 | `AudioPlayer` | `audio-player.tsx` | HTML5 audio player that plays files from storage. Shows "no audio" placeholder when path is null. |
 | `AssignModal` | `assign-modal.tsx` | Modal with searchable dropdown for assigning relationships (artist to song, prompt to collection, etc.). |
 | `SortableHeader` | `sortable-header.tsx` | Clickable table header cell with sort direction arrow indicator. |
 | `ListToolbar` | `list-toolbar.tsx` | Shared toolbar with search input and archive status segmented control (Active/All/Archived). |
-| `RatingField` | `rating-field.tsx` | Interactive star rating (0-5 whole stars, 0=unrated shows "--"). Click same star to reset. Also exports `RatingDisplay`. |
+| `RatingField` | `rating-field.tsx` | Interactive star rating (0-5 whole stars, 0=unrated). Click same star to reset. Also exports `RatingDisplay`. |
 | `ArchiveButton` | `archive-toggle.tsx` | Red "Archive" / green "Restore" button with confirmation Modal. Also exports `ArchiveBadge` (green "Active" / red "Archived" badge). |
 | `PlatformLinks` | `platform-links.tsx` | Spotify/Apple Music/YouTube icon buttons that open external URLs. Used in table Actions columns. |
-| `MediaEmbeds` | `media-embeds.tsx` | Spotify (300x90), Apple Music (300x140), YouTube (300x169) iframe embeds in a 300px Stack. Used on song show pages. |
-| `EditableField` | `editable-field.tsx` | Click-to-edit inline field with hover edit icon. Supports custom renderDisplay, validation, and async save. |
-| `ShowPageHeader` | `show-page.tsx` | Show page header with back button, Title order={2}, edit button, and badge slot. Enforces consistent styling. |
-| `SectionCard` | `show-page.tsx` | Card section with Title order={4} header and optional action button (size="xs" variant="light"). |
+| `MediaEmbeds` | `media-embeds.tsx` | Spotify, Apple Music, YouTube iframe embeds. Supports `type` prop ('track'\|'album') for correct embed URLs. With `onSave` prop, shows editable platform ID placeholders and edit links. |
+| `EditableField` | `editable-field.tsx` | Click-to-edit inline field with hover edit icon. Supports custom renderDisplay, validation, and async save. Supports `type='date'` for calendar date picker via @mantine/dates. |
+| `EntityPage` | `entity-page.tsx` | Global show page layout with editable title header, archive badge, optional right panel, archive button footer, loading/not-found states. |
+| `ImageUpload` | `image-upload.tsx` | Click-to-upload image with preview. Hover overlay shows upload icon. Replaces ImagePreview+FileUpload combo on show pages. |
+| `ShowPageHeader` | `show-page.tsx` | Deprecated -- use `EntityPage` instead. Show page header with back button, title, edit button, and badge slot. |
+| `SectionCard` | `entity-page.tsx` | Card section with Title order={4} header and optional action button (size="xs" variant="light"). Re-exported from `entity-page.tsx`. |
 
 ### Anatomy Components
 

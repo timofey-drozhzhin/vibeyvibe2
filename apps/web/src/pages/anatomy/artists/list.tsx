@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useList, useNavigation } from "@refinedev/core";
+import { useList, useNavigation, useCreate } from "@refinedev/core";
 import {
   Table,
   Group,
@@ -7,14 +7,14 @@ import {
   Title,
   Button,
   Pagination,
-  ActionIcon,
-  Tooltip,
   Card,
   Loader,
   Center,
-
+  Modal,
+  TextInput,
 } from "@mantine/core";
-import { IconEdit, IconPlus } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { IconPlus } from "@tabler/icons-react";
 import { ListToolbar } from "../../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../../components/shared/sortable-header.js";
 import { RatingDisplay } from "../../../components/shared/rating-field.js";
@@ -37,7 +37,31 @@ export const AnatomyArtistList = () => {
   const [archiveFilter, setArchiveFilter] = useState("active");
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const { show, edit, create } = useNavigation();
+  const { show } = useNavigation();
+  const { mutate: createRecord } = useCreate();
+
+  const [opened, { open, close }] = useDisclosure(false);
+  const [newName, setNewName] = useState("");
+  const [newIsni, setNewIsni] = useState("");
+
+  const isniValid = /^\d{15}[\dX]$/.test(newIsni);
+  const canCreate = newName.trim() !== "" && isniValid;
+
+  const handleCreate = () => {
+    createRecord(
+      {
+        resource: "anatomy/artists",
+        values: { name: newName, isni: newIsni },
+      },
+      {
+        onSuccess: () => {
+          setNewName("");
+          setNewIsni("");
+          close();
+        },
+      },
+    );
+  };
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -73,9 +97,9 @@ export const AnatomyArtistList = () => {
         <Title order={2}>Anatomy Artists</Title>
         <Button
           leftSection={<IconPlus size={16} />}
-          onClick={() => create("anatomy/artists")}
+          onClick={open}
         >
-          Create
+          New
         </Button>
       </Group>
 
@@ -110,7 +134,6 @@ export const AnatomyArtistList = () => {
                 <SortableHeader field="rating" label="Rating" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
                 <Table.Th>Status</Table.Th>
                 <SortableHeader field="createdAt" label="Added" currentSort={sortField} currentOrder={sortOrder} onSort={handleSort} />
-                <Table.Th>Actions</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -135,18 +158,6 @@ export const AnatomyArtistList = () => {
                         : "-"}
                     </Text>
                   </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <Tooltip label="Edit">
-                        <ActionIcon
-                          variant="subtle"
-                          onClick={() => edit("anatomy/artists", artist.id)}
-                        >
-                          <IconEdit size={16} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </Group>
-                  </Table.Td>
                 </Table.Tr>
               ))}
             </Table.Tbody>
@@ -159,6 +170,28 @@ export const AnatomyArtistList = () => {
           </Group>
         )}
       </Card>
+
+      <Modal opened={opened} onClose={close} title="New Artist">
+        <TextInput
+          label="Name"
+          placeholder="Artist name"
+          value={newName}
+          onChange={(e) => setNewName(e.currentTarget.value)}
+          mb="sm"
+        />
+        <TextInput
+          label="ISNI"
+          placeholder="e.g. 0000000121234567"
+          value={newIsni}
+          onChange={(e) => setNewIsni(e.currentTarget.value)}
+          error={newIsni && !isniValid ? "Invalid ISNI format" : undefined}
+          mb="md"
+        />
+        <Group justify="flex-end">
+          <Button variant="default" onClick={close}>Cancel</Button>
+          <Button onClick={handleCreate} disabled={!canCreate}>Create</Button>
+        </Group>
+      </Modal>
     </>
   );
 };

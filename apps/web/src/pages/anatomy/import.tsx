@@ -408,7 +408,6 @@ export const AnatomyImport = () => {
                   <Table.Th>Artists</Table.Th>
                   <Table.Th>Album</Table.Th>
                   <Table.Th>Release Date</Table.Th>
-                  <Table.Th>ISRC</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -445,11 +444,6 @@ export const AnatomyImport = () => {
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm">{track.releaseDate ?? "-"}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="xs" ff="monospace">
-                        {track.isrc ?? "-"}
-                      </Text>
                     </Table.Td>
                   </Table.Tr>
                 ))}
