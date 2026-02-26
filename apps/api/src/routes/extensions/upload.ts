@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { createStorageClient } from "../../services/storage/index.js";
+import { processImage } from "../../services/image/index.js";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -7,12 +8,6 @@ const ALLOWED_MIME_PREFIXES = ["image/", "audio/"];
 
 function isAllowedMimeType(mimeType: string): boolean {
   return ALLOWED_MIME_PREFIXES.some((prefix) => mimeType.startsWith(prefix));
-}
-
-function getExtension(filename: string): string {
-  const lastDot = filename.lastIndexOf(".");
-  if (lastDot === -1) return "";
-  return filename.slice(lastDot);
 }
 
 const VALID_DIRECTORIES = ["artists", "albums", "songs", "bin"];
@@ -51,15 +46,24 @@ uploadRoutes.post("/", async (c) => {
       ? directoryRaw
       : undefined;
 
-  // Generate unique filename using timestamp + random
-  const ext = getExtension(file.name);
+  const isImage = file.type.startsWith("image/");
+  let fileData = await file.arrayBuffer();
+  let contentType = file.type;
+  let ext = isImage ? ".jpg" : file.name.slice(file.name.lastIndexOf("."));
+
+  // Process images: downscale to 600x600 square JPEG
+  if (isImage) {
+    fileData = await processImage(fileData);
+    contentType = "image/jpeg";
+  }
+
+  // Generate unique filename
   const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
   const storagePath = directory ? `${directory}/${uniqueName}` : uniqueName;
 
   // Upload to storage
   const storage = createStorageClient();
-  const arrayBuffer = await file.arrayBuffer();
-  await storage.upload(storagePath, arrayBuffer, file.type);
+  await storage.upload(storagePath, fileData, contentType);
 
   const url = storage.getPublicUrl(storagePath);
 

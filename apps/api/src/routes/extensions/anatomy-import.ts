@@ -16,6 +16,7 @@ import {
   detectSpotifyType,
 } from "../../services/spotify/index.js";
 import { createStorageClient } from "../../services/storage/index.js";
+import { processImage } from "../../services/image/index.js";
 
 const anatomyImport = new Hono();
 
@@ -42,15 +43,13 @@ async function downloadAndStoreImage(
     const response = await fetch(imageUrl);
     if (!response.ok) return null;
 
-    const buffer = await response.arrayBuffer();
-    const contentType = response.headers.get("content-type") || "image/jpeg";
-    const ext = contentType.includes("png") ? ".png" : ".jpg";
-    // Generate a simple unique name using timestamp + random
+    const rawBuffer = await response.arrayBuffer();
+    const processedBuffer = await processImage(rawBuffer);
     const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    const storagePath = `${directory}/${uniqueName}${ext}`;
+    const storagePath = `${directory}/${uniqueName}.jpg`;
 
     const storage = createStorageClient();
-    await storage.upload(storagePath, buffer, contentType);
+    await storage.upload(storagePath, processedBuffer, "image/jpeg");
 
     cache.set(cacheKey, storagePath);
     return storagePath;
