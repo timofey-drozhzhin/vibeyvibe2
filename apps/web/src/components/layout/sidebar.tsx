@@ -17,81 +17,64 @@ import {
 } from "@mantine/core";
 import {
   IconMusic,
-  IconMicrophone2,
-  IconDisc,
-  IconMusicBolt,
   IconDna,
-  IconAdjustments,
   IconTrash,
-  IconDatabase,
   IconBrain,
-  IconMessageChatbot,
-  IconFolder,
-  IconSparkles,
   IconChevronRight,
   IconLayoutDashboard,
   IconLogout,
-  IconFileImport,
 } from "@tabler/icons-react";
 
-interface SectionItem {
+import {
+  sections as registrySections,
+  entityRegistry,
+  getRoutePath,
+  standalonePages,
+} from "../../config/entity-registry.js";
+import type { SectionContext } from "../../config/entity-registry.js";
+
+// Map section contexts to their header icons
+const sectionIcons: Record<SectionContext, React.ElementType> = {
+  "my-music": IconMusic,
+  "anatomy": IconDna,
+  "bin": IconTrash,
+  "suno": IconBrain,
+};
+
+interface SidebarItem {
   label: string;
-  icon: React.ElementType;
   to: string;
 }
 
-interface Section {
+interface SidebarSection {
   label: string;
   icon: React.ElementType;
   color: string;
-  items: SectionItem[];
+  items: SidebarItem[];
 }
 
-const sections: Section[] = [
-  {
-    label: "My Music",
-    icon: IconMusic,
-    color: "violet",
-    items: [
-      { label: "Artists", icon: IconMicrophone2, to: "/my-music/artists" },
-      { label: "Albums", icon: IconDisc, to: "/my-music/albums" },
-      { label: "Songs", icon: IconMusicBolt, to: "/my-music/songs" },
-    ],
-  },
-  {
-    label: "Anatomy",
-    icon: IconDna,
-    color: "teal",
-    items: [
-      { label: "Songs", icon: IconMusicBolt, to: "/anatomy/songs" },
-      { label: "Artists", icon: IconMicrophone2, to: "/anatomy/artists" },
-      { label: "Albums", icon: IconDisc, to: "/anatomy/albums" },
-      { label: "Attributes", icon: IconAdjustments, to: "/anatomy/attributes" },
-      { label: "Import", icon: IconFileImport, to: "/anatomy/import" },
-    ],
-  },
-  {
-    label: "Bin",
-    icon: IconTrash,
-    color: "orange",
-    items: [
-      { label: "Songs", icon: IconMusicBolt, to: "/bin/songs" },
-      { label: "Sources", icon: IconDatabase, to: "/bin/sources" },
-    ],
-  },
-  {
-    label: "Suno Studio",
-    icon: IconBrain,
-    color: "pink",
-    items: [
-      { label: "Prompts", icon: IconMessageChatbot, to: "/suno/prompts" },
-      { label: "Collections", icon: IconFolder, to: "/suno/collections" },
-      { label: "Generations", icon: IconSparkles, to: "/suno/generations" },
-    ],
-  },
-];
+// Build sidebar sections from the entity registry
+const sidebarSections: SidebarSection[] = registrySections.map((section) => ({
+  label: section.label,
+  icon: sectionIcons[section.context],
+  color: section.color,
+  items: [
+    ...entityRegistry
+      .filter((e) => e.context === section.context)
+      .map((e) => ({
+        label: e.pluralName,
+        to: getRoutePath(e),
+      })),
+    ...standalonePages
+      .filter((p) => p.context === section.context)
+      .map((p) => ({
+        label: p.label,
+        to: p.path,
+      })),
+  ],
+}));
 
-const SectionGroup = ({ section }: { section: Section }) => {
+const SectionGroup = ({ section }: { section: SidebarSection }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isActive = section.items.some((item) =>
@@ -133,7 +116,6 @@ const SectionGroup = ({ section }: { section: Section }) => {
             <NavLink
               key={item.to}
               label={item.label}
-              leftSection={<item.icon size={16} />}
               active={location.pathname.startsWith(item.to)}
               onClick={() => navigate(item.to)}
               variant="light"
@@ -192,7 +174,7 @@ export const Sider = () => {
             variant="light"
           />
 
-          {sections.map((section) => (
+          {sidebarSections.map((section) => (
             <SectionGroup key={section.label} section={section} />
           ))}
         </Stack>

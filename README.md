@@ -35,6 +35,13 @@ A personal AI music management system for cataloging music collections, analyzin
 
 The API serves all data through the `/api` prefix. During development, the Vite dev server proxies `/api` requests to the API backend.
 
+The system uses a **registry-driven architecture**:
+- A unified Drizzle schema defines all tables in one file with shared base columns
+- An API route factory generates standard CRUD endpoints from entity configurations in a centralized registry
+- A frontend entity registry drives all UI generation (routes, sidebar navigation, pages, forms, list columns)
+- Two generic page components (list + show) handle all 14 entity types
+- Extensions (Spotify import, ProfileEditor) are loaded for specific entities via the registry
+
 ## Tech Stack
 
 | Layer | Technology | Version |
@@ -88,7 +95,7 @@ With `DEV_AUTH_BYPASS=true` set in `.env`, authentication is bypassed during dev
 
 ## Environment Variables
 
-All env variables are validated on startup via Zod (`apps/api/src/env.ts`). No defaults — all values must be set in `.env`. See `.env.dev-example` and `.env.prod-example` for templates.
+All env variables are validated on startup via Zod (`apps/api/src/env.ts`). No defaults -- all values must be set in `.env`. See `.env.dev-example` and `.env.prod-example` for templates.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -117,23 +124,56 @@ All env variables are validated on startup via Zod (`apps/api/src/env.ts`). No d
 | Production | libSQL (Turso/Bunny) | `DATABASE_URL` + `DATABASE_AUTH_TOKEN` |
 
 - ORM: **Drizzle ORM** with the libSQL driver
-- All tables use `text` primary keys with nanoid-generated IDs
-- All tables include `createdAt` and `updatedAt` timestamp columns
+- All tables use **integer auto-increment** primary keys
+- All column names use **snake_case** (e.g., `image_path`, `release_date`, `spotify_uid`)
+- Foreign keys use `_id` suffix (e.g., `song_id`, `artist_id`)
+- External platform identifiers use `_uid` suffix (e.g., `spotify_uid`, `apple_music_uid`, `youtube_uid`)
+- Timestamps are `created_at` and `updated_at` (snake_case text columns with SQL `CURRENT_TIMESTAMP` defaults)
 - All domain tables include an `archived` boolean flag (records are never deleted)
+- Rating fields use a **0-1 real** scale (0 = unrated, values between 0 and 1 represent the rating)
 
-### Table Prefixes
+### Shared Base Columns
 
-| Prefix | Section | Tables |
-|--------|---------|--------|
-| `my_` | My Music | `my_songs`, `my_artists`, `my_albums`, `my_song_artists`, `my_song_albums` |
-| `anatomy_` | Anatomy | `anatomy_songs`, `anatomy_artists`, `anatomy_albums`, `anatomy_song_artists`, `anatomy_song_albums`, `anatomy_attributes`, `anatomy_profiles` |
-| `bin_` | Bin | `bin_sources`, `bin_songs` |
-| `suno_` | Suno Studio | `suno_prompts`, `suno_collections`, `suno_collection_prompts`, `suno_generations`, `suno_generation_prompts` |
-| (none) | Auth | `user`, `session`, `account`, `verification` (managed by Better Auth) |
+A `baseEntityColumns` object provides shared columns to all entity tables:
+
+```typescript
+const baseEntityColumns = {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  context: text("context").notNull(),
+  archived: integer("archived", { mode: "boolean" }).default(false),
+  created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+};
+```
+
+### Table Structure
+
+Tables are unified. Shared entity tables use a `context` column to differentiate sections.
+
+| Table | Context Values | Description |
+|-------|---------------|-------------|
+| `songs` | my_music, anatomy | Merged songs table with context column |
+| `artists` | my_music, anatomy | Merged artists table |
+| `albums` | my_music, anatomy | Merged albums table |
+| `artist_songs` | -- | Pivot: artist<>song (composite PK) |
+| `album_songs` | -- | Pivot: album<>song (composite PK) |
+| `song_profiles` | anatomy | Anatomy profiles with JSON value column |
+| `song_attributes` | anatomy | Analysis attributes by category |
+| `bin_sources` | bin | Source playlists/channels |
+| `bin_songs` | bin | Bin song entries |
+| `suno_prompt_collections` | suno | Prompt collection groups |
+| `suno_prompts` | suno | AI generation prompts |
+| `suno_collection_prompts` | -- | Pivot: collection<>prompt (composite PK) |
+| `suno_song_playlists` | suno | Generated song playlists |
+| `suno_songs` | suno | Generated songs from Suno |
+| Auth tables | -- | user, session, account, verification (Better Auth) |
+
+All domain tables are defined in a single unified file: `apps/api/src/db/schema.ts`.
 
 ### Migration Workflow
 
-1. Edit schema files in `apps/api/src/db/schema/`
+1. Edit schema in `apps/api/src/db/schema.ts` (or `schema/auth.ts` for auth tables)
 2. Push locally: `pnpm db:push` (development only, applies directly to local SQLite)
 3. Generate migration: `pnpm db:generate` (creates SQL migration files)
 4. Commit the schema changes and migration files
@@ -162,7 +202,7 @@ The upload endpoint (`POST /api/upload`) accepts multipart form data with:
 ## Application Sections
 
 ### My Music
-Personal music library. Catalog songs, artists, and albums with industry identifiers (ISRC, ISNI, EAN), ratings (0-5), cover art, and links to Spotify, Apple Music, and YouTube. Songs can be assigned to artists and albums through junction tables.
+Personal music library. Catalog songs, artists, and albums with industry identifiers (ISRC, ISNI, EAN), ratings (0-1 real scale), cover art, and links to Spotify, Apple Music, and YouTube. Songs can be assigned to artists and albums through junction tables.
 
 ### Anatomy
 Song analysis workspace. Study reference songs, artists, and albums through structured attributes (tempo, mood, instrumentation, etc.) organized by category. Build anatomy profiles that map attribute values to songs. Profiles store a JSON object keyed by attribute name. Supports smart search across ISRC codes, ISNI identifiers, and names. Includes Spotify import to extract song metadata from track, album, or playlist URLs.
@@ -171,7 +211,99 @@ Song analysis workspace. Study reference songs, artists, and albums through stru
 Collection point for song discoveries. Track where songs come from via sources (playlists, channels, recommendations) and store raw audio assets. Each bin song can link to a source and hold an uploaded audio file.
 
 ### Suno Studio
-AI music generation workflow. Craft text prompts with lyrics, style descriptions, and voice gender. Organize prompts into collections. Track generation results from Suno, linking back to the prompts that produced them and optionally to bin songs for output storage. Prompts can reference anatomy profiles for style guidance.
+AI music generation workflow. Craft text prompts with lyrics and style descriptions. Organize prompts into collections via a many-to-many pivot table. Track generation results from Suno, linking songs back to the prompts that produced them and optionally to bin songs for output storage. Prompts can reference anatomy profiles for style guidance.
+
+## Project Structure
+
+```
+/
+├── apps/
+│   ├── api/                    # Hono backend API
+│   │   ├── src/
+│   │   │   ├── index.ts        # Dev entry point (Node.js server, port 3001)
+│   │   │   ├── handler.ts      # Production entry point (Bunny Edge Scripting)
+│   │   │   ├── app.ts          # Hono app: middleware, auth, route mounting
+│   │   │   ├── env.ts          # Zod-validated environment variables
+│   │   │   ├── auth/           # Better Auth configuration
+│   │   │   ├── db/
+│   │   │   │   ├── schema.ts   # Unified Drizzle schema (all 14 domain tables)
+│   │   │   │   ├── schema/
+│   │   │   │   │   ├── index.ts    # Re-exports schema.ts + auth.ts
+│   │   │   │   │   └── auth.ts     # Better Auth tables
+│   │   │   │   ├── migrations/ # Generated SQL migrations
+│   │   │   │   ├── seed.ts     # Database seeder
+│   │   │   │   └── seed-attributes.ts # Song attributes seeder (60+ categorized attributes)
+│   │   │   ├── middleware/      # Auth, error, and rate limiting middleware
+│   │   │   ├── routes/
+│   │   │   │   ├── index.ts    # Assembles factory + extension routes under /api
+│   │   │   │   ├── registry.ts # 14 entity-context configurations (tables, schemas, enrichers)
+│   │   │   │   ├── factory/
+│   │   │   │   │   ├── types.ts          # EntityRouteConfig types
+│   │   │   │   │   └── create-routes.ts  # Generic CRUD route factory
+│   │   │   │   └── extensions/
+│   │   │   │       ├── anatomy-import.ts # Spotify import endpoints
+│   │   │   │       ├── upload.ts         # File upload endpoint
+│   │   │   │       └── storage.ts        # File serving endpoint
+│   │   │   ├── services/
+│   │   │   │   ├── spotify/   # Spotify metadata extraction service
+│   │   │   │   └── storage/   # StorageClient (local + Bunny implementations)
+│   │   │   ├── types/          # Type declarations (spotify-url-info)
+│   │   │   └── validators/     # Zod validation schemas
+│   │   ├── drizzle.config.ts   # Drizzle Kit configuration
+│   │   └── package.json
+│   └── web/                    # React SPA frontend
+│       ├── src/
+│       │   ├── main.tsx        # React entry point
+│       │   ├── App.tsx         # Refine configuration and routing
+│       │   ├── theme.ts        # Mantine theme (Poppins, violet)
+│       │   ├── config/
+│       │   │   └── entity-registry.ts  # Entity definitions driving all UI
+│       │   ├── providers/
+│       │   │   ├── auth-provider.ts    # Refine auth provider
+│       │   │   └── data-provider.ts    # Refine REST data provider
+│       │   ├── components/
+│       │   │   ├── layout/     # Layout wrapper and dynamic sidebar navigation
+│       │   │   ├── generic/    # Registry-driven components
+│       │   │   │   ├── list-cell.tsx             # Table cell renderer
+│       │   │   │   ├── field-row.tsx             # Detail field renderer
+│       │   │   │   ├── aside-panel.tsx           # Right-side panel (image, embeds)
+│       │   │   │   └── relationship-section.tsx  # M:N relationship management
+│       │   │   ├── shared/     # Reusable components
+│       │   │   └── anatomy/    # Anatomy-specific components (ProfileEditor)
+│       │   ├── pages/
+│       │   │   ├── login.tsx       # Login page
+│       │   │   ├── dashboard.tsx   # Dashboard
+│       │   │   ├── generic/
+│       │   │   │   ├── list.tsx    # GenericEntityList (handles ALL entities)
+│       │   │   │   └── show.tsx    # GenericEntityDetail (handles ALL entities)
+│       │   │   └── anatomy/
+│       │   │       └── import.tsx  # Spotify import (standalone page)
+│       │   └── utils/          # Utility functions
+│       ├── vite.config.ts      # Vite configuration with API proxy
+│       └── package.json
+├── tests/
+│   └── e2e/                    # End-to-end test specs
+├── tmp/                        # Temporary files (gitignored)
+│   └── storage/                # Local file storage for dev
+├── .devcontainer/              # Dev container configuration
+├── .env.dev-example            # Development environment template
+├── .env.prod-example           # Production environment template
+├── package.json                # Root workspace scripts
+├── pnpm-workspace.yaml         # pnpm workspace config
+├── tsconfig.base.json          # Shared TypeScript base config
+└── CLAUDE.md                   # AI assistant instructions
+```
+
+## Design Principles
+
+- **Registry-Driven**: All entity CRUD is generated from configuration. Adding a new entity means adding a registry entry, not writing new route/page files. The API registry (`routes/registry.ts`) and frontend registry (`config/entity-registry.ts`) drive the entire system.
+- **DRY Schema**: A `baseEntityColumns` object provides shared columns (id, name, context, archived, timestamps) to all entity tables. One schema file defines all 14 domain tables.
+- **Context Filtering**: Shared tables (songs, artists, albums) use a `context` column to partition data between sections (my_music vs anatomy). The route factory automatically applies context filters.
+- **No Deletes**: Records are archived (`archived = true` via PUT), never deleted. No DELETE HTTP methods exist.
+- **Single User**: This is a personal tool. One user account. Auth protects the deployment.
+- **Libraries Over Custom Code**: Use Refine hooks, Mantine components, Drizzle queries, and Zod schemas over bespoke implementations.
+- **Input Validation**: All API endpoints validate with Zod via `@hono/zod-validator`. List query schemas are auto-generated by the route factory.
+- **Edge-Ready**: The API bundle must work in a web-worker-like environment with no Node.js built-ins.
 
 ## Deployment Guide
 
@@ -292,78 +424,6 @@ pnpm db:seed          # Seed database with sample data
 pnpm lint             # Lint all packages
 pnpm typecheck        # TypeScript type checking
 ```
-
-## Project Structure
-
-```
-/
-├── apps/
-│   ├── api/                    # Hono backend API
-│   │   ├── src/
-│   │   │   ├── index.ts        # Dev entry point (Node.js server, port 3001)
-│   │   │   ├── handler.ts      # Production entry point (Bunny Edge Scripting)
-│   │   │   ├── app.ts          # Hono app: middleware, auth, route mounting
-│   │   │   ├── env.ts          # Zod-validated environment variables
-│   │   │   ├── auth/           # Better Auth configuration
-│   │   │   ├── db/
-│   │   │   │   ├── schema/     # Drizzle schema definitions
-│   │   │   │   ├── migrations/ # Generated SQL migrations
-│   │   │   │   ├── seed.ts     # Database seeder
-│   │   │   │   └── seed-attributes.ts # Anatomy attribute seeder (60+ categorized attributes)
-│   │   │   ├── middleware/      # Auth, error, and rate limiting middleware
-│   │   │   ├── routes/          # API route handlers
-│   │   │   │   ├── my-music/   # Songs, artists, albums
-│   │   │   │   ├── anatomy/    # Songs, artists, albums, attributes, profiles, import
-│   │   │   │   ├── bin/        # Songs, sources
-│   │   │   │   ├── suno/       # Prompts, collections, generations
-│   │   │   │   ├── upload.ts   # File upload endpoint
-│   │   │   │   └── storage.ts  # File serving endpoint
-│   │   │   ├── services/
-│   │   │   │   ├── spotify/   # Spotify metadata extraction service
-│   │   │   │   └── storage/   # StorageClient (local + Bunny implementations)
-│   │   │   └── validators/      # Zod validation schemas
-│   │   ├── drizzle.config.ts   # Drizzle Kit configuration
-│   │   └── package.json
-│   └── web/                    # React SPA frontend
-│       ├── src/
-│       │   ├── main.tsx        # React entry point
-│       │   ├── App.tsx         # Refine configuration and routing
-│       │   ├── theme.ts        # Mantine theme (Poppins, violet)
-│       │   ├── providers/
-│       │   │   ├── auth-provider.ts   # Refine auth provider
-│       │   │   └── data-provider.ts   # Refine REST data provider
-│       │   ├── components/
-│       │   │   ├── layout/     # Layout wrapper and sidebar navigation
-│       │   │   ├── shared/     # Reusable components
-│       │   │   └── anatomy/    # Anatomy-specific components
-│       │   ├── pages/          # List + show pages by section (no separate create/edit)
-│       │   │   ├── my-music/   # songs/, artists/, albums/
-│       │   │   ├── anatomy/    # songs/, artists/, albums/, attributes/, import.tsx
-│       │   │   ├── bin/        # songs/, sources/
-│       │   │   └── suno/       # prompts/, collections/, generations/
-│       │   └── utils/          # Utility functions
-│       ├── vite.config.ts      # Vite configuration with API proxy
-│       └── package.json
-├── tests/
-│   └── e2e/                    # End-to-end test specs
-├── tmp/                        # Temporary files (gitignored)
-│   └── storage/                # Local file storage for dev
-├── .devcontainer/              # Dev container configuration
-├── .env.dev-example            # Development environment template
-├── .env.prod-example           # Production environment template
-├── package.json                # Root workspace scripts
-├── pnpm-workspace.yaml         # pnpm workspace config
-├── tsconfig.base.json          # Shared TypeScript base config
-└── CLAUDE.md                   # AI assistant instructions
-```
-
-## Design Principles
-
-- **No Deletes**: Records are archived (`archived = true` via PUT), never deleted. No DELETE HTTP methods exist.
-- **Single User**: This is a personal tool. One user account. Auth protects the deployment.
-- **Libraries Over Custom Code**: Use Refine hooks, Mantine components, Drizzle queries, and Zod schemas over bespoke implementations.
-- **Input Validation**: All API endpoints validate with Zod via `@hono/zod-validator`.
-- **Edge-Ready**: The API bundle must work in a web-worker-like environment with no Node.js built-ins.
 
 ## License
 

@@ -1,7 +1,5 @@
-// Re-export all schema definitions
-// Note: no .js extensions here because drizzle-kit loads these via CJS require
-export * from "./auth";
-export * from "./my-music";
-export * from "./anatomy";
-export * from "./bin";
-export * from "./suno-studio";
+// Re-export the unified schema
+export * from "../schema.js";
+
+// Re-export auth tables (managed by Better Auth, unchanged)
+export * from "./auth.js";

@@ -5,7 +5,7 @@ import { authMiddleware } from "./middleware/auth.js";
 import { rateLimiter } from "./middleware/rate-limit.js";
 import { errorHandler } from "./middleware/error.js";
 import { getAuth } from "./auth/index.js";
-import { routes } from "./routes/index.js";
+import routes from "./routes/index.js";
 
 const app = new Hono();
 

@@ -32,6 +32,36 @@ The API serves all data through a `/api` prefix. The web app proxies `/api` requ
 ├── .env.dev-example      # Development environment template
 ├── .env.prod-example     # Production environment template
 └── .gitignore            # Global ignore rules
+
+apps/api/src/db/
+  schema.ts               # Unified Drizzle schema (all tables)
+  schema/
+    index.ts              # Re-exports schema.ts + auth.ts
+    auth.ts               # Better Auth tables (unchanged)
+  seed.ts                 # Database seeding
+  seed-attributes.ts      # Song attributes seeding
+
+apps/api/src/routes/
+  factory/
+    types.ts              # Route factory types
+    create-routes.ts      # Generic CRUD route factory
+  extensions/
+    anatomy-import.ts     # Spotify import
+    upload.ts             # File upload
+    storage.ts            # File serving
+  registry.ts             # All entity route configurations
+  index.ts                # Assembles factory + extensions
+
+apps/web/src/
+  config/
+    entity-registry.ts    # Entity definitions driving all UI
+  pages/
+    generic/
+      list.tsx            # Generic entity list page
+      show.tsx            # Generic entity detail page
+  components/
+    generic/              # Dynamic UI sub-components (FieldRow, AsidePanel, RelationshipSection, ListCell)
+    shared/               # Reusable shared components
 ```
 
 ## Tech Stack
@@ -61,12 +91,13 @@ There are NO delete operations anywhere in the system. Every record that needs t
 ### Single User System
 This is a personal tool. There is no registration flow after initial setup. Only one user account exists. Auth exists to protect the deployment, not to manage multiple users.
 
-### Database Table Prefixes
-All database tables are prefixed by their section:
-- `my_` -- My Music (my_songs, my_artists, my_albums, my_song_artists, my_song_albums)
-- `anatomy_` -- Anatomy (anatomy_songs, anatomy_artists, anatomy_albums, anatomy_song_artists, anatomy_song_albums, anatomy_attributes, anatomy_profiles)
-- `bin_` -- Bin (bin_sources, bin_songs)
-- `suno_` -- Suno Studio (suno_prompts, suno_collections, suno_collection_prompts, suno_generations, suno_generation_prompts)
+### Database Table Naming
+Tables are now unified. Shared entity tables (`songs`, `artists`, `albums`) use a `context` column to differentiate sections (values: `"my_music"`, `"anatomy"`).
+- Shared tables: `songs`, `artists`, `albums` (with `context` column)
+- Pivot tables: `artist_songs`, `album_songs`, `suno_collection_prompts`
+- Anatomy-specific: `song_profiles`, `song_attributes`
+- Bin: `bin_sources`, `bin_songs`
+- Suno: `suno_prompt_collections`, `suno_prompts`, `suno_collection_prompts`, `suno_song_playlists`, `suno_songs`
 - Auth tables (user, session, account, verification) are managed by Better Auth and have no prefix.
 
 ### Temporary Files
@@ -137,17 +168,20 @@ For local development, `pnpm dev` automatically copies `.env.dev-example` to `.e
 - **Development**: Local SQLite file at `tmp/local.db` (relative to workspace root, gitignored). Created automatically on first `db:push`.
 - **Production**: Bunny libSQL remote database. Set `DATABASE_URL` to the libSQL connection string and provide `DATABASE_AUTH_TOKEN`.
 - ORM: Drizzle ORM with the libSQL driver.
-- All tables use `text` primary keys with nanoid-generated IDs.
-- All tables include `createdAt` and `updatedAt` timestamp columns.
+- All tables use integer auto-increment primary keys (was text nanoid).
+- All tables include `created_at` and `updated_at` timestamp columns.
+- Rating scale is 0-1 real (was 0-5 integer). 0 = unrated, values between 0 and 1 represent the rating.
+- Column names use snake_case (e.g., `image_path`, `release_date`, `spotify_uid`).
+- Foreign keys use `_id` suffix (e.g., `song_id`, `artist_id`). External identifiers use `_uid` suffix (e.g., `spotify_uid`, `apple_music_uid`).
 
 ### Seeding
 
 - `pnpm db:seed` -- Seeds the database with sample data (runs `apps/api/src/db/seed.ts`).
-- `apps/api/src/db/seed-attributes.ts` -- Standalone script to seed the `anatomy_attributes` table with a comprehensive set of 60+ analysis attributes grouped by category. Run directly via `tsx apps/api/src/db/seed-attributes.ts` from the API directory.
+- `apps/api/src/db/seed-attributes.ts` -- Standalone script to seed the `song_attributes` table with a comprehensive set of 60+ analysis attributes grouped by category. Run directly via `tsx apps/api/src/db/seed-attributes.ts` from the API directory.
 
 ### Notable Schema Details
 
-- **anatomy_attributes** includes a `category` column (text, nullable) for grouping attributes (e.g., "genre", "structure", "composition", "rhythm", "instrumentation", "vocals", "lyrics", "production", "mood", "energy", "signature").
+- **song_attributes** includes an `attribute_category` column (text, not null) for grouping attributes (e.g., "genre", "structure", "composition", "rhythm", "instrumentation", "vocals", "lyrics", "production", "mood", "energy", "signature").
 
 ## Storage
 
@@ -162,6 +196,10 @@ For local development, `pnpm dev` automatically copies `.env.dev-example` to `.e
 - Both are loaded from Google Fonts in `index.html`.
 
 ## Application Sections
+
+All entity pages are now dynamically generated from the entity registry. There are no per-entity page files -- two generic components (`GenericEntityList` and `GenericEntityDetail`) handle all entity types.
+
+Routes follow the pattern: `/{context}/{entity-slug}` for list pages, `/{context}/{entity-slug}/show/:id` for detail pages.
 
 ### My Music
 Personal music library. Track songs, artists, and albums with metadata (ISRC, ISNI, EAN), ratings, and links to Spotify/Apple Music/YouTube.
@@ -195,7 +233,7 @@ The Spotify metadata extraction service (`apps/api/src/services/spotify/index.ts
 1. User enters a Spotify URL on the Import page (`/anatomy/import`)
 2. `POST /api/anatomy/import` validates the URL and calls `fetchSpotifyData` to return a preview of extracted tracks
 3. User reviews and selects tracks to import
-4. `POST /api/anatomy/import/confirm` creates `anatomy_songs` and `anatomy_artists` records from the selected tracks, with duplicate detection by Spotify ID and ISRC. Also downloads cover art images to storage (`songs/{nanoid}.jpg`, `artists/{nanoid}.jpg`) and updates `imagePath` on created records.
+4. `POST /api/anatomy/import/confirm` creates `songs` and `artists` records (with `context = "anatomy"`) from the selected tracks, with duplicate detection by Spotify ID and ISRC. Also downloads cover art images to storage and updates `image_path` on created records.
 
 ## File Upload Routes
 
@@ -212,54 +250,49 @@ Serve uploaded files by storage path. Sets immutable cache headers. Supports ima
 
 ## Profile Management
 
-Anatomy profiles store structured analysis data as JSON objects keyed by attribute name (e.g., `{"Tempo": "120 BPM", "Mood": "melancholic"}`).
+Anatomy profiles store structured analysis data as JSON objects keyed by attribute name (e.g., `{"Tempo": "120 BPM", "Mood": "melancholic"}`). Profiles are stored in the `song_profiles` table with a `song_id` foreign key and a `value` text column containing the JSON string.
 
 ### API Routes
-- `GET /api/anatomy/profiles` -- List profiles (filterable by `songId`)
-- `POST /api/anatomy/profiles` -- Create profile (`{ songId, value }` where value is a JSON string)
-- `GET /api/anatomy/profiles/:id` -- Get profile (enriched with song name)
-- `PUT /api/anatomy/profiles/:id` -- Update/archive profile
-- `GET /api/anatomy/songs/:id/profiles` -- List all profiles for a song
-- `POST /api/anatomy/songs/:id/profiles` -- Create new profile version for a song
+Factory-generated CRUD routes at `/api/anatomy/song-profiles`:
+- `GET /api/anatomy/song-profiles` -- List profiles (filterable by `song_id` query parameter)
+- `POST /api/anatomy/song-profiles` -- Create profile (`{ name, song_id, value }`)
+- `GET /api/anatomy/song-profiles/:id` -- Get profile (enriched with song name via detail enricher)
+- `PUT /api/anatomy/song-profiles/:id` -- Update/archive profile
 
 ### ProfileEditor Component
 The `ProfileEditor` component (`components/anatomy/profile-editor.tsx`) fetches all active attributes and renders a textarea for each one. Supports creating new profiles and editing existing ones. Used on the Anatomy Song show page.
 
 ## Import Functionality
 
+These are extension routes defined in `apps/api/src/routes/extensions/anatomy-import.ts`, not factory-generated.
+
 ### POST /api/anatomy/import
 Accepts a Spotify URL and returns a preview of extracted track metadata using the Spotify import service. Validates that the URL is a supported Spotify URL (`open.spotify.com`, `spotify.link`). Returns track name, artists, album, release date, ISRC, image URL, and Spotify ID.
 
-**Schema**: `{ url: string }` (must be a valid URL)
+**Schema**: `{ url: string }` (must be a valid URL, validated by `importUrlSchema` from `validators/anatomy.ts`)
 
 ### POST /api/anatomy/import/confirm
-Accepts an array of tracks (from the preview step) and creates `anatomy_songs` and `anatomy_artists` records. Skips duplicates by Spotify ID or ISRC. Artists are matched case-insensitively by name; new artists receive placeholder ISNI values.
+Accepts an array of tracks (from the preview step) and creates `songs`, `artists`, and `albums` records with `context = "anatomy"`. Links them via `artist_songs` and `album_songs` pivot tables. Skips duplicates by Spotify ID or ISRC. Artists and albums are matched case-insensitively by name within the anatomy context.
 
-**Schema**: `{ tracks: [{ name, artists: [{name}], album?, releaseDate?, isrc?, imageUrl?, spotifyId }] }`
+**Schema**: `{ tracks: [{ name, artists: [{name}], album?: {name}, releaseDate?, isrc?, imageUrl?, spotifyId }] }`
 
 ## Relationship Assignment Routes
 
-Songs can be assigned to artists and albums through junction tables:
+Songs can be assigned to artists and albums through shared pivot tables (`artist_songs`, `album_songs`). These relationships are managed through the route factory and apply across all contexts. The `bodyField` in relationship configs uses camelCase (matching the JSON request body), while the underlying pivot table columns use snake_case.
 
-### My Music
-- `POST /api/my-music/songs/:id/artists` -- Assign artist (`{ artistId }`)
-- `PUT /api/my-music/songs/:id/artists/:artistId` -- Remove artist assignment
-- `POST /api/my-music/songs/:id/albums` -- Assign album (`{ albumId }`)
-- `PUT /api/my-music/songs/:id/albums/:albumId` -- Remove album assignment
-
-### Anatomy
-- `POST /api/anatomy/songs/:id/artists` -- Assign artist (`{ artistId }`)
-- `PUT /api/anatomy/songs/:id/artists/:artistId` -- Remove artist assignment
-- `POST /api/anatomy/songs/:id/albums` -- Assign album (`{ albumId }`)
-- `PUT /api/anatomy/songs/:id/albums/:albumId` -- Remove album assignment
+### Songs (My Music and Anatomy)
+- `POST /api/{context}/songs/:id/artists` -- Assign artist (`{ artistId }`)
+- `PUT /api/{context}/songs/:id/artists/:relatedId` -- Remove artist assignment
+- `POST /api/{context}/songs/:id/albums` -- Assign album (`{ albumId }`)
+- `PUT /api/{context}/songs/:id/albums/:relatedId` -- Remove album assignment
 
 ### Suno Studio
-- `POST /api/suno/collections/:id/prompts` -- Assign prompt (`{ promptId }`)
-- `PUT /api/suno/collections/:id/prompts/:promptId` -- Manage prompt assignment
+- `POST /api/suno/prompt-collections/:id/prompts` -- Assign prompt (`{ promptId }`)
+- `PUT /api/suno/prompt-collections/:id/prompts/:relatedId` -- Remove prompt assignment
 
 ## Show Page Standards
 
-All show pages use the `EntityPage` component (`components/shared/entity-page.tsx`) for consistent layout:
+All show pages are rendered by `GenericEntityDetail` (`pages/generic/show.tsx`), which uses the `EntityPage` component (`components/shared/entity-page.tsx`) for consistent layout:
 
 ### Layout
 - **`EntityPage`** wraps the entire show page with editable title header, archive badge, optional right panel, archive button in footer, and loading/not-found states.
@@ -286,15 +319,34 @@ Located in `apps/web/src/components/shared/`:
 | `AssignModal` | `assign-modal.tsx` | Modal with searchable dropdown for assigning relationships (artist to song, prompt to collection, etc.). |
 | `SortableHeader` | `sortable-header.tsx` | Clickable table header cell with sort direction arrow indicator. |
 | `ListToolbar` | `list-toolbar.tsx` | Shared toolbar with search input and archive status segmented control (Active/All/Archived). |
-| `RatingField` | `rating-field.tsx` | Interactive star rating (0-5 whole stars, 0=unrated). Click same star to reset. Also exports `RatingDisplay`. |
+| `RatingField` | `rating-field.tsx` | Interactive star rating (0-1 real scale, 0=unrated). Click same star to reset. Also exports `RatingDisplay`. |
 | `ArchiveButton` | `archive-toggle.tsx` | Red "Archive" / green "Restore" button with confirmation Modal. Also exports `ArchiveBadge` (green "Active" / red "Archived" badge). |
 | `PlatformLinks` | `platform-links.tsx` | Spotify/Apple Music/YouTube icon buttons that open external URLs. Used in table Actions columns. |
 | `MediaEmbeds` | `media-embeds.tsx` | Spotify, Apple Music, YouTube iframe embeds. Supports `type` prop ('track'\|'album') for correct embed URLs. With `onSave` prop, shows editable platform ID placeholders and edit links. |
 | `EditableField` | `editable-field.tsx` | Click-to-edit inline field with hover edit icon. Supports custom renderDisplay, validation, and async save. Supports `type='date'` for calendar date picker via @mantine/dates. |
 | `EntityPage` | `entity-page.tsx` | Global show page layout with editable title header, archive badge, optional right panel, archive button footer, loading/not-found states. |
 | `ImageUpload` | `image-upload.tsx` | Click-to-upload image with preview. Hover overlay shows upload icon. Replaces ImagePreview+FileUpload combo on show pages. |
-| `ShowPageHeader` | `show-page.tsx` | Deprecated -- use `EntityPage` instead. Show page header with back button, title, edit button, and badge slot. |
 | `SectionCard` | `entity-page.tsx` | Card section with Title order={4} header and optional action button (size="xs" variant="light"). Re-exported from `entity-page.tsx`. |
+
+### Generic Page Components
+
+The two main generic page components live in `apps/web/src/pages/generic/`:
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `GenericEntityList` | `pages/generic/list.tsx` | Dynamic list page driven by entity registry config. Renders table columns, search, pagination, and create modal for any entity type. |
+| `GenericEntityDetail` | `pages/generic/show.tsx` | Dynamic detail/show page driven by entity registry config. Renders field rows, aside panel, relationship sections for any entity type. |
+
+### Generic Sub-Components
+
+Supporting components used by the generic pages, located in `apps/web/src/components/generic/`:
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `FieldRow` | `field-row.tsx` | Renders a single field on a detail page based on field type configuration from the registry. |
+| `AsidePanel` | `aside-panel.tsx` | Right-side panel on detail pages for image upload, media embeds, and supplementary info. |
+| `RelationshipSection` | `relationship-section.tsx` | Displays and manages entity relationships (e.g., artists on a song, prompts in a collection). |
+| `ListCell` | `list-cell.tsx` | Renders a single table cell on list pages based on column type configuration from the registry. |
 
 ### Anatomy Components
 
@@ -306,11 +358,15 @@ Located in `apps/web/src/components/anatomy/`:
 
 ## API Validation Schemas
 
-Located in `apps/api/src/validators/`:
+All Zod validation schemas used by the route factory are defined inline in `apps/api/src/routes/registry.ts`. Each entity's `createSchema` and `updateSchema` are declared alongside the registry entry. List query schemas are auto-generated by the factory based on entity configuration (sortable columns, extra filters). Update schemas are typically `createSchema.partial().extend({ archived: z.boolean().optional() })` unless explicitly overridden.
 
-| File | Schemas |
-|------|---------|
-| `my-music.ts` | `createSongSchema`, `updateSongSchema`, `createArtistSchema`, `updateArtistSchema`, `createAlbumSchema`, `updateAlbumSchema`, `assignArtistSchema`, `assignAlbumSchema`, `listQuerySchema` |
-| `anatomy.ts` | `createAnatomySongSchema`, `updateAnatomySongSchema`, `createAnatomyArtistSchema`, `updateAnatomyArtistSchema`, `createAttributeSchema`, `updateAttributeSchema`, `createProfileSchema`, `updateProfileSchema`, `importUrlSchema`, `assignArtistSchema`, `smartSearchSchema` |
-| `bin.ts` | `createBinSongSchema`, `updateBinSongSchema`, `createBinSourceSchema`, `updateBinSourceSchema`, `importYoutubeSchema` |
-| `suno.ts` | `createPromptSchema`, `updatePromptSchema`, `createCollectionSchema`, `updateCollectionSchema`, `assignPromptSchema`, `createGenerationSchema`, `assignGenerationPromptSchema` |
+Legacy validator files still exist in `apps/api/src/validators/` (my-music.ts, anatomy.ts, bin.ts, suno.ts) but are **not consumed by the route factory**. The only active use is `importUrlSchema` from `validators/anatomy.ts`, which is referenced by the import extension route (`routes/extensions/anatomy-import.ts`).
+
+## API Route Factory
+
+CRUD routes are generated by a factory function (`apps/api/src/routes/factory/create-routes.ts`) from a centralized registry (`apps/api/src/routes/registry.ts`). The registry defines each entity's table, allowed columns, searchable fields, and relationships. The factory produces standard GET (list), GET (single), POST (create), and PUT (update) endpoints.
+
+Special routes that do not fit the CRUD pattern live in `apps/api/src/routes/extensions/`:
+- `anatomy-import.ts` -- Spotify import preview and confirm
+- `upload.ts` -- File upload endpoint
+- `storage.ts` -- File serving endpoint

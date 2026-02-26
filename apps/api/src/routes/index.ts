@@ -1,80 +1,98 @@
 import { Hono } from "hono";
-import { myMusicSongsRoutes } from "./my-music/songs.js";
-import { myMusicArtistsRoutes } from "./my-music/artists.js";
-import { myMusicAlbumsRoutes } from "./my-music/albums.js";
-import { anatomySongsRoutes } from "./anatomy/songs.js";
-import { anatomyArtistsRoutes } from "./anatomy/artists.js";
-import { anatomyAlbumsRoutes } from "./anatomy/albums.js";
-import { anatomyAttributesRoutes } from "./anatomy/attributes.js";
-import { anatomyProfilesRoutes } from "./anatomy/profiles.js";
-import { anatomyImportRoutes } from "./anatomy/import.js";
-import { binSongsRoutes } from "./bin/songs.js";
-import { binSourcesRoutes } from "./bin/sources.js";
-import { sunoPromptsRoutes } from "./suno/prompts.js";
-import { sunoCollectionsRoutes } from "./suno/collections.js";
-import { sunoGenerationsRoutes } from "./suno/generations.js";
-import { uploadRoutes } from "./upload.js";
-import { storageRoutes } from "./storage.js";
+import { createEntityRoutes } from "./factory/create-routes.js";
+import { registry } from "./registry.js";
+import anatomyImport from "./extensions/anatomy-import.js";
+import uploadRoutes from "./extensions/upload.js";
+import storageRoutes from "./extensions/storage.js";
 
-export const routes = new Hono();
+const routes = new Hono();
 
-// My Music
-routes.route("/my-music/songs", myMusicSongsRoutes);
-routes.route("/my-music/artists", myMusicArtistsRoutes);
-routes.route("/my-music/albums", myMusicAlbumsRoutes);
+// Register all entity routes from registry
+for (const config of registry) {
+  const entityRouter = createEntityRoutes(config);
+  routes.route(`/${config.context}/${config.slug}`, entityRouter);
+}
 
-// Anatomy
-routes.route("/anatomy/songs", anatomySongsRoutes);
-routes.route("/anatomy/artists", anatomyArtistsRoutes);
-routes.route("/anatomy/albums", anatomyAlbumsRoutes);
-routes.route("/anatomy/attributes", anatomyAttributesRoutes);
-routes.route("/anatomy/profiles", anatomyProfilesRoutes);
-routes.route("/anatomy", anatomyImportRoutes);
-
-// Bin
-routes.route("/bin/songs", binSongsRoutes);
-routes.route("/bin/sources", binSourcesRoutes);
-
-// Suno Studio
-routes.route("/suno/prompts", sunoPromptsRoutes);
-routes.route("/suno/collections", sunoCollectionsRoutes);
-routes.route("/suno/generations", sunoGenerationsRoutes);
-
-// Upload
+// Extension routes
+routes.route("/anatomy", anatomyImport);
 routes.route("/upload", uploadRoutes);
-
-// Storage (file serving)
 routes.route("/storage", storageRoutes);
 
-// Dashboard
+// Dashboard stats
 routes.get("/dashboard/stats", async (c) => {
-  const db = (await import("../db/index.js")).getDb();
-  const { sql } = await import("drizzle-orm");
-  const schema = await import("../db/schema/index.js");
+  const { getDb } = await import("../db/index.js");
+  const {
+    songs,
+    artists,
+    albums,
+    songProfiles,
+    songAttributes,
+    binSources,
+    binSongs,
+    sunoPrompts,
+    sunoPromptCollections,
+    sunoSongs,
+    sunoSongPlaylists,
+  } = await import("../db/schema/index.js");
+  const { sql, eq } = await import("drizzle-orm");
+  const db = getDb();
 
-  const count = (table: any) =>
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(table)
-      .then((r: any) => r[0].count);
-
-  const [mySongs, myArtists, myAlbums, anatomySongs, anatomyArtists, binSongs, sunoPrompts, sunoCollections, sunoGenerations] =
-    await Promise.all([
-      count(schema.mySongs),
-      count(schema.myArtists),
-      count(schema.myAlbums),
-      count(schema.anatomySongs),
-      count(schema.anatomyArtists),
-      count(schema.binSongs),
-      count(schema.sunoPrompts),
-      count(schema.sunoCollections),
-      count(schema.sunoGenerations),
-    ]);
+  const [
+    myMusicSongs,
+    myMusicArtists,
+    myMusicAlbums,
+    anatomySongs,
+    anatomyArtists,
+    anatomyAlbums,
+    attrCount,
+    profileCount,
+    binSrcCount,
+    binSongCount,
+    promptCount,
+    collectionCount,
+    sunoSongCount,
+    playlistCount,
+  ] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(songs).where(eq(songs.context, "my_music")),
+    db.select({ count: sql<number>`count(*)` }).from(artists).where(eq(artists.context, "my_music")),
+    db.select({ count: sql<number>`count(*)` }).from(albums).where(eq(albums.context, "my_music")),
+    db.select({ count: sql<number>`count(*)` }).from(songs).where(eq(songs.context, "anatomy")),
+    db.select({ count: sql<number>`count(*)` }).from(artists).where(eq(artists.context, "anatomy")),
+    db.select({ count: sql<number>`count(*)` }).from(albums).where(eq(albums.context, "anatomy")),
+    db.select({ count: sql<number>`count(*)` }).from(songAttributes),
+    db.select({ count: sql<number>`count(*)` }).from(songProfiles),
+    db.select({ count: sql<number>`count(*)` }).from(binSources),
+    db.select({ count: sql<number>`count(*)` }).from(binSongs),
+    db.select({ count: sql<number>`count(*)` }).from(sunoPrompts),
+    db.select({ count: sql<number>`count(*)` }).from(sunoPromptCollections),
+    db.select({ count: sql<number>`count(*)` }).from(sunoSongs),
+    db.select({ count: sql<number>`count(*)` }).from(sunoSongPlaylists),
+  ]);
 
   return c.json({
-    myMusic: { songs: mySongs, artists: myArtists, albums: myAlbums },
-    anatomy: { songs: anatomySongs, artists: anatomyArtists },
-    bin: { songs: binSongs },
-    suno: { prompts: sunoPrompts, collections: sunoCollections, generations: sunoGenerations },
+    myMusic: {
+      songs: myMusicSongs[0].count,
+      artists: myMusicArtists[0].count,
+      albums: myMusicAlbums[0].count,
+    },
+    anatomy: {
+      songs: anatomySongs[0].count,
+      artists: anatomyArtists[0].count,
+      albums: anatomyAlbums[0].count,
+      attributes: attrCount[0].count,
+      profiles: profileCount[0].count,
+    },
+    bin: {
+      sources: binSrcCount[0].count,
+      songs: binSongCount[0].count,
+    },
+    suno: {
+      prompts: promptCount[0].count,
+      collections: collectionCount[0].count,
+      songs: sunoSongCount[0].count,
+      playlists: playlistCount[0].count,
+    },
   });
 });
+
+export default routes;

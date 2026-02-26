@@ -40,7 +40,7 @@ export function createStorageClient(): StorageClient {
       return new BunnyStorageClient({
         storageZone: env.BUNNY_STORAGE_ZONE,
         accessKey: env.BUNNY_STORAGE_PASSWORD,
-        region: env.BUNNY_STORAGE_REGION,
+        region: env.BUNNY_STORAGE_REGION ?? "",
         cdnHostname: env.BUNNY_CDN_HOSTNAME,
       });
     }
