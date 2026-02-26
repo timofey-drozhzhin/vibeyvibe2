@@ -13,7 +13,7 @@ interface ListCellProps {
 }
 
 function formatDate(value: any): string {
-  if (!value) return "\u2014";
+  if (!value) return "";
   try {
     return new Date(value).toLocaleDateString();
   } catch {
@@ -54,14 +54,14 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
 
   // Date fields (e.g. release_date)
   if (fieldKey.endsWith("_date")) {
-    return <Text size="sm">{value || "\u2014"}</Text>;
+    return <Text size="sm">{value || ""}</Text>;
   }
 
   // UID fields (spotify_uid, suno_uid, etc.)
   if (fieldKey.endsWith("_uid")) {
     return (
       <Text size="sm" c="dimmed">
-        {value || "\u2014"}
+        {value || ""}
       </Text>
     );
   }
@@ -89,7 +89,7 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
     // Fallback to raw value
     return (
       <Text size="sm" c="dimmed">
-        {value ?? "\u2014"}
+        {value ?? ""}
       </Text>
     );
   }
@@ -99,16 +99,16 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
     const names = record.artists.map((a: any) => a.name).join(", ");
     return (
       <Text size="sm" c="dimmed">
-        {names || "\u2014"}
+        {names || ""}
       </Text>
     );
   }
 
   // Name column -> plain text (clickable behavior handled by parent)
   if (fieldKey === "name") {
-    return <Text fw={500}>{value || "\u2014"}</Text>;
+    return <Text fw={500}>{value || ""}</Text>;
   }
 
   // Default -> text display
-  return <Text size="sm">{value != null ? String(value) : "\u2014"}</Text>;
+  return <Text size="sm">{value != null ? String(value) : ""}</Text>;
 };

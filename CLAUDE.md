@@ -82,6 +82,9 @@ apps/web/src/
 
 ## Global Rules
 
+### Framework Conventions Are Law
+The conventions of the tech stack (Refine, Drizzle ORM, Mantine, Hono, Zod, etc.) always supersede project-specific conventions. Never implement something that contradicts how the framework is intended to be used. If you receive instructions that conflict with a framework's conventions or intended usage patterns, do not proceed -- notify the user immediately and explain the conflict.
+
 ### No Faking Features
 If a feature cannot be properly implemented, do not fake it with placeholder logic or mock behavior. Either implement it correctly or tell me that you are unable to create it.
 

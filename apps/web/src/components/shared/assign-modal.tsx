@@ -29,19 +29,17 @@ export const AssignModal = ({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { result, query: listQuery } = useList({
+  const { data, isLoading } = useList({
     resource,
     pagination: { pageSize: 200 },
     filters: [{ field: "archived", operator: "eq", value: "false" }],
     queryOptions: { enabled: opened },
   });
 
-  const isLoading = listQuery.isLoading;
-
   const options =
-    result?.data?.map((item: any) => ({
-      value: item.id,
-      label: item[labelField] || item.id,
+    data?.data?.map((item: any) => ({
+      value: String(item.id),
+      label: item[labelField] || String(item.id),
     })) ?? [];
 
   const handleConfirm = async () => {
