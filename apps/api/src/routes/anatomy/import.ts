@@ -231,13 +231,11 @@ anatomyImportRoutes.post(
         if (existingArtist.length > 0) {
           artistId = existingArtist[0].id;
         } else {
-          // Create a new artist with a placeholder ISNI
+          // Create a new artist
           artistId = nanoid();
-          const placeholderIsni = `0000000${Date.now().toString().slice(-9)}`;
           await db.insert(anatomyArtists).values({
             id: artistId,
             name: artistData.name,
-            isni: placeholderIsni,
           });
         }
 

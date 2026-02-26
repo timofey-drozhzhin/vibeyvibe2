@@ -40,6 +40,43 @@ export interface SpotifyImportResult {
 const { getData, getDetails } = spotifyUrlInfo(fetch);
 
 /**
+ * Fetch the album name for a track from the main Spotify page's OG metadata.
+ *
+ * The spotify-url-info library scrapes embed pages which do not include album
+ * info. The main page's og:description follows the pattern:
+ *   "Artist · Album · Song · Year"
+ * so the album name is the second segment.
+ */
+async function fetchAlbumFromOgTags(
+  spotifyId: string
+): Promise<string | undefined> {
+  try {
+    const res = await fetch(`https://open.spotify.com/track/${spotifyId}`, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      redirect: "follow",
+    });
+    if (!res.ok) return undefined;
+
+    const html = await res.text();
+    // Match: <meta property="og:description" content="...">
+    const match = html.match(
+      /<meta\s+property="og:description"\s+content="([^"]+)"/
+    );
+    if (!match) return undefined;
+
+    // Format: "Artist · Album · Song · Year"
+    const parts = match[1].split(" · ");
+    if (parts.length >= 3) {
+      // Second segment is the album name
+      return parts[1].trim() || undefined;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Extract the Spotify ID from a Spotify URI string.
  * URIs look like `spotify:track:6rqhFgbbKwnb9MLmUQDhG6`
  */
@@ -158,6 +195,16 @@ export async function fetchSpotifyData(
       // For a single track we use getData which returns the richest response.
       const data = await getData(url);
       const track = normalizeTrack(data);
+
+      // The embed page doesn't include album info, so fetch it from the
+      // main Spotify page's OG tags when missing.
+      if (!track.album && track.spotifyId) {
+        const albumName = await fetchAlbumFromOgTags(track.spotifyId);
+        if (albumName) {
+          track.album = { name: albumName };
+        }
+      }
+
       return { type, tracks: [track] };
     }
 
@@ -200,11 +247,19 @@ export async function fetchSpotifyData(
             const rich = normalizeTrack(richData, {
               imageUrl: track.imageUrl,
             });
+
+            // The embed page doesn't include album info, so fetch from OG tags
+            let album = rich.album || track.album;
+            if (!album && track.spotifyId) {
+              const albumName = await fetchAlbumFromOgTags(track.spotifyId);
+              if (albumName) album = { name: albumName };
+            }
+
             // Merge: prefer rich data, fall back to initial
             return {
               ...track,
               isrc: rich.isrc || track.isrc,
-              album: rich.album || track.album,
+              album,
               releaseDate: rich.releaseDate || track.releaseDate,
               imageUrl: rich.imageUrl || track.imageUrl,
             };

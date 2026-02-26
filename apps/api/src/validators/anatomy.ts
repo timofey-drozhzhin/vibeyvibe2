@@ -20,7 +20,7 @@ export const updateAnatomySongSchema = createAnatomySongSchema.partial().extend(
 
 export const createAnatomyArtistSchema = z.object({
   name: z.string().min(1).max(200),
-  isni: z.string().regex(isniRegex, "Invalid ISNI format (16 digits)"),
+  isni: z.string().regex(isniRegex, "Invalid ISNI format (16 digits)").nullable().optional(),
   imagePath: z.string().nullable().optional(),
   rating: z.number().int().min(0).max(5).default(0),
 });

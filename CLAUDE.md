@@ -51,6 +51,9 @@ The API serves all data through a `/api` prefix. The web app proxies `/api` requ
 
 ## Global Rules
 
+### No Faking Features
+If a feature cannot be properly implemented, do not fake it with placeholder logic or mock behavior. Either implement it correctly or tell me that you are unable to create it.
+
 ### No Deletes -- Archive Only
 There are NO delete operations anywhere in the system. Every record that needs to be "removed" is archived by setting `archived = true` via a PUT request. No DELETE HTTP methods exist. No delete buttons exist in the UI.
 

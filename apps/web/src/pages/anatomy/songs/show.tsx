@@ -29,7 +29,7 @@ import { EntityPage, SectionCard } from "../../../components/shared/entity-page.
 interface AnatomyArtist {
   id: string;
   name: string;
-  isni: string;
+  isni: string | null;
   rating: number;
   archived: boolean;
 }

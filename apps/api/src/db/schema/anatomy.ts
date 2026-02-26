@@ -22,7 +22,7 @@ export const anatomySongs = sqliteTable("anatomy_songs", {
 
 export const anatomyArtists = sqliteTable("anatomy_artists", {
   id: text("id").primaryKey(),
-  isni: text("isni").notNull().unique(),
+  isni: text("isni").unique(),
   name: text("name").notNull(),
   imagePath: text("image_path"),
   rating: real("rating").default(0).notNull(),

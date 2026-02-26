@@ -24,7 +24,7 @@ interface AnatomySong {
 interface AnatomyArtistDetail {
   id: string;
   name: string;
-  isni: string;
+  isni: string | null;
   rating: number;
   archived: boolean;
   imagePath: string | null;

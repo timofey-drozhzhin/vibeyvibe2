@@ -23,7 +23,7 @@ import { ArchiveBadge } from "../../../components/shared/archive-toggle.js";
 interface AnatomyArtist {
   id: string;
   name: string;
-  isni: string;
+  isni: string | null;
   rating: number;
   archived: boolean;
   imagePath: string | null;
@@ -42,21 +42,17 @@ export const AnatomyArtistList = () => {
 
   const [opened, { open, close }] = useDisclosure(false);
   const [newName, setNewName] = useState("");
-  const [newIsni, setNewIsni] = useState("");
-
-  const isniValid = /^\d{15}[\dX]$/.test(newIsni);
-  const canCreate = newName.trim() !== "" && isniValid;
+  const canCreate = newName.trim() !== "";
 
   const handleCreate = () => {
     createRecord(
       {
         resource: "anatomy/artists",
-        values: { name: newName, isni: newIsni },
+        values: { name: newName },
       },
       {
         onSuccess: () => {
           setNewName("");
-          setNewIsni("");
           close();
         },
       },
@@ -178,14 +174,6 @@ export const AnatomyArtistList = () => {
           value={newName}
           onChange={(e) => setNewName(e.currentTarget.value)}
           mb="sm"
-        />
-        <TextInput
-          label="ISNI"
-          placeholder="e.g. 0000000121234567"
-          value={newIsni}
-          onChange={(e) => setNewIsni(e.currentTarget.value)}
-          error={newIsni && !isniValid ? "Invalid ISNI format" : undefined}
-          mb="md"
         />
         <Group justify="flex-end">
           <Button variant="default" onClick={close}>Cancel</Button>
