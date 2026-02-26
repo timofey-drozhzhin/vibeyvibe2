@@ -53,7 +53,7 @@ export const AssignModal = ({
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [fieldName]: selectedId }),
+        body: JSON.stringify({ [fieldName]: Number(selectedId) }),
       });
 
       if (res.status === 409) {
