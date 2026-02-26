@@ -526,6 +526,8 @@ export const entityRegistry: EntityDef[] = [
         label: "URL",
         type: "url",
         placeholder: "https://...",
+        createField: true,
+        createRequired: true,
       },
     ],
     relationships: [],

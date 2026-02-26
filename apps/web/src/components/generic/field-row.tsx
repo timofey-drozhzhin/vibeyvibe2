@@ -88,6 +88,7 @@ function renderFieldContent(
           value={value ?? null}
           onSave={(v) => onSave(v)}
           placeholder={field.placeholder || "https://..."}
+          editOnIconOnly
           renderDisplay={(v) => (
             <Anchor href={v} target="_blank" rel="noopener noreferrer" size="sm">
               {v}

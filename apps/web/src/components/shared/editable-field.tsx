@@ -19,6 +19,8 @@ interface EditableFieldProps {
   validate?: (value: string) => string | null;
   /** Field type. "date" renders a calendar date picker. Default is "text". */
   type?: "text" | "date";
+  /** When true, only the edit icon triggers edit mode (not clicking the value). */
+  editOnIconOnly?: boolean;
 }
 
 export const EditableField = ({
@@ -29,6 +31,7 @@ export const EditableField = ({
   renderDisplay,
   validate,
   type = "text",
+  editOnIconOnly = false,
 }: EditableFieldProps) => {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(value ?? "");
@@ -140,12 +143,12 @@ export const EditableField = ({
   const hasValue = displayValue.length > 0;
 
   return (
-    <Box className="editable-field" onClick={handleStartEdit}>
+    <Box className="editable-field" onClick={editOnIconOnly ? undefined : handleStartEdit}>
       <Group gap="xs" wrap="nowrap" align="center">
         {hasValue ? (
           renderDisplay ? renderDisplay(displayValue) : <Text size="sm">{displayValue}</Text>
         ) : (
-          <Text size="sm" c="dimmed" fs="italic">{emptyText}</Text>
+          <Text size="sm" c="dimmed" fs="italic" onClick={editOnIconOnly ? handleStartEdit : undefined} style={editOnIconOnly ? { cursor: "pointer" } : undefined}>{emptyText}</Text>
         )}
         <ActionIcon
           className="edit-icon"
