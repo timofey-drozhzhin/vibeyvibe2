@@ -29,15 +29,17 @@ export const AssignModal = ({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data, isLoading } = useList({
+  const listResult = useList({
     resource,
-    pagination: { pageSize: 200 },
+    pagination: { pageSize: 100 },
     filters: [{ field: "archived", operator: "eq", value: "false" }],
     queryOptions: { enabled: opened },
   });
 
+  const isLoading = listResult.query.isLoading;
+
   const options =
-    data?.data?.map((item: any) => ({
+    listResult.result.data?.map((item: any) => ({
       value: String(item.id),
       label: item[labelField] || String(item.id),
     })) ?? [];
@@ -105,6 +107,7 @@ export const AssignModal = ({
           clearable
           nothingFoundMessage="No items found"
           disabled={isLoading}
+
         />
         <Group justify="flex-end">
           <Button variant="default" onClick={handleClose}>
