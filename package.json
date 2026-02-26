@@ -2,6 +2,7 @@
   "name": "vibeyvibe",
   "private": true,
   "scripts": {
+    "predev": "[ -f .env ] || cp .env.dev-example .env; mkdir -p tmp/storage; [ -f tmp/local.db ] || pnpm db:push",
     "dev": "pnpm --parallel -r run dev",
     "dev:api": "pnpm --filter @vibeyvibe/api run dev",
     "dev:web": "pnpm --filter @vibeyvibe/web run dev",

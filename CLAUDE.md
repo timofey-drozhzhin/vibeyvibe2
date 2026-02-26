@@ -29,7 +29,8 @@ The API serves all data through a `/api` prefix. The web app proxies `/api` requ
 ├── package.json          # Root workspace scripts
 ├── pnpm-workspace.yaml   # pnpm workspace config (apps/*)
 ├── tsconfig.base.json    # Shared TypeScript base configuration
-├── .env.example          # Environment variable template
+├── .env.dev-example      # Development environment template
+├── .env.prod-example     # Production environment template
 └── .gitignore            # Global ignore rules
 ```
 
@@ -72,9 +73,7 @@ All database tables are prefixed by their section:
 All temporary files and dev-environment specific go in `./tmp/` (gitignored). Local dev storage lives at `./tmp/storage/`, local dev database lives at `./tmp/local.db`. MCP Playwright outputs (screenshots, PDFs) go in `./tmp/mcp-playwright/screenshots`.
 
 ### Documentation
-Always document structural changes in CLAUDE.md files. Keep these files up to date when adding new routes, schemas, pages, or changing conventions.
-
-### Structural Notes for Context Continuity
+Always document changes (especially structural) in CLAUDE.md files. Keep these files up to date when adding new routes, schemas, pages, or changing conventions.
 `./tmp/DOCUMENTATIONS.md` is your temporary memory for CLAUDE.md and README.md documents. Update it before starting changes, and read it back after context compaction, to resume without losing important knowledge.
 
 ### Libraries Over Hand-Made Solutions
@@ -125,13 +124,13 @@ pnpm typecheck        # TypeScript type checking
 
 **There is exactly one `.env` file for the entire project, located at the workspace root (`/workspace/.env`).** Never create `.env` files inside `apps/api/`, `apps/web/`, or any subdirectory. Both apps load environment variables from the root `.env` file. All paths in `.env` (like `DATABASE_URL`, `STORAGE_LOCAL_PATH`) are relative to `apps/api/` since that's where the API process runs.
 
-1. Copy `.env.example` to `.env` at the workspace root:
-   ```bash
-   cp .env.example .env
-   ```
-2. For local development, the defaults work out of the box. Set `DEV_AUTH_BYPASS=true` to skip authentication during development.
-3. Generate a strong `BETTER_AUTH_SECRET` (minimum 16 characters, use 32+ in production).
-4. The `FRONTEND_URL` defaults to `http://localhost:5173` and `BETTER_AUTH_URL` defaults to `http://localhost:3001`.
+**No env variables have default values.** All values must be explicitly set in `.env`. The Zod schema in `apps/api/src/env.ts` validates all variables on startup and throws if any required values are missing.
+
+Two example files are provided:
+- `.env.dev-example` -- Development defaults (local SQLite, local storage, auth bypass enabled)
+- `.env.prod-example` -- Production template (libSQL remote, Bunny CDN, real auth)
+
+For local development, `pnpm dev` automatically copies `.env.dev-example` to `.env` if `.env` doesn't exist (via the `predev` script).
 
 ## Database
 

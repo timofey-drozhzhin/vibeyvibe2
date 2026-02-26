@@ -1,12 +1,14 @@
 import { drizzle } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
 import * as schema from "./schema/index.js";
+import { getEnv } from "../env.js";
 
 let _db: ReturnType<typeof createDrizzle> | null = null;
 
 function createDrizzle() {
-  const url = process.env.DATABASE_URL || "file:../../tmp/local.db";
-  const authToken = process.env.DATABASE_AUTH_TOKEN;
+  const env = getEnv();
+  const url = env.DATABASE_URL;
+  const authToken = env.DATABASE_AUTH_TOKEN;
 
   const client = createClient({
     url,

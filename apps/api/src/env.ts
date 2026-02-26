@@ -1,24 +1,28 @@
 import { z } from "zod";
 
+// Treat empty strings from .env as undefined
+const optionalString = z
+  .string()
+  .optional()
+  .transform((v) => (v === "" ? undefined : v));
+
 const envSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
-  DATABASE_URL: z.string().default("file:../../tmp/local.db"),
-  DATABASE_AUTH_TOKEN: z.string().optional(),
+  NODE_ENV: z.enum(["development", "production", "test"]),
+  DATABASE_URL: z.string().min(1),
+  DATABASE_AUTH_TOKEN: optionalString,
   BETTER_AUTH_SECRET: z.string().min(16),
   BETTER_AUTH_URL: z.string().url(),
-  GOOGLE_CLIENT_ID: z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional(),
-  STORAGE_PROVIDER: z.enum(["local", "bunny"]).default("local"),
-  STORAGE_LOCAL_PATH: z.string().default("../../tmp/storage"),
-  BUNNY_STORAGE_ZONE: z.string().optional(),
-  BUNNY_STORAGE_PASSWORD: z.string().optional(),
-  BUNNY_STORAGE_REGION: z.string().default("storage.bunnycdn.com"),
-  BUNNY_CDN_HOSTNAME: z.string().optional(),
-  BUNNY_CDN_SECURITY_KEY: z.string().optional(),
-  DEV_AUTH_BYPASS: z.string().optional(),
-  FRONTEND_URL: z.string().default("http://localhost:5173"),
+  GOOGLE_CLIENT_ID: optionalString,
+  GOOGLE_CLIENT_SECRET: optionalString,
+  STORAGE_PROVIDER: z.enum(["local", "bunny"]),
+  STORAGE_LOCAL_PATH: z.string().min(1),
+  BUNNY_STORAGE_ZONE: optionalString,
+  BUNNY_STORAGE_PASSWORD: optionalString,
+  BUNNY_STORAGE_REGION: optionalString,
+  BUNNY_CDN_HOSTNAME: optionalString,
+  BUNNY_CDN_SECURITY_KEY: optionalString,
+  DEV_AUTH_BYPASS: optionalString,
+  FRONTEND_URL: z.string().url(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -31,15 +35,9 @@ export function getEnv(): Env {
   const result = envSchema.safeParse(process.env);
   if (!result.success) {
     console.error("Invalid environment variables:", result.error.format());
-    // In dev, use defaults; in prod, this would fail
-    _env = envSchema.parse({
-      ...process.env,
-      BETTER_AUTH_SECRET:
-        process.env.BETTER_AUTH_SECRET || "dev-secret-change-me-in-production",
-      BETTER_AUTH_URL:
-        process.env.BETTER_AUTH_URL || "http://localhost:3001",
-    });
-    return _env;
+    throw new Error(
+      "Missing or invalid environment variables. Ensure .env exists at the workspace root."
+    );
   }
 
   _env = result.data;
