@@ -168,7 +168,7 @@ const ForeignKeyField = ({ field, value, onSave, entity, record }: ForeignKeyFie
 
   const { result, query: listQuery } = useList({
     resource: targetResource,
-    pagination: { pageSize: 200 },
+    pagination: { pageSize: 100 },
     filters: [{ field: "archived", operator: "eq", value: "false" }],
     queryOptions: { enabled: editing && !!targetResource },
   });

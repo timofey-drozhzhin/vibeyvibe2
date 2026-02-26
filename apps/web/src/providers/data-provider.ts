@@ -37,24 +37,17 @@ const dataProvider: DataProvider = {
       params.set("order", sorters[0].order);
     }
 
-    // Map Refine filters to our API query params
+    // Map Refine filters to API query params generically
     if (filters) {
       for (const filter of filters) {
-        if ("field" in filter && filter.field === "search" && filter.value) {
-          params.set("search", String(filter.value));
-          params.set("q", String(filter.value));
-        }
-        if ("field" in filter && filter.field === "archived" && filter.value !== undefined) {
-          params.set("archived", String(filter.value));
-        }
-        if ("field" in filter && filter.field === "sourceId" && filter.value) {
-          params.set("sourceId", String(filter.value));
-        }
-        if ("field" in filter && filter.field === "voiceGender" && filter.value) {
-          params.set("voiceGender", String(filter.value));
-        }
-        if ("field" in filter && filter.field === "category" && filter.value) {
-          params.set("category", String(filter.value));
+        if (!("field" in filter)) continue;
+        const { field, value } = filter;
+        if (field === "search" && value) {
+          params.set("search", String(value));
+        } else if (field === "archived" && value !== undefined) {
+          params.set("archived", String(value));
+        } else if (value !== undefined && value !== null && value !== "") {
+          params.set(field, String(value));
         }
       }
     }

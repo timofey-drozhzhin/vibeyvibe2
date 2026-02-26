@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { useList } from "@refinedev/core";
+import { useList, useCustomMutation } from "@refinedev/core";
 import { Modal, Select, Button, Group, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
 
 interface AssignModalProps {
   opened: boolean;
@@ -27,7 +25,6 @@ export const AssignModal = ({
   onSuccess,
 }: AssignModalProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const listResult = useList({
     resource,
@@ -35,6 +32,8 @@ export const AssignModal = ({
     filters: [{ field: "archived", operator: "eq", value: "false" }],
     queryOptions: { enabled: opened },
   });
+
+  const { mutateAsync, mutation } = useCustomMutation();
 
   const isLoading = listResult.query.isLoading;
 
@@ -47,43 +46,40 @@ export const AssignModal = ({
   const handleConfirm = async () => {
     if (!selectedId) return;
 
-    setIsSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}${assignUrl}`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [fieldName]: Number(selectedId) }),
+      await mutateAsync({
+        url: assignUrl,
+        method: "post",
+        values: { [fieldName]: Number(selectedId) },
+        successNotification: false,
+        errorNotification: false,
       });
 
-      if (res.status === 409) {
+      notifications.show({
+        title: "Assigned",
+        message: "Relationship added successfully.",
+        color: "green",
+      });
+      onSuccess();
+      setSelectedId(null);
+      onClose();
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("Already assigned") || msg.includes("409")) {
         notifications.show({
           title: "Already assigned",
           message: "This relationship already exists.",
           color: "yellow",
         });
-      } else if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `HTTP ${res.status}`);
+        setSelectedId(null);
+        onClose();
       } else {
         notifications.show({
-          title: "Assigned",
-          message: "Relationship added successfully.",
-          color: "green",
+          title: "Error",
+          message: msg || "Failed to assign.",
+          color: "red",
         });
-        onSuccess();
       }
-
-      setSelectedId(null);
-      onClose();
-    } catch (err: any) {
-      notifications.show({
-        title: "Error",
-        message: err.message || "Failed to assign.",
-        color: "red",
-      });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -107,7 +103,6 @@ export const AssignModal = ({
           clearable
           nothingFoundMessage="No items found"
           disabled={isLoading}
-
         />
         <Group justify="flex-end">
           <Button variant="default" onClick={handleClose}>
@@ -115,7 +110,7 @@ export const AssignModal = ({
           </Button>
           <Button
             onClick={handleConfirm}
-            loading={isSubmitting}
+            loading={mutation.isPending}
             disabled={!selectedId}
           >
             Confirm

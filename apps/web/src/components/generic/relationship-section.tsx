@@ -7,7 +7,7 @@ import {
   Badge,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useNavigation } from "@refinedev/core";
+import { useNavigation, useCustomMutation } from "@refinedev/core";
 import { notifications } from "@mantine/notifications";
 import { IconUnlink } from "@tabler/icons-react";
 import { SectionCard } from "../shared/entity-page.js";
@@ -18,8 +18,6 @@ import {
   resolveRelationshipTarget,
   getResourceName,
 } from "../../config/entity-registry.js";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
 
 interface RelationshipSectionProps {
   relationship: RelationshipDef;
@@ -38,6 +36,7 @@ export const RelationshipSection = ({
   const [assignOpened, { open: openAssign, close: closeAssign }] =
     useDisclosure(false);
   const [removingId, setRemovingId] = useState<string | number | null>(null);
+  const { mutateAsync } = useCustomMutation();
 
   const sourceResource = getResourceName(sourceEntity);
   const targetEntity = resolveRelationshipTarget(
@@ -53,20 +52,13 @@ export const RelationshipSection = ({
   const handleRemove = async (relatedId: string | number) => {
     setRemovingId(relatedId);
     try {
-      const res = await fetch(
-        `${API_URL}/api/${sourceResource}/${record.id}/${relationship.subResource}/${relatedId}`,
-        {
-          method: "PUT",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          (body as Record<string, string>).error || `HTTP ${res.status}`,
-        );
-      }
+      await mutateAsync({
+        url: `/api/${sourceResource}/${record.id}/${relationship.subResource}/${relatedId}`,
+        method: "put",
+        values: {},
+        successNotification: false,
+        errorNotification: false,
+      });
       notifications.show({
         title: "Removed",
         message: `${relationship.label} assignment removed.`,
