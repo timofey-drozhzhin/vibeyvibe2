@@ -116,6 +116,9 @@ Use the latest stable versions of all tools and dependencies. Current baseline v
 ### Input Validation
 All API endpoints must validate input with Zod using `@hono/zod-validator`. Every route handler validates both request body (POST/PUT) and query parameters (GET list endpoints).
 
+### Everything is Generic -- No Entity-Specific Code
+Every component, route, URL path, and function must operate at the global entity level. Never write code that targets a specific entity type or context. No entity-specific components, no entity-specific route handlers, no `if (entity === 'x')` branches. All behavior differences between entities come from their registry configuration, never from code. If one entity needs something, build it as a generic capability that all entities can use.
+
 ### Production Safety
 Never run `drizzle-kit push` against production. Production database changes go through the migration workflow: edit schema, push locally, generate migration, commit, then run `db:migrate` in production.
 

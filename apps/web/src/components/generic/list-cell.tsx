@@ -94,6 +94,16 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
     );
   }
 
+  // Enriched arrays (e.g. artists on songs/albums)
+  if (fieldKey === "artists" && Array.isArray(record.artists)) {
+    const names = record.artists.map((a: any) => a.name).join(", ");
+    return (
+      <Text size="sm" c="dimmed">
+        {names || "\u2014"}
+      </Text>
+    );
+  }
+
   // Name column -> plain text (clickable behavior handled by parent)
   if (fieldKey === "name") {
     return <Text fw={500}>{value || "\u2014"}</Text>;

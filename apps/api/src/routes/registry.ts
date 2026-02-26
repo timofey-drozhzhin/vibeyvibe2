@@ -336,6 +336,76 @@ async function sunoPromptDetailEnricher(db: any, entity: any) {
   return { profile: profile || null };
 }
 
+/**
+ * Batch-load artists for an array of album rows.
+ * Goes through album_songs -> artist_songs to find artists linked to each album's songs.
+ */
+async function albumListEnricher(db: any, rows: any[]) {
+  if (rows.length === 0) return rows;
+  const albumIds = rows.map((r: any) => r.id);
+  // Join: albumSongs -> artistSongs (on song_id) -> artists
+  const pivotRows = await db
+    .select({
+      albumId: albumSongs.album_id,
+      artistId: artists.id,
+      artistName: artists.name,
+    })
+    .from(albumSongs)
+    .innerJoin(artistSongs, eq(artistSongs.song_id, albumSongs.song_id))
+    .innerJoin(artists, eq(artists.id, artistSongs.artist_id))
+    .where(
+      sql`${albumSongs.album_id} IN (${sql.join(
+        albumIds.map((id: number) => sql`${id}`),
+        sql`, `
+      )})`
+    );
+
+  // Deduplicate artists per album
+  const artistMap: Record<number, { id: number; name: string }[]> = {};
+  for (const row of pivotRows) {
+    if (!artistMap[row.albumId]) artistMap[row.albumId] = [];
+    const existing = artistMap[row.albumId];
+    if (!existing.some((a) => a.id === row.artistId)) {
+      existing.push({ id: row.artistId, name: row.artistName });
+    }
+  }
+
+  return rows.map((album: any) => ({
+    ...album,
+    artists: artistMap[album.id] || [],
+  }));
+}
+
+/**
+ * Load related songs for a single artist detail view.
+ */
+async function artistDetailEnricher(db: any, entity: any) {
+  const relatedSongs = await db
+    .select()
+    .from(songs)
+    .innerJoin(artistSongs, eq(artistSongs.song_id, songs.id))
+    .where(eq(artistSongs.artist_id, entity.id));
+
+  return {
+    songs: relatedSongs.map((r: any) => r.songs),
+  };
+}
+
+/**
+ * Load related songs for a single album detail view.
+ */
+async function albumDetailEnricher(db: any, entity: any) {
+  const relatedSongs = await db
+    .select()
+    .from(songs)
+    .innerJoin(albumSongs, eq(albumSongs.song_id, songs.id))
+    .where(eq(albumSongs.album_id, entity.id));
+
+  return {
+    songs: relatedSongs.map((r: any) => r.songs),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Song relationship configs (reused for my_music and anatomy)
 // ---------------------------------------------------------------------------
@@ -356,6 +426,36 @@ const songRelationships = [
     parentFk: albumSongs.song_id,
     relatedFk: albumSongs.album_id,
     bodyField: "albumId",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Artist relationship configs (reused for my_music and anatomy)
+// ---------------------------------------------------------------------------
+
+const artistRelationships = [
+  {
+    slug: "songs",
+    pivotTable: artistSongs,
+    relatedTable: songs,
+    parentFk: artistSongs.artist_id,
+    relatedFk: artistSongs.song_id,
+    bodyField: "songId",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Album relationship configs (reused for my_music and anatomy)
+// ---------------------------------------------------------------------------
+
+const albumRelationships = [
+  {
+    slug: "songs",
+    pivotTable: albumSongs,
+    relatedTable: songs,
+    parentFk: albumSongs.album_id,
+    relatedFk: albumSongs.song_id,
+    bodyField: "songId",
   },
 ];
 
@@ -406,6 +506,8 @@ export const registry: EntityRouteConfig[] = [
       created_at: artists.created_at,
     },
     contextColumnValue: "my_music",
+    detailEnricher: artistDetailEnricher,
+    relationships: artistRelationships,
   },
 
   // =========================================================================
@@ -427,6 +529,9 @@ export const registry: EntityRouteConfig[] = [
       created_at: albums.created_at,
     },
     contextColumnValue: "my_music",
+    listEnricher: albumListEnricher,
+    detailEnricher: albumDetailEnricher,
+    relationships: albumRelationships,
   },
 
   // =========================================================================
@@ -471,6 +576,8 @@ export const registry: EntityRouteConfig[] = [
       created_at: artists.created_at,
     },
     contextColumnValue: "anatomy",
+    detailEnricher: artistDetailEnricher,
+    relationships: artistRelationships,
   },
 
   // =========================================================================
@@ -492,6 +599,9 @@ export const registry: EntityRouteConfig[] = [
       created_at: albums.created_at,
     },
     contextColumnValue: "anatomy",
+    listEnricher: albumListEnricher,
+    detailEnricher: albumDetailEnricher,
+    relationships: albumRelationships,
   },
 
   // =========================================================================

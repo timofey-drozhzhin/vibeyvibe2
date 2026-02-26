@@ -182,6 +182,36 @@ const songRelationships: RelationshipDef[] = [
   },
 ];
 
+const artistRelationships: RelationshipDef[] = [
+  {
+    type: "many-to-many",
+    target: "songs",
+    label: "Songs",
+    subResource: "songs",
+    assignFieldName: "songId",
+    pivotTable: "artist_songs",
+    columns: [
+      { key: "name", label: "Name", type: "text" },
+      { key: "rating", label: "Rating", type: "rating" },
+    ],
+  },
+];
+
+const albumRelationships: RelationshipDef[] = [
+  {
+    type: "many-to-many",
+    target: "songs",
+    label: "Songs",
+    subResource: "songs",
+    assignFieldName: "songId",
+    pivotTable: "album_songs",
+    columns: [
+      { key: "name", label: "Name", type: "text" },
+      { key: "rating", label: "Rating", type: "rating" },
+    ],
+  },
+];
+
 const artistFields = (storageDir: string): FieldDef[] => [
   {
     key: "isni",
@@ -289,7 +319,7 @@ export const entityRegistry: EntityDef[] = [
     context: "my-music",
     storageDirectory: "artists",
     fields: artistFields("artists"),
-    relationships: [],
+    relationships: artistRelationships,
     listColumns: [
       "image_path",
       "name",
@@ -311,10 +341,11 @@ export const entityRegistry: EntityDef[] = [
     context: "my-music",
     storageDirectory: "albums",
     fields: albumFields("albums"),
-    relationships: [],
+    relationships: albumRelationships,
     listColumns: [
       "image_path",
       "name",
+      "artists",
       "release_date",
       "rating",
       "archived",
@@ -367,7 +398,7 @@ export const entityRegistry: EntityDef[] = [
     context: "anatomy",
     storageDirectory: "artists",
     fields: artistFields("artists"),
-    relationships: [],
+    relationships: artistRelationships,
     listColumns: [
       "image_path",
       "name",
@@ -389,10 +420,11 @@ export const entityRegistry: EntityDef[] = [
     context: "anatomy",
     storageDirectory: "albums",
     fields: albumFields("albums"),
-    relationships: [],
+    relationships: albumRelationships,
     listColumns: [
       "image_path",
       "name",
+      "artists",
       "release_date",
       "rating",
       "archived",
