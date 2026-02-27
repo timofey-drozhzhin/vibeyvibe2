@@ -36,9 +36,12 @@ src/
 │   │   └── create-routes.ts # Generic CRUD route factory (generates GET list, GET detail, POST, PUT, relationships)
 │   └── extensions/
 │       ├── lab-import.ts   # Spotify import preview + confirm endpoints
+│       ├── vibes-generator.ts # AI vibes generation via OpenRouter
 │       ├── upload.ts     # File upload endpoint (multipart form data)
 │       └── storage.ts    # File serving endpoint (static file delivery)
 ├── services/
+│   ├── openrouter/
+│   │   └── index.ts      # OpenRouter chat completion API wrapper (edge-compatible)
 │   ├── spotify/
 │   │   └── index.ts      # Spotify metadata extraction (uses spotify-url-info library)
 │   └── storage/
@@ -487,6 +490,27 @@ The `spotify-url-info` library lacks built-in types. Custom type declarations ar
 
 **CRITICAL**: Never run `drizzle-kit push` against production. Always use the generate + migrate workflow for production databases.
 
+## OpenRouter Service
+
+The OpenRouter service (`services/openrouter/index.ts`) is a minimal `fetch`-based wrapper for the OpenRouter chat completions API. Edge-compatible (no Node.js-specific APIs).
+
+### Public API
+- `chatCompletion(messages, options?)` -- Sends messages to the configured OpenRouter model. Returns the text content of the first choice. Throws if `OPENROUTER_API_KEY` is not set.
+
+### Vibes Generator Extension
+
+Extension route at `routes/extensions/vibes-generator.ts`. Mounted at `/api/vibes-generator`.
+
+**POST `/api/vibes-generator/generate`**
+- Accepts `{ songId: number }`
+- Fetches the song, its artists, and all active vibes
+- Builds a detailed prompt instructing the AI to analyze the song and produce vibe values
+- Calls OpenRouter, parses JSON response (vibe ID -> value mapping)
+- Upserts `song_vibes` rows (inserts new, updates existing)
+- Returns `{ data: { songId, totalVibes, upserted, skipped } }`
+
+Error codes: 404 (song not found), 400 (no active vibes), 503 (API key not configured), 502 (OpenRouter error), 422 (unparseable response)
+
 ## Testing
 
 - Framework: Vitest
@@ -525,3 +549,5 @@ All env variables are validated by the Zod schema in `src/env.ts`. No defaults -
 | BUNNY_CDN_SECURITY_KEY | No | Bunny CDN security key |
 | DEV_AUTH_BYPASS | No | Set "true" to bypass auth in dev |
 | FRONTEND_URL | Yes | Frontend origin for CORS |
+| OPENROUTER_API_KEY | No | OpenRouter API key (enables AI vibes generation) |
+| VIBES_GENERATOR_OPENROUTER_MODEL | No | OpenRouter model ID (default: google/gemini-2.5-flash) |

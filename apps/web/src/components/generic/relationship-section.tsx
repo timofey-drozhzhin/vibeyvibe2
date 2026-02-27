@@ -6,11 +6,13 @@ import {
   ActionIcon,
   Tooltip,
   Badge,
+  Button,
+  Group,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useNavigation, useCustomMutation } from "@refinedev/core";
 import { notifications } from "@mantine/notifications";
-import { IconUnlink } from "@tabler/icons-react";
+import { IconUnlink, IconPlus, IconSparkles } from "@tabler/icons-react";
 import { SectionCard } from "../shared/entity-page.js";
 import { AssignModal } from "../shared/assign-modal.js";
 import { RatingDisplay } from "../shared/rating-field.js";
@@ -38,6 +40,7 @@ export const RelationshipSection = ({
   const [assignOpened, { open: openAssign, close: closeAssign }] =
     useDisclosure(false);
   const [removingId, setRemovingId] = useState<string | number | null>(null);
+  const [generating, setGenerating] = useState(false);
   const { mutateAsync } = useCustomMutation();
 
   const sourceResource = getResourceName(sourceEntity);
@@ -82,6 +85,36 @@ export const RelationshipSection = ({
     }
   };
 
+  const handleGenerate = async () => {
+    if (!relationship.generateAction) return;
+    setGenerating(true);
+    try {
+      await mutateAsync({
+        url: relationship.generateAction.endpoint,
+        method: "post",
+        values: {
+          [relationship.generateAction.bodyField]: record.id,
+        },
+        successNotification: false,
+        errorNotification: false,
+      });
+      notifications.show({
+        title: "Generated",
+        message: `${relationship.label} generated successfully.`,
+        color: "green",
+      });
+      onRefresh();
+    } catch {
+      notifications.show({
+        title: "Error",
+        message: "Generation failed. Please try again.",
+        color: "red",
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handlePayloadUpdate = async (
     relatedId: string | number,
     fieldKey: string,
@@ -113,10 +146,37 @@ export const RelationshipSection = ({
     <>
       <SectionCard
         title={relationship.label}
-        action={{
-          label: `Assign ${relationship.label.replace(/s$/, "")}`,
-          onClick: openAssign,
-        }}
+        {...(relationship.generateAction
+          ? {
+              actions: (
+                <Group gap="xs">
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="violet"
+                    leftSection={<IconSparkles size={14} />}
+                    loading={generating}
+                    onClick={handleGenerate}
+                  >
+                    {relationship.generateAction.label}
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    leftSection={<IconPlus size={14} />}
+                    onClick={openAssign}
+                  >
+                    {`Assign ${relationship.label.replace(/s$/, "")}`}
+                  </Button>
+                </Group>
+              ),
+            }
+          : {
+              action: {
+                label: `Assign ${relationship.label.replace(/s$/, "")}`,
+                onClick: openAssign,
+              },
+            })}
       >
         <Table striped>
           <Table.Thead>

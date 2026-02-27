@@ -57,6 +57,11 @@ export interface RelationshipDef {
   }>;
   targetLabelField?: string;
   payloadFields?: PayloadFieldDef[];
+  generateAction?: {
+    label: string;
+    endpoint: string;
+    bodyField: string;
+  };
 }
 
 export interface SectionDef {
@@ -204,6 +209,11 @@ const songRelationships: RelationshipDef[] = [
     payloadFields: [
       { key: "value", label: "Value", type: "text", required: true },
     ],
+    generateAction: {
+      label: "Generate",
+      endpoint: "/api/vibes-generator/generate",
+      bodyField: "songId",
+    },
   },
 ];
 

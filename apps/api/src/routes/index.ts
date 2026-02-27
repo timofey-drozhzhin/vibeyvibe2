@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { createEntityRoutes } from "./factory/create-routes.js";
 import { registry } from "./registry.js";
 import labImport from "./extensions/lab-import.js";
+import vibesGenerator from "./extensions/vibes-generator.js";
 import uploadRoutes from "./extensions/upload.js";
 import storageRoutes from "./extensions/storage.js";
 
@@ -15,6 +16,7 @@ for (const config of registry) {
 
 // Extension routes
 routes.route("/lab", labImport);
+routes.route("/vibes-generator", vibesGenerator);
 routes.route("/upload", uploadRoutes);
 routes.route("/storage", storageRoutes);
 

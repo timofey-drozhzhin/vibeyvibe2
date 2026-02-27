@@ -23,6 +23,8 @@ const envSchema = z.object({
   BUNNY_CDN_SECURITY_KEY: optionalString,
   DEV_AUTH_BYPASS: optionalString,
   FRONTEND_URL: z.string().url(),
+  OPENROUTER_API_KEY: optionalString,
+  VIBES_GENERATOR_OPENROUTER_MODEL: optionalString,
 });
 
 export type Env = z.infer<typeof envSchema>;

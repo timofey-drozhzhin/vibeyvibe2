@@ -84,6 +84,11 @@ interface RelationshipDef {
     type?: "text" | "rating" | "badge" | "date";
   }>;
   targetLabelField?: string;
+  generateAction?: {         // Optional AI generate button in section header
+    label: string;           // Button label (e.g. "Generate")
+    endpoint: string;        // API endpoint to POST to
+    bodyField: string;       // Field name for record ID in POST body
+  };
 }
 
 interface EntityDef {
@@ -337,7 +342,7 @@ Located in `components/shared/`:
 | Component | File | Description |
 |-----------|------|-------------|
 | `EntityPage` | `entity-page.tsx` | Global show page layout: editable title, archive badge, optional right panel, archive button footer, loading/not-found states |
-| `SectionCard` | `entity-page.tsx` | Card section with `Title order={4}` header and optional action button. Re-exported from entity-page. |
+| `SectionCard` | `entity-page.tsx` | Card section with `Title order={4}` header and optional action button(s). Supports `action` (single button with "+") or `actions` (custom ReactNode). Re-exported from entity-page. |
 | `EditableField` | `editable-field.tsx` | Click-to-edit inline field with hover edit icon. Supports custom `renderDisplay`, validation, async save. Supports `type='date'` for calendar picker via @mantine/dates. |
 | `RatingField` | `rating-field.tsx` | Interactive star rating (0-1 decimal scale, 0=unrated). Click same star to reset. Emits 0-1 values. |
 | `RatingDisplay` | `rating-field.tsx` | Read-only star rating display (0-1 decimal scale). |

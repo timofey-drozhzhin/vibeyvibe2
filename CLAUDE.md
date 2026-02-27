@@ -273,6 +273,24 @@ Accepts an array of tracks (from the preview step) and creates `songs`, `artists
 
 **Schema**: `{ tracks: [{ name, artists: [{name}], album?: {name}, releaseDate?, isrc?, imageUrl?, spotifyId }] }`
 
+## Vibes Generator
+
+AI-powered generation of vibe values for songs. Uses OpenRouter API to call an LLM that analyzes a song and produces values for all active vibes.
+
+### Configuration
+Requires two optional environment variables in `.env`:
+- `OPENROUTER_API_KEY` -- API key for OpenRouter
+- `VIBES_GENERATOR_OPENROUTER_MODEL` -- Model to use (defaults to `google/gemini-2.5-flash`)
+
+### POST /api/vibes-generator/generate
+Generates vibe values for a song using AI. Fetches the song, its artists, and all active vibes, builds a prompt, calls OpenRouter, and upserts `song_vibes` pivot rows.
+
+**Schema**: `{ songId: number }`
+**Returns**: `{ data: { songId, totalVibes, upserted, skipped } }`
+
+### Frontend
+The generate button is configured via a `generateAction` property on `RelationshipDef` in the entity registry. The `RelationshipSection` component renders it as a "Generate" button with sparkles icon in the Vibes section header.
+
 ## Relationship Assignment Routes
 
 Songs can be assigned to artists and albums through shared pivot tables (`artist_songs`, `album_songs`). These relationships are managed through the route factory and apply across all contexts. The `bodyField` in relationship configs uses camelCase (matching the JSON request body), while the underlying pivot table columns use snake_case.

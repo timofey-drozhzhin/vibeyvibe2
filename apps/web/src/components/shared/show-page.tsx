@@ -147,27 +147,32 @@ const EditableTitle = ({
 
 interface SectionCardProps {
   title: string;
+  /** Single action button with "+" icon (backward-compatible) */
   action?: {
     label: string;
     onClick: () => void;
   };
+  /** Custom actions node — when provided, renders instead of `action` */
+  actions?: ReactNode;
   children: ReactNode;
 }
 
-export const SectionCard = ({ title, action, children }: SectionCardProps) => (
+export const SectionCard = ({ title, action, actions, children }: SectionCardProps) => (
   <Card withBorder>
     <Group justify="space-between" mb="md">
       <Title order={4}>{title}</Title>
-      {action && (
-        <Button
-          size="xs"
-          variant="light"
-          leftSection={<IconPlus size={14} />}
-          onClick={action.onClick}
-        >
-          {action.label}
-        </Button>
-      )}
+      {actions
+        ? actions
+        : action && (
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={<IconPlus size={14} />}
+              onClick={action.onClick}
+            >
+              {action.label}
+            </Button>
+          )}
     </Group>
     {children}
   </Card>
