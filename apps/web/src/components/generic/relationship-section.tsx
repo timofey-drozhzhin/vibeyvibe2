@@ -101,9 +101,7 @@ export const RelationshipSection = ({
       const result = await mutateAsync({
         url: action.endpoint,
         method: "post",
-        values: {
-          [action.bodyField]: record.id,
-        },
+        values: { [action.bodyField]: record.id },
         successNotification: false,
         errorNotification: false,
       });
@@ -122,10 +120,12 @@ export const RelationshipSection = ({
         });
         onRefresh();
       }
-    } catch {
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Generation failed. Please try again.";
       notifications.show({
         title: "Error",
-        message: "Generation failed. Please try again.",
+        message,
         color: "red",
       });
     } finally {

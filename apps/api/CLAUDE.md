@@ -565,5 +565,5 @@ All env variables are validated by the Zod schema in `src/env.ts`. No defaults -
 | DEV_AUTH_BYPASS | No | Set "true" to bypass auth in dev |
 | FRONTEND_URL | Yes | Frontend origin for CORS |
 | OPENROUTER_API_KEY | No | OpenRouter API key (enables AI generation) |
-| VIBES_GENERATOR_OPENROUTER_MODEL | No | OpenRouter model ID for vibes generation |
+| VIBES_GENERATION_OPENROUTER_MODEL | No | OpenRouter model ID for vibes generation |
 | VIBES_SUNO_PROMPT_OPENROUTER_MODEL | No | OpenRouter model ID for Suno prompt generation |

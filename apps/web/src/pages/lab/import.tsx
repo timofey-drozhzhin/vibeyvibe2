@@ -200,55 +200,59 @@ export const LabImport = () => {
 
         // Trigger vibe generation for each created song
         if (generateVibes && result.created.length > 0) {
-          const total = result.created.length;
-          let completed = 0;
-          let failed = 0;
-
-          notifications.show({
-            id: "vibes-generation",
-            title: "Generating vibes",
-            message: `0/${total} songs completed...`,
-            color: "violet",
-            loading: true,
-            autoClose: false,
-            withCloseButton: false,
-          });
-
           for (const song of result.created) {
-            try {
-              await fetch(`${apiUrl}/vibes-generator/generate`, {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ songId: song.id }),
-              });
-              completed++;
-            } catch {
-              failed++;
-            }
-
-            notifications.update({
-              id: "vibes-generation",
+            const notifId = `vibes-gen-${song.id}`;
+            notifications.show({
+              id: notifId,
               title: "Generating vibes",
-              message: `${completed + failed}/${total} songs completed${failed > 0 ? ` (${failed} failed)` : ""}...`,
+              message: `"${song.name}" — generating...`,
               color: "violet",
               loading: true,
               autoClose: false,
               withCloseButton: false,
             });
-          }
 
-          notifications.update({
-            id: "vibes-generation",
-            title: failed > 0 ? "Vibes generation completed with errors" : "Vibes generated",
-            message: failed > 0
-              ? `Generated vibes for ${completed}/${total} song(s). ${failed} failed.`
-              : `Generated vibes for ${completed} song(s).`,
-            color: failed > 0 ? "yellow" : "green",
-            loading: false,
-            autoClose: 5000,
-            withCloseButton: true,
-          });
+            try {
+              const genRes = await fetch(`${apiUrl}/vibes-generator/generate`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ songId: song.id }),
+              });
+              if (genRes.ok) {
+                notifications.update({
+                  id: notifId,
+                  title: "Vibes generated",
+                  message: `"${song.name}" — done. View: /lab/songs/show/${song.id}`,
+                  color: "green",
+                  loading: false,
+                  autoClose: 8000,
+                  withCloseButton: true,
+                });
+              } else {
+                const errBody = await genRes.json().catch(() => ({}));
+                notifications.update({
+                  id: notifId,
+                  title: "Vibes generation failed",
+                  message: `"${song.name}" — ${errBody?.error || `Error ${genRes.status}`}`,
+                  color: "red",
+                  loading: false,
+                  autoClose: false,
+                  withCloseButton: true,
+                });
+              }
+            } catch (err: any) {
+              notifications.update({
+                id: notifId,
+                title: "Vibes generation failed",
+                message: `"${song.name}" — ${err?.message || "Network error"}`,
+                color: "red",
+                loading: false,
+                autoClose: false,
+                withCloseButton: true,
+              });
+            }
+          }
         }
       } else {
         notifications.show({

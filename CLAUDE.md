@@ -283,7 +283,7 @@ AI-powered generation of vibe values for songs. Uses OpenRouter API to call an L
 ### Configuration
 Requires environment variables in `.env`:
 - `OPENROUTER_API_KEY` -- API key for OpenRouter
-- `VIBES_GENERATOR_OPENROUTER_MODEL` -- Model to use for vibes generation
+- `VIBES_GENERATION_OPENROUTER_MODEL` -- Model to use for vibes generation
 
 ### POST /api/vibes-generator/generate
 Generates vibe values for a song using AI. Fetches the song, its artists, and all active vibes, builds a prompt, calls OpenRouter, and upserts `song_vibes` pivot rows.

@@ -28,9 +28,9 @@ export async function chatCompletion(
     throw new Error("OPENROUTER_API_KEY is not configured");
   }
 
-  const model = options?.model || env.VIBES_GENERATOR_OPENROUTER_MODEL;
+  const model = options?.model || env.VIBES_GENERATION_OPENROUTER_MODEL;
   if (!model) {
-    throw new Error("No OpenRouter model configured. Set VIBES_GENERATOR_OPENROUTER_MODEL or pass model in options.");
+    throw new Error("No OpenRouter model configured. Set VIBES_GENERATION_OPENROUTER_MODEL or pass model in options.");
   }
 
   const response = await fetch(
