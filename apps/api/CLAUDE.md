@@ -20,7 +20,7 @@ src/
 ├── db/
 │   ├── index.ts          # Drizzle client factory with libSQL driver (getDb() singleton)
 │   ├── schema.ts         # Unified Drizzle schema (ALL domain tables in one file)
-│   ├── seed.ts           # Database seeding script — sample data + all 59 song attributes (run via pnpm db:seed)
+│   ├── seed.ts           # Database seeding script — sample data + all 59 vibes (run via pnpm db:seed)
 │   └── schema/
 │       ├── index.ts      # Re-exports schema.ts + auth.ts
 │       └── auth.ts       # Better Auth tables: user, session, account, verification
@@ -72,7 +72,7 @@ Complete table inventory:
 | `artists` | Entity | Shared artists (context: `my_music` or `lab`) |
 | `albums` | Entity | Shared albums (context: `my_music` or `lab`) |
 | `song_profiles` | Entity | Lab profiles linked to songs (context: `lab`) |
-| `song_attributes` | Entity | Lab analysis attributes (context: `lab`) |
+| `vibes` | Entity | Lab vibes (context: `lab`) |
 | `bin_sources` | Entity | Bin collection sources (context: `bin`) |
 | `bin_songs` | Entity | Bin song entries (context: `bin`) |
 | `suno_prompt_collections` | Entity | Suno prompt collection groups (context: `suno`) |
@@ -108,7 +108,7 @@ All tables use `integer("id").primaryKey({ autoIncrement: true })`. No text/nano
 
 ### Column Naming
 
-- All column names use **snake_case** (e.g., `image_path`, `release_date`, `spotify_uid`, `attribute_category`).
+- All column names use **snake_case** (e.g., `image_path`, `release_date`, `spotify_uid`, `vibe_category`).
 - Foreign keys use `_id` suffix (e.g., `song_id`, `artist_id`, `bin_source_id`, `suno_prompt_id`).
 - External identifiers (platform IDs) use `_uid` suffix (e.g., `spotify_uid`, `apple_music_uid`, `youtube_uid`, `suno_uid`).
 
@@ -222,7 +222,7 @@ The registry (`routes/registry.ts`) defines all 14 entity-context configurations
 | `createSongSchema` | name, isrc?, image_path?, release_date?, rating?, spotify_uid?, apple_music_uid?, youtube_uid? |
 | `createArtistSchema` | name, isni?, image_path?, rating? |
 | `createAlbumSchema` | name, ean?, image_path?, release_date?, rating?, spotify_uid?, apple_music_uid?, youtube_uid? |
-| `createAttributeSchema` | name, attribute_category, description?, instructions?, examples? |
+| `createVibeSchema` | name, vibe_category, description?, instructions?, examples? |
 | `createProfileSchema` | name, song_id, rating?, value? |
 | `createBinSourceSchema` | name, url |
 | `createBinSongSchema` | name, asset_path?, lyrics?, notes?, rating?, bin_source_id? |
@@ -243,7 +243,7 @@ Each entity also has an explicit `update*Schema` defined as `create*Schema.parti
 | 4 | `/lab/songs` | `lab` | `songs` | Song | list: artists, detail: artists+albums | artists, albums | -- |
 | 5 | `/lab/artists` | `lab` | `artists` | Artist | -- | -- | -- |
 | 6 | `/lab/albums` | `lab` | `albums` | Album | -- | -- | -- |
-| 7 | `/lab/song-attributes` | `lab` | `songAttributes` | Attribute | -- | -- | `category` (eq) |
+| 7 | `/lab/vibes` | `lab` | `vibes` | Vibe | -- | -- | `category` (eq) |
 | 8 | `/lab/song-profiles` | `lab` | `songProfiles` | Profile | list: songName, detail: songName | -- | `song_id` (eq) |
 | 9 | `/bin/sources` | `bin` | `binSources` | Source | -- | -- | -- |
 | 10 | `/bin/songs` | `bin` | `binSongs` | Bin Song | list: source, detail: source | -- | `bin_source_id` (eq) |

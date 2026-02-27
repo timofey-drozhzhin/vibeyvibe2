@@ -7,7 +7,7 @@ import {
   artistSongs,
   albumSongs,
   songProfiles,
-  songAttributes,
+  vibes,
   binSources,
   binSongs,
   sunoPromptCollections,
@@ -66,16 +66,16 @@ const updateAlbumSchema = createAlbumSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
-// Song Attributes
-const createAttributeSchema = z.object({
+// Vibes
+const createVibeSchema = z.object({
   name: z.string().min(1).max(100),
-  attribute_category: z.string().min(1),
+  vibe_category: z.string().min(1),
   description: z.string().nullable().optional(),
   instructions: z.string().nullable().optional(),
   examples: z.string().nullable().optional(),
 });
 
-const updateAttributeSchema = createAttributeSchema.partial().extend({
+const updateVibeSchema = createVibeSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
@@ -510,27 +510,27 @@ export const registry: EntityRouteConfig[] = [
   },
 
   // =========================================================================
-  // 7. lab/song-attributes
+  // 7. lab/vibes
   // =========================================================================
   {
     context: "lab",
-    slug: "song-attributes",
-    table: songAttributes,
-    entityName: "Attribute",
-    createSchema: createAttributeSchema,
-    updateSchema: updateAttributeSchema,
-    defaultSort: songAttributes.created_at,
+    slug: "vibes",
+    table: vibes,
+    entityName: "Vibe",
+    createSchema: createVibeSchema,
+    updateSchema: updateVibeSchema,
+    defaultSort: vibes.created_at,
     defaultOrder: "desc",
     sortableColumns: {
-      name: songAttributes.name,
-      attribute_category: songAttributes.attribute_category,
-      created_at: songAttributes.created_at,
+      name: vibes.name,
+      vibe_category: vibes.vibe_category,
+      created_at: vibes.created_at,
     },
     contextColumnValue: "lab",
     extraFilters: [
       {
         param: "category",
-        column: songAttributes.attribute_category,
+        column: vibes.vibe_category,
         schema: z.string().optional(),
         mode: "eq",
       },

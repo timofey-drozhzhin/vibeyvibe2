@@ -32,7 +32,7 @@ const defaultLabels: Record<string, string> = {
   created_at: "Added",
   updated_at: "Updated",
   release_date: "Release Date",
-  attribute_category: "Category",
+  vibe_category: "Category",
   description: "Description",
   url: "URL",
 };
@@ -44,7 +44,7 @@ const sortableFields = new Set([
   "release_date",
   "created_at",
   "updated_at",
-  "attribute_category",
+  "vibe_category",
 ]);
 
 

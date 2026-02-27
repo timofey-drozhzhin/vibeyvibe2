@@ -38,7 +38,7 @@ apps/api/src/db/
   schema/
     index.ts              # Re-exports schema.ts + auth.ts
     auth.ts               # Better Auth tables (unchanged)
-  seed.ts                 # Database seeding (sample data + all song attributes)
+  seed.ts                 # Database seeding (sample data + all 59 vibes)
 
 apps/api/src/routes/
   factory/
@@ -103,7 +103,7 @@ This is a personal tool. There is no registration flow after initial setup. Only
 Tables are now unified. Shared entity tables (`songs`, `artists`, `albums`) use a `context` column to differentiate sections (values: `"my_music"`, `"lab"`).
 - Shared tables: `songs`, `artists`, `albums` (with `context` column)
 - Pivot tables: `artist_songs`, `album_songs`, `suno_collection_prompts`
-- Lab-specific: `song_profiles`, `song_attributes`
+- Lab-specific: `song_profiles`, `vibes`
 - Bin: `bin_sources`, `bin_songs`
 - Suno: `suno_prompt_collections`, `suno_prompts`, `suno_collection_prompts`, `suno_song_playlists`, `suno_songs`
 - Auth tables (user, session, account, verification) are managed by Better Auth and have no prefix.
@@ -187,11 +187,11 @@ For local development, `pnpm dev` automatically copies `.env.dev-example` to `.e
 
 ### Seeding
 
-- `pnpm db:seed` -- Seeds the database with sample data and all 59 song attributes (runs `apps/api/src/db/seed.ts`). Attributes are upserted — existing ones are updated if changed, new ones are inserted.
+- `pnpm db:seed` -- Seeds the database with sample data and all 59 vibes (runs `apps/api/src/db/seed.ts`). Vibes are upserted — existing ones are updated if changed, new ones are inserted.
 
 ### Notable Schema Details
 
-- **song_attributes** includes an `attribute_category` column (text, not null) for grouping attributes (e.g., "genre", "structure", "composition", "rhythm", "instrumentation", "vocals", "lyrics", "production", "mood", "energy", "signature").
+- **vibes** includes a `vibe_category` column (text, not null) for grouping vibes (e.g., "genre", "structure", "composition", "rhythm", "instrumentation", "vocals", "lyrics", "production", "mood", "energy", "signature").
 
 ## Storage
 

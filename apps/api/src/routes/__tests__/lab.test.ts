@@ -311,15 +311,15 @@ describe("Lab Artists", () => {
   });
 });
 
-// ─── Lab Attributes ──────────────────────────────────────────────────────
+// ─── Lab Vibes ──────────────────────────────────────────────────────────
 
-describe("Lab Attributes", () => {
-  let createdAttrId: string;
+describe("Lab Vibes", () => {
+  let createdVibeId: string;
 
-  describe("POST /api/lab/attributes", () => {
-    it("creates an attribute with all fields", async () => {
+  describe("POST /api/lab/vibes", () => {
+    it("creates a vibe with all fields", async () => {
       const res = await app.request(
-        "/api/lab/attributes",
+        "/api/lab/vibes",
         json({
           name: `Tempo ${ts}`,
           description: "Song tempo in BPM",
@@ -332,12 +332,12 @@ describe("Lab Attributes", () => {
       expect(body.data.name).toBe(`Tempo ${ts}`);
       expect(body.data.description).toBe("Song tempo in BPM");
       expect(body.data.id).toBeDefined();
-      createdAttrId = body.data.id;
+      createdVibeId = body.data.id;
     });
 
-    it("creates an attribute with only name", async () => {
+    it("creates a vibe with only name", async () => {
       const res = await app.request(
-        "/api/lab/attributes",
+        "/api/lab/vibes",
         json({ name: `Mood ${ts}` })
       );
       expect(res.status).toBe(201);
@@ -345,7 +345,7 @@ describe("Lab Attributes", () => {
 
     it("returns 400 for empty name", async () => {
       const res = await app.request(
-        "/api/lab/attributes",
+        "/api/lab/vibes",
         json({ name: "" })
       );
       expect(res.status).toBe(400);
@@ -353,16 +353,16 @@ describe("Lab Attributes", () => {
 
     it("returns 400 for name exceeding 100 chars", async () => {
       const res = await app.request(
-        "/api/lab/attributes",
+        "/api/lab/vibes",
         json({ name: "x".repeat(101) })
       );
       expect(res.status).toBe(400);
     });
   });
 
-  describe("GET /api/lab/attributes", () => {
+  describe("GET /api/lab/vibes", () => {
     it("returns paginated list", async () => {
-      const res = await app.request("/api/lab/attributes");
+      const res = await app.request("/api/lab/vibes");
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data).toBeInstanceOf(Array);
@@ -371,7 +371,7 @@ describe("Lab Attributes", () => {
 
     it("supports search by name", async () => {
       const res = await app.request(
-        `/api/lab/attributes?q=Tempo ${ts}`
+        `/api/lab/vibes?q=Tempo ${ts}`
       );
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -379,29 +379,29 @@ describe("Lab Attributes", () => {
     });
   });
 
-  describe("GET /api/lab/attributes/:id", () => {
-    it("returns a single attribute", async () => {
+  describe("GET /api/lab/vibes/:id", () => {
+    it("returns a single vibe", async () => {
       const res = await app.request(
-        `/api/lab/attributes/${createdAttrId}`
+        `/api/lab/vibes/${createdVibeId}`
       );
       expect(res.status).toBe(200);
       const body = await res.json();
-      expect(body.data.id).toBe(createdAttrId);
+      expect(body.data.id).toBe(createdVibeId);
       expect(body.data.name).toBe(`Tempo ${ts}`);
     });
 
-    it("returns 404 for non-existent attribute", async () => {
+    it("returns 404 for non-existent vibe", async () => {
       const res = await app.request(
-        "/api/lab/attributes/nonexistent-xyz"
+        "/api/lab/vibes/nonexistent-xyz"
       );
       expect(res.status).toBe(404);
     });
   });
 
-  describe("PUT /api/lab/attributes/:id", () => {
-    it("updates an attribute", async () => {
+  describe("PUT /api/lab/vibes/:id", () => {
+    it("updates a vibe", async () => {
       const res = await app.request(
-        `/api/lab/attributes/${createdAttrId}`,
+        `/api/lab/vibes/${createdVibeId}`,
         jsonPut({ description: "Updated description" })
       );
       expect(res.status).toBe(200);
@@ -409,9 +409,9 @@ describe("Lab Attributes", () => {
       expect(body.data.description).toBe("Updated description");
     });
 
-    it("archives an attribute", async () => {
+    it("archives a vibe", async () => {
       const res = await app.request(
-        `/api/lab/attributes/${createdAttrId}`,
+        `/api/lab/vibes/${createdVibeId}`,
         jsonPut({ archived: true })
       );
       expect(res.status).toBe(200);
@@ -419,9 +419,9 @@ describe("Lab Attributes", () => {
       expect(body.data.archived).toBe(true);
     });
 
-    it("returns 404 for non-existent attribute", async () => {
+    it("returns 404 for non-existent vibe", async () => {
       const res = await app.request(
-        "/api/lab/attributes/nonexistent-xyz",
+        "/api/lab/vibes/nonexistent-xyz",
         jsonPut({ name: "Nope" })
       );
       expect(res.status).toBe(404);

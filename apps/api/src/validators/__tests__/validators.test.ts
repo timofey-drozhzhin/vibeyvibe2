@@ -19,8 +19,8 @@ import {
   updateLabSongSchema,
   createLabArtistSchema,
   updateLabArtistSchema,
-  createAttributeSchema,
-  updateAttributeSchema,
+  createVibeSchema,
+  updateVibeSchema,
   createProfileSchema,
   updateProfileSchema,
   importUrlSchema,
@@ -560,9 +560,9 @@ describe("Lab Validators", () => {
     });
   });
 
-  describe("createAttributeSchema", () => {
-    it("accepts valid attribute with all fields", () => {
-      const result = createAttributeSchema.safeParse({
+  describe("createVibeSchema", () => {
+    it("accepts valid vibe with all fields", () => {
+      const result = createVibeSchema.safeParse({
         name: "Tempo",
         description: "The speed of the song",
         instruction: "Specify BPM",
@@ -571,25 +571,25 @@ describe("Lab Validators", () => {
       expect(result.success).toBe(true);
     });
 
-    it("accepts attribute with only name", () => {
-      const result = createAttributeSchema.safeParse({ name: "Mood" });
+    it("accepts vibe with only name", () => {
+      const result = createVibeSchema.safeParse({ name: "Mood" });
       expect(result.success).toBe(true);
     });
 
     it("rejects empty name", () => {
-      const result = createAttributeSchema.safeParse({ name: "" });
+      const result = createVibeSchema.safeParse({ name: "" });
       expect(result.success).toBe(false);
     });
 
     it("rejects name exceeding 100 characters", () => {
-      const result = createAttributeSchema.safeParse({
+      const result = createVibeSchema.safeParse({
         name: "x".repeat(101),
       });
       expect(result.success).toBe(false);
     });
 
     it("accepts null description", () => {
-      const result = createAttributeSchema.safeParse({
+      const result = createVibeSchema.safeParse({
         name: "Attr",
         description: null,
       });
@@ -597,16 +597,16 @@ describe("Lab Validators", () => {
     });
   });
 
-  describe("updateAttributeSchema", () => {
+  describe("updateVibeSchema", () => {
     it("accepts partial update", () => {
-      const result = updateAttributeSchema.safeParse({
+      const result = updateVibeSchema.safeParse({
         description: "Updated",
       });
       expect(result.success).toBe(true);
     });
 
     it("accepts archived field", () => {
-      const result = updateAttributeSchema.safeParse({ archived: true });
+      const result = updateVibeSchema.safeParse({ archived: true });
       expect(result.success).toBe(true);
     });
   });

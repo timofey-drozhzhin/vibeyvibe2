@@ -88,7 +88,7 @@ interface RelationshipDef {
 }
 
 interface EntityDef {
-  slug: string;              // URL slug (e.g. "songs", "song-attributes")
+  slug: string;              // URL slug (e.g. "songs", "vibes")
   tableName: string;         // DB table name (without section prefix)
   name: string;              // Singular display name
   pluralName: string;        // Plural display name
@@ -114,7 +114,7 @@ interface EntityDef {
 | 4 | `lab/songs` | Song | lab |
 | 5 | `lab/artists` | Artist | lab |
 | 6 | `lab/albums` | Album | lab |
-| 7 | `lab/song-attributes` | Song Attribute | lab |
+| 7 | `lab/vibes` | Vibe | lab |
 | 8 | `lab/song-profiles` | Song Profile | lab |
 | 9 | `bin/sources` | Source | bin |
 | 10 | `bin/songs` | Song | bin |
@@ -239,7 +239,7 @@ Receives an `EntityDef` as a prop and renders:
 - **Header**: Title (`entity.pluralName`) + "New" button
 - **Toolbar**: `ListToolbar` with search input and archive filter (Active/All/Archived)
 - **Table**: Columns from `entity.listColumns`, rendered via `ListCell` component
-  - Sortable columns: name, rating, release_date, created_at, updated_at, attribute_category
+  - Sortable columns: name, rating, release_date, created_at, updated_at, vibe_category
   - Image columns render as small Avatar previews (32px)
   - Name column is clickable (navigates to show page)
   - Platform links (Actions column) shown if entity has platform UID fields

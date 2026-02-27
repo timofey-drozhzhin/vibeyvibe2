@@ -159,7 +159,7 @@ Tables are unified. Shared entity tables use a `context` column to differentiate
 | `artist_songs` | -- | Pivot: artist<>song (composite PK) |
 | `album_songs` | -- | Pivot: album<>song (composite PK) |
 | `song_profiles` | lab | Lab profiles with JSON value column |
-| `song_attributes` | lab | Analysis attributes by category |
+| `vibes` | lab | Analysis vibes by category |
 | `bin_sources` | bin | Source playlists/channels |
 | `bin_songs` | bin | Bin song entries |
 | `suno_prompt_collections` | suno | Prompt collection groups |
@@ -232,7 +232,7 @@ AI music generation workflow. Craft text prompts with lyrics and style descripti
 │   │   │   │   │   └── auth.ts     # Better Auth tables
 │   │   │   │   ├── migrations/ # Generated SQL migrations
 │   │   │   │   ├── seed.ts     # Database seeder
-│   │   │   │   └── seed-attributes.ts # Song attributes seeder (60+ categorized attributes)
+│   │   │   │   └── seed.ts          # Database seeder (sample data + 59 vibes)
 │   │   │   ├── middleware/      # Auth, error, and rate limiting middleware
 │   │   │   ├── routes/
 │   │   │   │   ├── index.ts    # Assembles factory + extension routes under /api

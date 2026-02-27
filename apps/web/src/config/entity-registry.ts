@@ -475,17 +475,17 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 8. lab/song-attributes
+  // 8. lab/vibes
   // =========================================================================
   {
-    slug: "song-attributes",
-    tableName: "song_attributes",
-    name: "Song Attribute",
-    pluralName: "Song Attributes",
+    slug: "vibes",
+    tableName: "vibes",
+    name: "Vibe",
+    pluralName: "Vibes",
     context: "lab",
     fields: [
       {
-        key: "attribute_category",
+        key: "vibe_category",
         label: "Category",
         type: "text",
         placeholder: "e.g. genre, structure, mood...",
@@ -507,7 +507,7 @@ export const entityRegistry: EntityDef[] = [
       },
     ],
     relationships: [],
-    listColumns: ["name", "attribute_category", "archived", "created_at"],
+    listColumns: ["name", "vibe_category", "archived", "created_at"],
     asideFields: [],
   },
 

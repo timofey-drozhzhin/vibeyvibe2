@@ -12,7 +12,7 @@ import {
 } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 
-interface LabAttribute {
+interface Vibe {
   id: string;
   name: string;
   description: string | null;
@@ -38,8 +38,8 @@ export const ProfileEditor = ({
 }: ProfileEditorProps) => {
   const [values, setValues] = useState<Record<string, string>>({});
 
-  const { query: attributesQuery, result: attributesResult } = useList<LabAttribute>({
-    resource: "lab/song-attributes",
+  const { query: vibesQuery, result: vibesResult } = useList<Vibe>({
+    resource: "lab/vibes",
     pagination: { pageSize: 100 },
     filters: [{ field: "archived", operator: "eq", value: false }],
   });
@@ -47,8 +47,8 @@ export const ProfileEditor = ({
   const { mutate: createProfile, mutation: createMutation } = useCreate();
   const { mutate: updateProfile, mutation: updateMutation } = useUpdate();
 
-  const attributes = attributesResult.data ?? [];
-  const attributesLoading = attributesQuery.isLoading;
+  const vibesList = vibesResult.data ?? [];
+  const vibesLoading = vibesQuery.isLoading;
 
   useEffect(() => {
     if (initialValues) {
@@ -102,7 +102,7 @@ export const ProfileEditor = ({
     }
   };
 
-  if (attributesLoading) {
+  if (vibesLoading) {
     return (
       <Center py="xl">
         <Loader />
@@ -110,17 +110,17 @@ export const ProfileEditor = ({
     );
   }
 
-  if (attributes.length === 0) {
+  if (vibesList.length === 0) {
     return (
       <Text c="dimmed" ta="center" py="md">
-        No attributes defined. Create attributes first in the Lab Song Attributes section.
+        No vibes defined. Create vibes first in the Lab Vibes section.
       </Text>
     );
   }
 
   return (
     <Stack gap="md">
-      {attributes.map((attr: LabAttribute) => (
+      {vibesList.map((attr: Vibe) => (
         <div key={attr.id}>
           <Group gap="xs" mb={4}>
             <Text size="sm" fw={500}>

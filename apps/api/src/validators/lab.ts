@@ -29,7 +29,7 @@ export const updateLabArtistSchema = createLabArtistSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
-export const createAttributeSchema = z.object({
+export const createVibeSchema = z.object({
   name: z.string().min(1).max(100),
   category: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
@@ -37,7 +37,7 @@ export const createAttributeSchema = z.object({
   examples: z.string().nullable().optional(),
 });
 
-export const updateAttributeSchema = createAttributeSchema.partial().extend({
+export const updateVibeSchema = createVibeSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 

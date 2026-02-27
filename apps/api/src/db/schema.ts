@@ -168,17 +168,17 @@ export const songProfilesRelations = relations(songProfiles, ({ one }) => ({
 }));
 
 // ===========================================================================
-// 7. Song Attributes
+// 7. Vibes
 // ===========================================================================
-export const songAttributes = sqliteTable("song_attributes", {
+export const vibes = sqliteTable("vibes", {
   ...baseEntityColumns,
-  attribute_category: text("attribute_category").notNull(),
+  vibe_category: text("vibe_category").notNull(),
   description: text("description"),
   instructions: text("instructions"),
   examples: text("examples"),
 });
 
-export const songAttributesRelations = relations(songAttributes, () => ({}));
+export const vibesRelations = relations(vibes, () => ({}));
 
 // ===========================================================================
 // 8. Bin Sources
