@@ -62,6 +62,11 @@ export interface RelationshipDef {
     endpoint: string;
     bodyField: string;
   };
+  removeAction?: {
+    label: string;
+    type: "unlink" | "delete";
+  };
+  hideAssign?: boolean;
 }
 
 export interface SectionDef {
@@ -214,6 +219,11 @@ const songRelationships: RelationshipDef[] = [
       endpoint: "/api/vibes-generator/generate",
       bodyField: "songId",
     },
+    removeAction: {
+      label: "Delete",
+      type: "delete",
+    },
+    hideAssign: true,
   },
 ];
 

@@ -12,7 +12,7 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { useNavigation, useCustomMutation } from "@refinedev/core";
 import { notifications } from "@mantine/notifications";
-import { IconUnlink, IconPlus, IconSparkles } from "@tabler/icons-react";
+import { IconUnlink, IconPlus, IconSparkles, IconTrash } from "@tabler/icons-react";
 import { SectionCard } from "../shared/entity-page.js";
 import { AssignModal } from "../shared/assign-modal.js";
 import { RatingDisplay } from "../shared/rating-field.js";
@@ -71,8 +71,10 @@ export const RelationshipSection = ({
         errorNotification: false,
       });
       notifications.show({
-        title: "Removed",
-        message: `${relationship.label} assignment removed.`,
+        title: relationship.removeAction?.type === "delete" ? "Deleted" : "Removed",
+        message: relationship.removeAction?.type === "delete"
+          ? `${relationship.label.replace(/s$/, "")} deleted.`
+          : `${relationship.label} assignment removed.`,
         color: "green",
       });
       onRefresh();
@@ -160,23 +162,27 @@ export const RelationshipSection = ({
                   >
                     {relationship.generateAction.label}
                   </Button>
-                  <Button
-                    size="xs"
-                    variant="light"
-                    leftSection={<IconPlus size={14} />}
-                    onClick={openAssign}
-                  >
-                    {`Assign ${relationship.label.replace(/s$/, "")}`}
-                  </Button>
+                  {!relationship.hideAssign && (
+                    <Button
+                      size="xs"
+                      variant="light"
+                      leftSection={<IconPlus size={14} />}
+                      onClick={openAssign}
+                    >
+                      {`Assign ${relationship.label.replace(/s$/, "")}`}
+                    </Button>
+                  )}
                 </Group>
               ),
             }
-          : {
-              action: {
-                label: `Assign ${relationship.label.replace(/s$/, "")}`,
-                onClick: openAssign,
-              },
-            })}
+          : relationship.hideAssign
+            ? {}
+            : {
+                action: {
+                  label: `Assign ${relationship.label.replace(/s$/, "")}`,
+                  onClick: openAssign,
+                },
+              })}
       >
         <Table striped>
           <Table.Thead>
@@ -223,7 +229,7 @@ export const RelationshipSection = ({
                 ))}
                 <Table.Td>
                   <Tooltip
-                    label={`Remove from ${sourceEntity.name.toLowerCase()}`}
+                    label={relationship.removeAction?.label ?? `Remove from ${sourceEntity.name.toLowerCase()}`}
                   >
                     <ActionIcon
                       variant="subtle"
@@ -231,7 +237,11 @@ export const RelationshipSection = ({
                       loading={removingId === item.id}
                       onClick={() => handleRemove(item.id)}
                     >
-                      <IconUnlink size={16} />
+                      {relationship.removeAction?.type === "delete" ? (
+                        <IconTrash size={16} />
+                      ) : (
+                        <IconUnlink size={16} />
+                      )}
                     </ActionIcon>
                   </Tooltip>
                 </Table.Td>
