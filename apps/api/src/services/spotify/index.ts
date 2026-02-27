@@ -119,8 +119,7 @@ function normalizeTrack(raw: any, fallback?: { imageUrl?: string; album?: string
       typeof a === "string" ? { name: a } : { name: a.name ?? String(a) }
     );
   } else if (typeof raw.artist === "string" && raw.artist) {
-    // The `toTrack` shape from spotify-url-info joins artists into a single string.
-    artists = raw.artist.split(/, | & /).map((n: string) => ({ name: n.trim() }));
+    artists = [{ name: raw.artist.trim() }];
   }
 
   // Extract image URL from various possible locations in the raw data.
