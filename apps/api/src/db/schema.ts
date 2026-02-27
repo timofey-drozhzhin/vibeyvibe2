@@ -225,22 +225,7 @@ export const binSongsRelations = relations(binSongs, ({ one, many }) => ({
 }));
 
 // ===========================================================================
-// 10. Suno Prompt Collections
-// ===========================================================================
-export const sunoPromptCollections = sqliteTable("suno_prompt_collections", {
-  ...baseEntityColumns,
-  description: text("description"),
-});
-
-export const sunoPromptCollectionsRelations = relations(
-  sunoPromptCollections,
-  ({ many }) => ({
-    sunoCollectionPrompts: many(sunoCollectionPrompts),
-  })
-);
-
-// ===========================================================================
-// 11. Suno Prompts
+// 10. Suno Prompts
 // ===========================================================================
 export const sunoPrompts = sqliteTable(
   "suno_prompts",
@@ -249,47 +234,19 @@ export const sunoPrompts = sqliteTable(
     lyrics: text("lyrics"),
     prompt: text("prompt"),
     notes: text("notes"),
+    song_id: integer("song_id").references(() => songs.id),
   },
+  (table) => [index("suno_prompts_song_id_idx").on(table.song_id)]
 );
 
 export const sunoPromptsRelations = relations(
   sunoPrompts,
-  ({ many }) => ({
-    sunoCollectionPrompts: many(sunoCollectionPrompts),
+  ({ one, many }) => ({
+    song: one(songs, {
+      fields: [sunoPrompts.song_id],
+      references: [songs.id],
+    }),
     sunoSongs: many(sunoSongs),
-  })
-);
-
-// ===========================================================================
-// 12. Suno Collection Prompts (PIVOT — no base schema)
-// ===========================================================================
-export const sunoCollectionPrompts = sqliteTable(
-  "suno_collection_prompts",
-  {
-    collection_id: integer("collection_id")
-      .notNull()
-      .references(() => sunoPromptCollections.id, { onDelete: "cascade" }),
-    prompt_id: integer("prompt_id")
-      .notNull()
-      .references(() => sunoPrompts.id, { onDelete: "cascade" }),
-    created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
-  },
-  (table) => [
-    primaryKey({ columns: [table.collection_id, table.prompt_id] }),
-  ]
-);
-
-export const sunoCollectionPromptsRelations = relations(
-  sunoCollectionPrompts,
-  ({ one }) => ({
-    sunoPromptCollection: one(sunoPromptCollections, {
-      fields: [sunoCollectionPrompts.collection_id],
-      references: [sunoPromptCollections.id],
-    }),
-    sunoPrompt: one(sunoPrompts, {
-      fields: [sunoCollectionPrompts.prompt_id],
-      references: [sunoPrompts.id],
-    }),
   })
 );
 

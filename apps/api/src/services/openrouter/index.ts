@@ -20,7 +20,7 @@ interface OpenRouterResponse {
  */
 export async function chatCompletion(
   messages: ChatMessage[],
-  options?: { temperature?: number; maxTokens?: number },
+  options?: { temperature?: number; maxTokens?: number; model?: string },
 ): Promise<string> {
   const env = getEnv();
   const apiKey = env.OPENROUTER_API_KEY;
@@ -28,8 +28,10 @@ export async function chatCompletion(
     throw new Error("OPENROUTER_API_KEY is not configured");
   }
 
-  const model =
-    env.VIBES_GENERATOR_OPENROUTER_MODEL || "google/gemini-2.5-flash";
+  const model = options?.model || env.VIBES_GENERATOR_OPENROUTER_MODEL;
+  if (!model) {
+    throw new Error("No OpenRouter model configured. Set VIBES_GENERATOR_OPENROUTER_MODEL or pass model in options.");
+  }
 
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",

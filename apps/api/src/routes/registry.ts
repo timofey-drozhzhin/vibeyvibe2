@@ -10,9 +10,7 @@ import {
   songVibes,
   binSources,
   binSongs,
-  sunoPromptCollections,
   sunoPrompts,
-  sunoCollectionPrompts,
   sunoSongPlaylists,
   sunoSongs,
 } from "../db/schema/index.js";
@@ -103,22 +101,13 @@ const updateBinSongSchema = createBinSongSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
-// Suno Prompt Collections
-const createPromptCollectionSchema = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().nullable().optional(),
-});
-
-const updatePromptCollectionSchema = createPromptCollectionSchema.partial().extend({
-  archived: z.boolean().optional(),
-});
-
 // Suno Prompts
 const createSunoPromptSchema = z.object({
   name: z.string().min(1).max(200),
   lyrics: z.string().nullable().optional(),
   prompt: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  song_id: z.number().int().positive().nullable().optional(),
 });
 
 const updateSunoPromptSchema = createSunoPromptSchema.partial().extend({
@@ -234,18 +223,16 @@ async function songDetailEnricher(db: any, entity: any) {
 
 
 /**
- * Load prompts for a collection detail view.
+ * Enrich suno prompt detail with linked song name.
  */
-async function collectionDetailEnricher(db: any, entity: any) {
-  const promptRows = await db
-    .select()
-    .from(sunoPrompts)
-    .innerJoin(sunoCollectionPrompts, eq(sunoCollectionPrompts.prompt_id, sunoPrompts.id))
-    .where(eq(sunoCollectionPrompts.collection_id, entity.id));
-
-  return {
-    prompts: promptRows.map((r: any) => r.suno_prompts),
-  };
+async function sunoPromptDetailEnricher(db: any, entity: any) {
+  if (!entity.song_id) return {};
+  const [song] = await db
+    .select({ id: songs.id, name: songs.name })
+    .from(songs)
+    .where(eq(songs.id, entity.song_id))
+    .limit(1);
+  return song ? { song } : {};
 }
 
 
@@ -612,37 +599,7 @@ export const registry: EntityRouteConfig[] = [
   },
 
   // =========================================================================
-  // 11. suno/prompt-collections
-  // =========================================================================
-  {
-    context: "suno",
-    slug: "prompt-collections",
-    table: sunoPromptCollections,
-    entityName: "Collection",
-    createSchema: createPromptCollectionSchema,
-    updateSchema: updatePromptCollectionSchema,
-    defaultSort: sunoPromptCollections.created_at,
-    defaultOrder: "desc",
-    sortableColumns: {
-      name: sunoPromptCollections.name,
-      created_at: sunoPromptCollections.created_at,
-    },
-    contextColumnValue: "suno",
-    detailEnricher: collectionDetailEnricher,
-    relationships: [
-      {
-        slug: "prompts",
-        pivotTable: sunoCollectionPrompts,
-        relatedTable: sunoPrompts,
-        parentFk: sunoCollectionPrompts.collection_id,
-        relatedFk: sunoCollectionPrompts.prompt_id,
-        bodyField: "promptId",
-      },
-    ],
-  },
-
-  // =========================================================================
-  // 12. suno/prompts
+  // 11. suno/prompts
   // =========================================================================
   {
     context: "suno",
@@ -658,6 +615,15 @@ export const registry: EntityRouteConfig[] = [
       created_at: sunoPrompts.created_at,
     },
     contextColumnValue: "suno",
+    detailEnricher: sunoPromptDetailEnricher,
+    extraFilters: [
+      {
+        param: "song_id",
+        column: sunoPrompts.song_id,
+        schema: z.coerce.number().int().positive(),
+        mode: "eq" as const,
+      },
+    ],
   },
 
   // =========================================================================

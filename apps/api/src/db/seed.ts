@@ -10,7 +10,7 @@ import {
   songs, artists, albums, artistSongs, albumSongs,
   vibes,
   binSources, binSongs,
-  sunoPromptCollections, sunoPrompts, sunoCollectionPrompts,
+  sunoPrompts,
   sunoSongPlaylists, sunoSongs,
 } from "./schema/index.js";
 import { user, account } from "./schema/auth.js";
@@ -231,16 +231,6 @@ async function seed() {
 
   console.log("  Bin songs created");
 
-  // ─── Suno Prompt Collections ─────────────────────────────────────────────
-  const [chillVibes] = await db.insert(sunoPromptCollections).values({
-    name: "Chill Vibes", context: "suno", description: "Relaxing electronic tracks",
-  }).returning();
-  const [energeticBangers] = await db.insert(sunoPromptCollections).values({
-    name: "Energetic Bangers", context: "suno", description: "High energy dance tracks",
-  }).returning();
-
-  console.log("  Suno prompt collections created");
-
   // ─── Suno Prompts ────────────────────────────────────────────────────────
   const [lofiSunset] = await db.insert(sunoPrompts).values({
     name: "Lo-fi Sunset", context: "suno", lyrics: "Watching the sun go down...", prompt: "lo-fi hip hop, warm, vinyl crackle, sunset vibes", notes: "For chill collection",
@@ -250,14 +240,6 @@ async function seed() {
   }).returning();
 
   console.log("  Suno prompts created");
-
-  // ─── Suno Collection-Prompt Relationships ────────────────────────────────
-  await db.insert(sunoCollectionPrompts).values([
-    { collection_id: chillVibes.id, prompt_id: lofiSunset.id },
-    { collection_id: energeticBangers.id, prompt_id: danceFloor.id },
-  ]).onConflictDoNothing();
-
-  console.log("  Suno collection-prompt relationships created");
 
   // ─── Suno Song Playlists ─────────────────────────────────────────────────
   const [bestGenerations] = await db.insert(sunoSongPlaylists).values({

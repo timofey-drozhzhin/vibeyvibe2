@@ -3,6 +3,7 @@ import { createEntityRoutes } from "./factory/create-routes.js";
 import { registry } from "./registry.js";
 import labImport from "./extensions/lab-import.js";
 import vibesGenerator from "./extensions/vibes-generator.js";
+import sunoPromptGenerator from "./extensions/suno-prompt-generator.js";
 import uploadRoutes from "./extensions/upload.js";
 import storageRoutes from "./extensions/storage.js";
 
@@ -17,6 +18,7 @@ for (const config of registry) {
 // Extension routes
 routes.route("/lab", labImport);
 routes.route("/vibes-generator", vibesGenerator);
+routes.route("/suno-prompt-generator", sunoPromptGenerator);
 routes.route("/upload", uploadRoutes);
 routes.route("/storage", storageRoutes);
 
@@ -31,7 +33,6 @@ routes.get("/dashboard/stats", async (c) => {
     binSources,
     binSongs,
     sunoPrompts,
-    sunoPromptCollections,
     sunoSongs,
     sunoSongPlaylists,
   } = await import("../db/schema/index.js");
@@ -49,7 +50,6 @@ routes.get("/dashboard/stats", async (c) => {
     binSrcCount,
     binSongCount,
     promptCount,
-    collectionCount,
     sunoSongCount,
     playlistCount,
   ] = await Promise.all([
@@ -63,7 +63,6 @@ routes.get("/dashboard/stats", async (c) => {
     db.select({ count: sql<number>`count(*)` }).from(binSources),
     db.select({ count: sql<number>`count(*)` }).from(binSongs),
     db.select({ count: sql<number>`count(*)` }).from(sunoPrompts),
-    db.select({ count: sql<number>`count(*)` }).from(sunoPromptCollections),
     db.select({ count: sql<number>`count(*)` }).from(sunoSongs),
     db.select({ count: sql<number>`count(*)` }).from(sunoSongPlaylists),
   ]);
@@ -86,7 +85,6 @@ routes.get("/dashboard/stats", async (c) => {
     },
     suno: {
       prompts: promptCount[0].count,
-      collections: collectionCount[0].count,
       songs: sunoSongCount[0].count,
       playlists: playlistCount[0].count,
     },

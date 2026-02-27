@@ -12,12 +12,12 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { useNavigation, useCustomMutation } from "@refinedev/core";
 import { notifications } from "@mantine/notifications";
-import { IconUnlink, IconPlus, IconSparkles, IconTrash } from "@tabler/icons-react";
+import { IconUnlink, IconPlus, IconSparkles, IconMusic, IconTrash } from "@tabler/icons-react";
 import { SectionCard } from "../shared/entity-page.js";
 import { AssignModal } from "../shared/assign-modal.js";
 import { RatingDisplay } from "../shared/rating-field.js";
 import { EditableField } from "../shared/editable-field.js";
-import type { RelationshipDef, EntityDef } from "../../config/entity-registry.js";
+import type { RelationshipDef, EntityDef, GenerateActionDef } from "../../config/entity-registry.js";
 import {
   resolveRelationshipTarget,
   getResourceName,
@@ -40,8 +40,16 @@ export const RelationshipSection = ({
   const [assignOpened, { open: openAssign, close: closeAssign }] =
     useDisclosure(false);
   const [removingId, setRemovingId] = useState<string | number | null>(null);
-  const [generating, setGenerating] = useState(false);
+  const [generatingIdx, setGeneratingIdx] = useState<number | null>(null);
   const { mutateAsync } = useCustomMutation();
+
+  // Normalize generateAction to always be an array
+  const generateActions: GenerateActionDef[] = useMemo(() => {
+    if (!relationship.generateAction) return [];
+    return Array.isArray(relationship.generateAction)
+      ? relationship.generateAction
+      : [relationship.generateAction];
+  }, [relationship.generateAction]);
 
   const sourceResource = getResourceName(sourceEntity);
   const targetEntity = resolveRelationshipTarget(
@@ -87,25 +95,33 @@ export const RelationshipSection = ({
     }
   };
 
-  const handleGenerate = async () => {
-    if (!relationship.generateAction) return;
-    setGenerating(true);
+  const handleGenerate = async (action: GenerateActionDef, idx: number) => {
+    setGeneratingIdx(idx);
     try {
-      await mutateAsync({
-        url: relationship.generateAction.endpoint,
+      const result = await mutateAsync({
+        url: action.endpoint,
         method: "post",
         values: {
-          [relationship.generateAction.bodyField]: record.id,
+          [action.bodyField]: record.id,
         },
         successNotification: false,
         errorNotification: false,
       });
-      notifications.show({
-        title: "Generated",
-        message: `${relationship.label} generated successfully.`,
-        color: "green",
-      });
-      onRefresh();
+      if (action.successNavigate && result?.data?.data?.id) {
+        notifications.show({
+          title: "Generated",
+          message: `${action.label} created successfully. Navigating...`,
+          color: "green",
+        });
+        show(action.successNavigate, result.data.data.id);
+      } else {
+        notifications.show({
+          title: "Generated",
+          message: `${relationship.label} generated successfully.`,
+          color: "green",
+        });
+        onRefresh();
+      }
     } catch {
       notifications.show({
         title: "Error",
@@ -113,7 +129,7 @@ export const RelationshipSection = ({
         color: "red",
       });
     } finally {
-      setGenerating(false);
+      setGeneratingIdx(null);
     }
   };
 
@@ -148,20 +164,28 @@ export const RelationshipSection = ({
     <>
       <SectionCard
         title={relationship.label}
-        {...(relationship.generateAction
+        {...(generateActions.length > 0
           ? {
               actions: (
                 <Group gap="xs">
-                  <Button
-                    size="xs"
-                    variant="light"
-                    color="violet"
-                    leftSection={<IconSparkles size={14} />}
-                    loading={generating}
-                    onClick={handleGenerate}
-                  >
-                    {relationship.generateAction.label}
-                  </Button>
+                  {generateActions.map((action, idx) => {
+                    const ActionIcon_ =
+                      action.icon === "music" ? IconMusic : IconSparkles;
+                    return (
+                      <Button
+                        key={idx}
+                        size="xs"
+                        variant="light"
+                        color={action.color ?? "violet"}
+                        leftSection={<ActionIcon_ size={14} />}
+                        loading={generatingIdx === idx}
+                        disabled={generatingIdx !== null && generatingIdx !== idx}
+                        onClick={() => handleGenerate(action, idx)}
+                      >
+                        {action.label}
+                      </Button>
+                    );
+                  })}
                   {!relationship.hideAssign && (
                     <Button
                       size="xs"

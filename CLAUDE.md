@@ -90,6 +90,9 @@ If a feature would require structural changes (new abstractions, schema overhaul
 ### Revert Failed Fixes
 If a fix did not resolve the issue, revert it before trying the next approach. Do not leave dead code behind.
 
+### No Default Environment Values
+Never set default/fallback values for environment variables in code. All env values must be explicitly set in `.env`. If a required env variable is missing, return an appropriate error (e.g., 503) rather than falling back to a default. This prevents unexpected behavior from implicit configuration.
+
 ### No Faking Features
 If a feature cannot be properly implemented, do not fake it with placeholder logic or mock behavior. Either implement it correctly or tell me that you are unable to create it.
 
@@ -278,9 +281,9 @@ Accepts an array of tracks (from the preview step) and creates `songs`, `artists
 AI-powered generation of vibe values for songs. Uses OpenRouter API to call an LLM that analyzes a song and produces values for all active vibes.
 
 ### Configuration
-Requires two optional environment variables in `.env`:
+Requires environment variables in `.env`:
 - `OPENROUTER_API_KEY` -- API key for OpenRouter
-- `VIBES_GENERATOR_OPENROUTER_MODEL` -- Model to use (defaults to `google/gemini-2.5-flash`)
+- `VIBES_GENERATOR_OPENROUTER_MODEL` -- Model to use for vibes generation
 
 ### POST /api/vibes-generator/generate
 Generates vibe values for a song using AI. Fetches the song, its artists, and all active vibes, builds a prompt, calls OpenRouter, and upserts `song_vibes` pivot rows.
@@ -289,7 +292,27 @@ Generates vibe values for a song using AI. Fetches the song, its artists, and al
 **Returns**: `{ data: { songId, totalVibes, upserted, skipped } }`
 
 ### Frontend
-The generate button is configured via a `generateAction` property on `RelationshipDef` in the entity registry. The `RelationshipSection` component renders it as a "Generate" button with sparkles icon in the Vibes section header.
+The generate button is configured via a `generateAction` property on `RelationshipDef` in the entity registry. `generateAction` accepts a single `GenerateActionDef` or an array for multiple actions. The `RelationshipSection` component renders action buttons in the section header. Each action can specify `color`, `icon` ("sparkles" or "music"), and optional `successNavigate` (resource name to navigate to on success, using `data.id` from the response).
+
+## Suno Prompt Generator
+
+AI-powered generation of Suno AI prompts (lyrics + style) from a song's vibes. Uses OpenRouter API to analyze the song's vibe values and produce a ready-to-use Suno prompt.
+
+### Configuration
+Requires environment variables in `.env`:
+- `OPENROUTER_API_KEY` -- API key for OpenRouter
+- `VIBES_SUNO_PROMPT_OPENROUTER_MODEL` -- Model to use for Suno prompt generation
+
+### POST /api/suno-prompt-generator/generate
+Generates a Suno prompt from a song's vibes. Fetches the song, its artists, and its assigned vibe values (song_vibes joined with vibes), builds a detailed prompt instructing the AI to produce lyrics and style, calls OpenRouter, parses the JSON response, and creates a new `suno_prompts` record linked to the song via `song_id`.
+
+**Schema**: `{ songId: number }`
+**Returns**: `{ data: { id, name, songId } }`
+
+**Error codes**: 404 (song not found), 400 (no vibes assigned to song), 503 (env not configured), 502 (OpenRouter error), 422 (unparseable response)
+
+### Frontend
+The "+ Suno Prompt" button appears alongside the "Generate" button in the Vibes section on song show pages. It's configured as a second entry in the `generateAction` array on the vibes relationship. On success, it navigates to the newly created suno prompt's show page.
 
 ## Relationship Assignment Routes
 

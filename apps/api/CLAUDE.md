@@ -37,6 +37,7 @@ src/
 │   └── extensions/
 │       ├── lab-import.ts   # Spotify import preview + confirm endpoints
 │       ├── vibes-generator.ts # AI vibes generation via OpenRouter
+│       ├── suno-prompt-generator.ts # AI Suno prompt generation from song vibes
 │       ├── upload.ts     # File upload endpoint (multipart form data)
 │       └── storage.ts    # File serving endpoint (static file delivery)
 ├── services/
@@ -511,6 +512,20 @@ Extension route at `routes/extensions/vibes-generator.ts`. Mounted at `/api/vibe
 
 Error codes: 404 (song not found), 400 (no active vibes), 503 (API key not configured), 502 (OpenRouter error), 422 (unparseable response)
 
+### Suno Prompt Generator Extension
+
+Extension route at `routes/extensions/suno-prompt-generator.ts`. Mounted at `/api/suno-prompt-generator`.
+
+**POST `/api/suno-prompt-generator/generate`**
+- Accepts `{ songId: number }`
+- Fetches the song, its artists, and all assigned vibe values (song_vibes joined with vibes)
+- Builds a detailed prompt instructing the AI to generate Suno-compatible lyrics and style
+- Calls OpenRouter (using `VIBES_SUNO_PROMPT_OPENROUTER_MODEL`), parses JSON response (`{ lyrics, style }`)
+- Creates a new `suno_prompts` record with the generated lyrics/style, linked to the source song via `song_id`
+- Returns `{ data: { id, name, songId } }`
+
+Error codes: 404 (song not found), 400 (no vibes assigned to song), 503 (env not configured), 502 (OpenRouter error), 422 (unparseable response)
+
 ## Testing
 
 - Framework: Vitest
@@ -549,5 +564,6 @@ All env variables are validated by the Zod schema in `src/env.ts`. No defaults -
 | BUNNY_CDN_SECURITY_KEY | No | Bunny CDN security key |
 | DEV_AUTH_BYPASS | No | Set "true" to bypass auth in dev |
 | FRONTEND_URL | Yes | Frontend origin for CORS |
-| OPENROUTER_API_KEY | No | OpenRouter API key (enables AI vibes generation) |
-| VIBES_GENERATOR_OPENROUTER_MODEL | No | OpenRouter model ID (default: google/gemini-2.5-flash) |
+| OPENROUTER_API_KEY | No | OpenRouter API key (enables AI generation) |
+| VIBES_GENERATOR_OPENROUTER_MODEL | No | OpenRouter model ID for vibes generation |
+| VIBES_SUNO_PROMPT_OPENROUTER_MODEL | No | OpenRouter model ID for Suno prompt generation |

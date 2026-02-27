@@ -43,6 +43,16 @@ export interface PayloadFieldDef {
   placeholder?: string;
 }
 
+export interface GenerateActionDef {
+  label: string;
+  endpoint: string;
+  bodyField: string;
+  color?: string;
+  icon?: "sparkles" | "music";
+  /** Resource to navigate to on success (uses data.id from response) */
+  successNavigate?: string;
+}
+
 export interface RelationshipDef {
   type: "many-to-many" | "one-to-many";
   target: string;
@@ -57,11 +67,7 @@ export interface RelationshipDef {
   }>;
   targetLabelField?: string;
   payloadFields?: PayloadFieldDef[];
-  generateAction?: {
-    label: string;
-    endpoint: string;
-    bodyField: string;
-  };
+  generateAction?: GenerateActionDef | GenerateActionDef[];
   removeAction?: {
     label: string;
     type: "unlink" | "delete";
@@ -214,11 +220,21 @@ const songRelationships: RelationshipDef[] = [
     payloadFields: [
       { key: "value", label: "Value", type: "text", required: true },
     ],
-    generateAction: {
-      label: "Generate",
-      endpoint: "/api/vibes-generator/generate",
-      bodyField: "songId",
-    },
+    generateAction: [
+      {
+        label: "Generate",
+        endpoint: "/api/vibes-generator/generate",
+        bodyField: "songId",
+      },
+      {
+        label: "Suno Prompt",
+        endpoint: "/api/suno-prompt-generator/generate",
+        bodyField: "songId",
+        color: "pink",
+        icon: "music",
+        successNavigate: "suno/prompts",
+      },
+    ],
     removeAction: {
       label: "Delete",
       type: "delete",
@@ -650,6 +666,12 @@ export const entityRegistry: EntityDef[] = [
     context: "suno",
     fields: [
       {
+        key: "song_id",
+        label: "Source Song",
+        type: "fk",
+        target: "lab/songs",
+      },
+      {
         key: "lyrics",
         label: "Lyrics",
         type: "textarea",
@@ -666,7 +688,7 @@ export const entityRegistry: EntityDef[] = [
       },
     ],
     relationships: [],
-    listColumns: ["name", "archived", "created_at"],
+    listColumns: ["name", "song_id", "archived", "created_at"],
     asideFields: [],
   },
 ];
