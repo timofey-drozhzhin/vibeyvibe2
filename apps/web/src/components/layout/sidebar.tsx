@@ -144,8 +144,11 @@ export const Sider = () => {
   return (
     <Box
       w={260}
+      miw={260}
       h="100vh"
       style={{
+        position: "sticky",
+        top: 0,
         borderRight: "1px solid var(--mantine-color-default-border)",
         display: "flex",
         flexDirection: "column",

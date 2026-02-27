@@ -79,6 +79,9 @@ export const LabImport = () => {
   const [previewType, setPreviewType] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // Options
+  const [generateVibes, setGenerateVibes] = useState(false);
+
   // Confirm state
   const [isConfirming, setIsConfirming] = useState(false);
   const [importResult, setImportResult] = useState<
@@ -194,6 +197,59 @@ export const LabImport = () => {
           }`,
           color: "green",
         });
+
+        // Trigger vibe generation for each created song
+        if (generateVibes && result.created.length > 0) {
+          const total = result.created.length;
+          let completed = 0;
+          let failed = 0;
+
+          notifications.show({
+            id: "vibes-generation",
+            title: "Generating vibes",
+            message: `0/${total} songs completed...`,
+            color: "violet",
+            loading: true,
+            autoClose: false,
+            withCloseButton: false,
+          });
+
+          for (const song of result.created) {
+            try {
+              await fetch(`${apiUrl}/vibes-generator/generate`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ songId: song.id }),
+              });
+              completed++;
+            } catch {
+              failed++;
+            }
+
+            notifications.update({
+              id: "vibes-generation",
+              title: "Generating vibes",
+              message: `${completed + failed}/${total} songs completed${failed > 0 ? ` (${failed} failed)` : ""}...`,
+              color: "violet",
+              loading: true,
+              autoClose: false,
+              withCloseButton: false,
+            });
+          }
+
+          notifications.update({
+            id: "vibes-generation",
+            title: failed > 0 ? "Vibes generation completed with errors" : "Vibes generated",
+            message: failed > 0
+              ? `Generated vibes for ${completed}/${total} song(s). ${failed} failed.`
+              : `Generated vibes for ${completed} song(s).`,
+            color: failed > 0 ? "yellow" : "green",
+            loading: false,
+            autoClose: 5000,
+            withCloseButton: true,
+          });
+        }
       } else {
         notifications.show({
           title: "Nothing imported",
@@ -213,7 +269,7 @@ export const LabImport = () => {
     } finally {
       setIsConfirming(false);
     }
-  }, [previewTracks, selectedIds, apiUrl]);
+  }, [previewTracks, selectedIds, apiUrl, generateVibes]);
 
   // ---------- Selection helpers ----------
 
@@ -382,14 +438,21 @@ export const LabImport = () => {
                   {previewTracks.length} track(s) found
                 </Text>
               </Group>
-              <Button
-                leftSection={<IconCheck size={16} />}
-                onClick={handleConfirm}
-                loading={isConfirming}
-                disabled={selectedIds.size === 0}
-              >
-                Confirm Import ({selectedIds.size})
-              </Button>
+              <Group gap="md">
+                <Checkbox
+                  label="Generate Vibes"
+                  checked={generateVibes}
+                  onChange={(e) => setGenerateVibes(e.currentTarget.checked)}
+                />
+                <Button
+                  leftSection={<IconCheck size={16} />}
+                  onClick={handleConfirm}
+                  loading={isConfirming}
+                  disabled={selectedIds.size === 0}
+                >
+                  Confirm Import ({selectedIds.size})
+                </Button>
+              </Group>
             </Group>
 
             <Table striped highlightOnHover>
