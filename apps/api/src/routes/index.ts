@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { createEntityRoutes } from "./factory/create-routes.js";
 import { registry } from "./registry.js";
-import anatomyImport from "./extensions/anatomy-import.js";
+import labImport from "./extensions/lab-import.js";
 import uploadRoutes from "./extensions/upload.js";
 import storageRoutes from "./extensions/storage.js";
 
@@ -14,7 +14,7 @@ for (const config of registry) {
 }
 
 // Extension routes
-routes.route("/anatomy", anatomyImport);
+routes.route("/lab", labImport);
 routes.route("/upload", uploadRoutes);
 routes.route("/storage", storageRoutes);
 
@@ -41,9 +41,9 @@ routes.get("/dashboard/stats", async (c) => {
     myMusicSongs,
     myMusicArtists,
     myMusicAlbums,
-    anatomySongs,
-    anatomyArtists,
-    anatomyAlbums,
+    labSongs,
+    labArtists,
+    labAlbums,
     attrCount,
     profileCount,
     binSrcCount,
@@ -56,9 +56,9 @@ routes.get("/dashboard/stats", async (c) => {
     db.select({ count: sql<number>`count(*)` }).from(songs).where(eq(songs.context, "my_music")),
     db.select({ count: sql<number>`count(*)` }).from(artists).where(eq(artists.context, "my_music")),
     db.select({ count: sql<number>`count(*)` }).from(albums).where(eq(albums.context, "my_music")),
-    db.select({ count: sql<number>`count(*)` }).from(songs).where(eq(songs.context, "anatomy")),
-    db.select({ count: sql<number>`count(*)` }).from(artists).where(eq(artists.context, "anatomy")),
-    db.select({ count: sql<number>`count(*)` }).from(albums).where(eq(albums.context, "anatomy")),
+    db.select({ count: sql<number>`count(*)` }).from(songs).where(eq(songs.context, "lab")),
+    db.select({ count: sql<number>`count(*)` }).from(artists).where(eq(artists.context, "lab")),
+    db.select({ count: sql<number>`count(*)` }).from(albums).where(eq(albums.context, "lab")),
     db.select({ count: sql<number>`count(*)` }).from(songAttributes),
     db.select({ count: sql<number>`count(*)` }).from(songProfiles),
     db.select({ count: sql<number>`count(*)` }).from(binSources),
@@ -75,10 +75,10 @@ routes.get("/dashboard/stats", async (c) => {
       artists: myMusicArtists[0].count,
       albums: myMusicAlbums[0].count,
     },
-    anatomy: {
-      songs: anatomySongs[0].count,
-      artists: anatomyArtists[0].count,
-      albums: anatomyAlbums[0].count,
+    lab: {
+      songs: labSongs[0].count,
+      artists: labArtists[0].count,
+      albums: labAlbums[0].count,
       attributes: attrCount[0].count,
       profiles: profileCount[0].count,
     },

@@ -22,7 +22,7 @@ import type { EntityRouteConfig } from "./factory/types.js";
 // Shared Zod Schemas
 // ---------------------------------------------------------------------------
 
-// Songs (shared across my_music and anatomy contexts)
+// Songs (shared across my_music and lab contexts)
 const createSongSchema = z.object({
   name: z.string().min(1).max(200),
   isrc: z.string().nullable().optional(),
@@ -38,7 +38,7 @@ const updateSongSchema = createSongSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
-// Artists (shared across my_music and anatomy contexts)
+// Artists (shared across my_music and lab contexts)
 const createArtistSchema = z.object({
   name: z.string().min(1).max(200),
   isni: z.string().nullable().optional(),
@@ -50,7 +50,7 @@ const updateArtistSchema = createArtistSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
-// Albums (shared across my_music and anatomy contexts)
+// Albums (shared across my_music and lab contexts)
 const createAlbumSchema = z.object({
   name: z.string().min(1).max(200),
   ean: z.string().nullable().optional(),
@@ -312,7 +312,7 @@ async function albumDetailEnricher(db: any, entity: any) {
 }
 
 // ---------------------------------------------------------------------------
-// Song relationship configs (reused for my_music and anatomy)
+// Song relationship configs (reused for my_music and lab)
 // ---------------------------------------------------------------------------
 
 const songRelationships = [
@@ -335,7 +335,7 @@ const songRelationships = [
 ];
 
 // ---------------------------------------------------------------------------
-// Artist relationship configs (reused for my_music and anatomy)
+// Artist relationship configs (reused for my_music and lab)
 // ---------------------------------------------------------------------------
 
 const artistRelationships = [
@@ -350,7 +350,7 @@ const artistRelationships = [
 ];
 
 // ---------------------------------------------------------------------------
-// Album relationship configs (reused for my_music and anatomy)
+// Album relationship configs (reused for my_music and lab)
 // ---------------------------------------------------------------------------
 
 const albumRelationships = [
@@ -440,10 +440,10 @@ export const registry: EntityRouteConfig[] = [
   },
 
   // =========================================================================
-  // 4. anatomy/songs
+  // 4. lab/songs
   // =========================================================================
   {
-    context: "anatomy",
+    context: "lab",
     slug: "songs",
     table: songs,
     entityName: "Song",
@@ -457,17 +457,17 @@ export const registry: EntityRouteConfig[] = [
       release_date: songs.release_date,
       created_at: songs.created_at,
     },
-    contextColumnValue: "anatomy",
+    contextColumnValue: "lab",
     listEnricher: songListEnricher,
     detailEnricher: songDetailEnricher,
     relationships: songRelationships,
   },
 
   // =========================================================================
-  // 5. anatomy/artists
+  // 5. lab/artists
   // =========================================================================
   {
-    context: "anatomy",
+    context: "lab",
     slug: "artists",
     table: artists,
     entityName: "Artist",
@@ -480,16 +480,16 @@ export const registry: EntityRouteConfig[] = [
       rating: artists.rating,
       created_at: artists.created_at,
     },
-    contextColumnValue: "anatomy",
+    contextColumnValue: "lab",
     detailEnricher: artistDetailEnricher,
     relationships: artistRelationships,
   },
 
   // =========================================================================
-  // 6. anatomy/albums
+  // 6. lab/albums
   // =========================================================================
   {
-    context: "anatomy",
+    context: "lab",
     slug: "albums",
     table: albums,
     entityName: "Album",
@@ -503,17 +503,17 @@ export const registry: EntityRouteConfig[] = [
       release_date: albums.release_date,
       created_at: albums.created_at,
     },
-    contextColumnValue: "anatomy",
+    contextColumnValue: "lab",
     listEnricher: albumListEnricher,
     detailEnricher: albumDetailEnricher,
     relationships: albumRelationships,
   },
 
   // =========================================================================
-  // 7. anatomy/song-attributes
+  // 7. lab/song-attributes
   // =========================================================================
   {
-    context: "anatomy",
+    context: "lab",
     slug: "song-attributes",
     table: songAttributes,
     entityName: "Attribute",
@@ -526,7 +526,7 @@ export const registry: EntityRouteConfig[] = [
       attribute_category: songAttributes.attribute_category,
       created_at: songAttributes.created_at,
     },
-    contextColumnValue: "anatomy",
+    contextColumnValue: "lab",
     extraFilters: [
       {
         param: "category",
@@ -538,10 +538,10 @@ export const registry: EntityRouteConfig[] = [
   },
 
   // =========================================================================
-  // 8. anatomy/song-profiles
+  // 8. lab/song-profiles
   // =========================================================================
   {
-    context: "anatomy",
+    context: "lab",
     slug: "song-profiles",
     table: songProfiles,
     entityName: "Profile",
@@ -553,7 +553,7 @@ export const registry: EntityRouteConfig[] = [
       name: songProfiles.name,
       created_at: songProfiles.created_at,
     },
-    contextColumnValue: "anatomy",
+    contextColumnValue: "lab",
     extraFilters: [
       {
         param: "song_id",

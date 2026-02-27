@@ -36,7 +36,7 @@ import type { SectionContext } from "../../config/entity-registry.js";
 // Map section contexts to their header icons
 const sectionIcons: Record<SectionContext, React.ElementType> = {
   "my-music": IconMusic,
-  "anatomy": IconDna,
+  "lab": IconDna,
   "bin": IconTrash,
   "suno": IconBrain,
 };

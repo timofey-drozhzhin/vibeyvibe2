@@ -28,7 +28,7 @@ import { GenericEntityList } from "./pages/generic/list.js";
 import { GenericEntityDetail } from "./pages/generic/show.js";
 
 // Standalone pages (not driven by registry)
-import { AnatomyImport } from "./pages/anatomy/import.js";
+import { LabImport } from "./pages/lab/import.js";
 
 // Mantine-based notification provider for Refine
 const notificationProvider = {
@@ -95,8 +95,8 @@ export const App = () => {
           ))}
 
           {/* Standalone pages */}
-          <Route path="anatomy">
-            <Route path="import" element={<AnatomyImport />} />
+          <Route path="lab">
+            <Route path="import" element={<LabImport />} />
           </Route>
         </Route>
 

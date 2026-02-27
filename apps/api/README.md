@@ -114,30 +114,30 @@ All routes are prefixed with `/api`. Authentication is required on all routes ex
 | GET | `/api/my-music/albums/:id` | Get album by ID |
 | PUT | `/api/my-music/albums/:id` | Update/archive album |
 
-### Anatomy
+### Lab
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/anatomy/songs` | List anatomy songs (smart search: ISRC, ISNI, name, artist name) |
-| POST | `/api/anatomy/songs` | Create anatomy song |
-| GET | `/api/anatomy/songs/:id` | Get song with active profile and linked artists |
-| PUT | `/api/anatomy/songs/:id` | Update/archive anatomy song |
-| GET | `/api/anatomy/songs/:id/profiles` | List all profiles for a song |
-| POST | `/api/anatomy/songs/:id/profiles` | Create new profile version for a song |
-| GET | `/api/anatomy/artists` | List anatomy artists |
-| POST | `/api/anatomy/artists` | Create anatomy artist |
-| GET | `/api/anatomy/artists/:id` | Get anatomy artist |
-| PUT | `/api/anatomy/artists/:id` | Update/archive anatomy artist |
-| GET | `/api/anatomy/attributes` | List attributes |
-| POST | `/api/anatomy/attributes` | Create attribute |
-| GET | `/api/anatomy/attributes/:id` | Get attribute |
-| PUT | `/api/anatomy/attributes/:id` | Update/archive attribute |
-| GET | `/api/anatomy/profiles` | List profiles (filterable by `songId` query param) |
-| POST | `/api/anatomy/profiles` | Create profile (`{ songId, value }`) |
-| GET | `/api/anatomy/profiles/:id` | Get profile (enriched with song name) |
-| PUT | `/api/anatomy/profiles/:id` | Update/archive profile |
-| POST | `/api/anatomy/import` | Preview: parse Spotify URL and return extracted tracks |
-| POST | `/api/anatomy/import/confirm` | Confirm: create anatomy songs and artists from selected tracks |
+| GET | `/api/lab/songs` | List lab songs (smart search: ISRC, ISNI, name, artist name) |
+| POST | `/api/lab/songs` | Create lab song |
+| GET | `/api/lab/songs/:id` | Get song with active profile and linked artists |
+| PUT | `/api/lab/songs/:id` | Update/archive lab song |
+| GET | `/api/lab/songs/:id/profiles` | List all profiles for a song |
+| POST | `/api/lab/songs/:id/profiles` | Create new profile version for a song |
+| GET | `/api/lab/artists` | List lab artists |
+| POST | `/api/lab/artists` | Create lab artist |
+| GET | `/api/lab/artists/:id` | Get lab artist |
+| PUT | `/api/lab/artists/:id` | Update/archive lab artist |
+| GET | `/api/lab/attributes` | List attributes |
+| POST | `/api/lab/attributes` | Create attribute |
+| GET | `/api/lab/attributes/:id` | Get attribute |
+| PUT | `/api/lab/attributes/:id` | Update/archive attribute |
+| GET | `/api/lab/profiles` | List profiles (filterable by `songId` query param) |
+| POST | `/api/lab/profiles` | Create profile (`{ songId, value }`) |
+| GET | `/api/lab/profiles/:id` | Get profile (enriched with song name) |
+| PUT | `/api/lab/profiles/:id` | Update/archive profile |
+| POST | `/api/lab/import` | Preview: parse Spotify URL and return extracted tracks |
+| POST | `/api/lab/import/confirm` | Confirm: create lab songs and artists from selected tracks |
 
 ### Bin
 
@@ -180,12 +180,12 @@ All list endpoints accept standardized query parameters:
 | `pageSize` | number | 25 | Items per page (1-100) |
 | `sort` | string | -- | Column to sort by (varies per resource) |
 | `order` | string | `desc` | Sort direction (`asc` or `desc`) |
-| `search` | string | -- | Text search filter (name, ISRC for anatomy) |
-| `q` | string | -- | Alternative search parameter (anatomy songs) |
+| `search` | string | -- | Text search filter (name, ISRC for lab) |
+| `q` | string | -- | Alternative search parameter (lab songs) |
 | `archived` | boolean | -- | Filter by archive status |
 
 **Resource-specific parameters:**
-- **Anatomy profiles**: `songId` (filter profiles by song)
+- **Lab profiles**: `songId` (filter profiles by song)
 - **Bin songs**: `sourceId` (filter by source)
 - **Suno prompts**: `voiceGender` (filter by voice gender)
 
@@ -212,11 +212,11 @@ This API has no DELETE endpoints. Records are archived by sending a PUT request 
 | `my_song_artists` | id, songId, artistId | Junction table, unique composite index |
 | `my_song_albums` | id, songId, albumId | Junction table, unique composite index |
 
-### Anatomy Tables
+### Lab Tables
 
 | Table | Columns | Notes |
 |-------|---------|-------|
-| `anatomy_songs` | id, isrc (required, unique), name, imagePath, releaseDate (required), rating, spotifyId, appleMusicId, youtubeId | ISRC required for anatomy |
+| `anatomy_songs` | id, isrc (required, unique), name, imagePath, releaseDate (required), rating, spotifyId, appleMusicId, youtubeId | ISRC required for lab |
 | `anatomy_artists` | id, isni (required, unique), name, imagePath, rating | ISNI required |
 | `anatomy_song_artists` | id, songId, artistId | Junction table |
 | `anatomy_attributes` | id, name (unique), category, description, instruction, examples | Defines analysis dimensions; category groups related attributes |
@@ -233,7 +233,7 @@ This API has no DELETE endpoints. Records are archived by sending a PUT request 
 
 | Table | Columns | Notes |
 |-------|---------|-------|
-| `suno_prompts` | id, lyrics, style, voiceGender, notes, profileId (FK to anatomy_profiles), rating | Links to anatomy for style reference |
+| `suno_prompts` | id, lyrics, style, voiceGender, notes, profileId (FK to anatomy_profiles), rating | Links to lab for style reference |
 | `suno_collections` | id, name, description | Groups prompts |
 | `suno_collection_prompts` | id, collectionId, promptId | Junction table |
 | `suno_generations` | id, sunoId, binSongId (FK to bin_songs) | Links to bin for output storage |
@@ -256,7 +256,7 @@ Every route handler uses `@hono/zod-validator`. Schemas are defined in `src/vali
 | File | Schemas |
 |------|---------|
 | `my-music.ts` | `createSongSchema`, `updateSongSchema`, `createArtistSchema`, `updateArtistSchema`, `createAlbumSchema`, `updateAlbumSchema`, `assignArtistSchema`, `assignAlbumSchema`, `listQuerySchema` |
-| `anatomy.ts` | `createAnatomySongSchema`, `updateAnatomySongSchema`, `createAnatomyArtistSchema`, `updateAnatomyArtistSchema`, `createAttributeSchema`, `updateAttributeSchema`, `createProfileSchema`, `updateProfileSchema`, `importUrlSchema`, `smartSearchSchema` |
+| `lab.ts` | `createLabSongSchema`, `updateLabSongSchema`, `createLabArtistSchema`, `updateLabArtistSchema`, `createAttributeSchema`, `updateAttributeSchema`, `createProfileSchema`, `updateProfileSchema`, `importUrlSchema`, `smartSearchSchema` |
 | `bin.ts` | `createBinSongSchema`, `updateBinSongSchema`, `createBinSourceSchema`, `updateBinSourceSchema`, `importYoutubeSchema` |
 | `suno.ts` | `createPromptSchema`, `updatePromptSchema`, `createCollectionSchema`, `updateCollectionSchema`, `assignPromptSchema`, `createGenerationSchema`, `assignGenerationPromptSchema` |
 

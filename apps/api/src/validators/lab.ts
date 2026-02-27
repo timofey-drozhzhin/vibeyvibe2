@@ -3,7 +3,7 @@ import { z } from "zod";
 const isrcRegex = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/;
 const isniRegex = /^\d{15}[\dX]$/;
 
-export const createAnatomySongSchema = z.object({
+export const createLabSongSchema = z.object({
   name: z.string().min(1).max(200),
   isrc: z.string().regex(isrcRegex, "Invalid ISRC format"),
   imagePath: z.string().nullable().optional(),
@@ -14,18 +14,18 @@ export const createAnatomySongSchema = z.object({
   youtubeId: z.string().nullable().optional(),
 });
 
-export const updateAnatomySongSchema = createAnatomySongSchema.partial().extend({
+export const updateLabSongSchema = createLabSongSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
-export const createAnatomyArtistSchema = z.object({
+export const createLabArtistSchema = z.object({
   name: z.string().min(1).max(200),
   isni: z.string().regex(isniRegex, "Invalid ISNI format (16 digits)").nullable().optional(),
   imagePath: z.string().nullable().optional(),
   rating: z.number().int().min(0).max(5).default(0),
 });
 
-export const updateAnatomyArtistSchema = createAnatomyArtistSchema.partial().extend({
+export const updateLabArtistSchema = createLabArtistSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
@@ -78,7 +78,7 @@ export const assignArtistSchema = z.object({
   artistId: z.string().min(1),
 });
 
-export const createAnatomyAlbumSchema = z.object({
+export const createLabAlbumSchema = z.object({
   name: z.string().min(1),
   ean: z.string().optional(),
   imagePath: z.string().optional(),
@@ -89,7 +89,7 @@ export const createAnatomyAlbumSchema = z.object({
   youtubeId: z.string().optional(),
 });
 
-export const updateAnatomyAlbumSchema = createAnatomyAlbumSchema.partial().extend({
+export const updateLabAlbumSchema = createLabAlbumSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 

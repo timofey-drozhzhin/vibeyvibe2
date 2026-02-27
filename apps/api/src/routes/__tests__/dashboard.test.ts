@@ -22,10 +22,10 @@ describe("GET /api/dashboard/stats", () => {
     expect(typeof data.myMusic.artists).toBe("number");
     expect(typeof data.myMusic.albums).toBe("number");
 
-    // Anatomy section
-    expect(data.anatomy).toBeDefined();
-    expect(typeof data.anatomy.songs).toBe("number");
-    expect(typeof data.anatomy.artists).toBe("number");
+    // Lab section
+    expect(data.lab).toBeDefined();
+    expect(typeof data.lab.songs).toBe("number");
+    expect(typeof data.lab.artists).toBe("number");
 
     // Bin section
     expect(data.bin).toBeDefined();
@@ -45,8 +45,8 @@ describe("GET /api/dashboard/stats", () => {
     expect(data.myMusic.songs).toBeGreaterThanOrEqual(0);
     expect(data.myMusic.artists).toBeGreaterThanOrEqual(0);
     expect(data.myMusic.albums).toBeGreaterThanOrEqual(0);
-    expect(data.anatomy.songs).toBeGreaterThanOrEqual(0);
-    expect(data.anatomy.artists).toBeGreaterThanOrEqual(0);
+    expect(data.lab.songs).toBeGreaterThanOrEqual(0);
+    expect(data.lab.artists).toBeGreaterThanOrEqual(0);
     expect(data.bin.songs).toBeGreaterThanOrEqual(0);
     expect(data.suno.prompts).toBeGreaterThanOrEqual(0);
     expect(data.suno.collections).toBeGreaterThanOrEqual(0);

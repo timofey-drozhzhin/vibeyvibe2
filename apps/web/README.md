@@ -80,19 +80,19 @@ The app is organized into four main sections, each with standard CRUD pages:
 | `/my-music/albums/show/:id` | `AlbumShow` | Album detail view |
 | `/my-music/albums/edit/:id` | `AlbumEdit` | Edit album, toggle archive |
 
-### Anatomy
+### Lab
 | Path | Component | Description |
 |------|-----------|-------------|
-| `/anatomy/songs` | `AnatomySongList` | Reference songs for analysis (smart search) |
-| `/anatomy/songs/create` | `AnatomySongCreate` | Add reference song (ISRC required) |
-| `/anatomy/songs/show/:id` | `AnatomySongShow` | Song detail with anatomy profile editor |
-| `/anatomy/songs/edit/:id` | `AnatomySongEdit` | Edit reference song |
-| `/anatomy/artists` | `AnatomyArtistList` | Reference artists |
-| `/anatomy/artists/show/:id` | `AnatomyArtistShow` | Artist detail |
-| `/anatomy/attributes` | `AnatomyAttributeList` | Analysis attributes (tempo, mood, etc.) |
-| `/anatomy/attributes/create` | `AnatomyAttributeCreate` | Add attribute with description and instruction |
-| `/anatomy/attributes/edit/:id` | `AnatomyAttributeEdit` | Edit attribute |
-| `/anatomy/import` | `AnatomyImport` | Import songs from Spotify URLs (preview + confirm) |
+| `/lab/songs` | `LabSongList` | Reference songs for analysis (smart search) |
+| `/lab/songs/create` | `LabSongCreate` | Add reference song (ISRC required) |
+| `/lab/songs/show/:id` | `LabSongShow` | Song detail with lab profile editor |
+| `/lab/songs/edit/:id` | `LabSongEdit` | Edit reference song |
+| `/lab/artists` | `LabArtistList` | Reference artists |
+| `/lab/artists/show/:id` | `LabArtistShow` | Artist detail |
+| `/lab/attributes` | `LabAttributeList` | Analysis attributes (tempo, mood, etc.) |
+| `/lab/attributes/create` | `LabAttributeCreate` | Add attribute with description and instruction |
+| `/lab/attributes/edit/:id` | `LabAttributeEdit` | Edit attribute |
+| `/lab/import` | `LabImport` | Import songs from Spotify URLs (preview + confirm) |
 
 ### Bin
 | Path | Component | Description |
@@ -111,7 +111,7 @@ The app is organized into four main sections, each with standard CRUD pages:
 |------|-----------|-------------|
 | `/suno/prompts` | `SunoPromptList` | Generation prompts |
 | `/suno/prompts/create` | `SunoPromptCreate` | Craft new prompt (lyrics, style, voice, notes, profile link) |
-| `/suno/prompts/show/:id` | `SunoPromptShow` | Prompt detail with linked anatomy profile |
+| `/suno/prompts/show/:id` | `SunoPromptShow` | Prompt detail with linked lab profile |
 | `/suno/prompts/edit/:id` | `SunoPromptEdit` | Edit prompt |
 | `/suno/collections` | `SunoCollectionList` | Prompt collections |
 | `/suno/collections/create` | `SunoCollectionCreate` | Create collection |
@@ -299,11 +299,11 @@ Switch for setting archived status on edit forms.
 
 Also exports `ArchiveBadge` for read-only display (shows red "Archived" badge when true).
 
-## Anatomy-Specific Components
+## Lab-Specific Components
 
-### ProfileEditor (`src/components/anatomy/profile-editor.tsx`)
+### ProfileEditor (`src/components/lab/profile-editor.tsx`)
 
-Form for creating or editing anatomy profiles. Fetches all active attributes and renders a textarea for each one. Saves the profile as a JSON object mapping attribute names to values.
+Form for creating or editing lab profiles. Fetches all active attributes and renders a textarea for each one. Saves the profile as a JSON object mapping attribute names to values.
 
 ```tsx
 <ProfileEditor
@@ -316,7 +316,7 @@ Form for creating or editing anatomy profiles. Fetches all active attributes and
 ```
 
 **Props:**
-- `songId` -- The anatomy song this profile belongs to
+- `songId` -- The lab song this profile belongs to
 - `profileId` -- Existing profile ID for updates (omit for creation)
 - `initialValues` -- Pre-populated attribute values (`Record<string, string>`)
 - `onSaved` -- Callback after successful save
@@ -361,7 +361,7 @@ All requests use `credentials: "include"` for cookie-based session management.
 ### Color Scheme
 - Default: **Dark mode** (`defaultColorScheme="dark"`)
 - Primary color: **Violet**
-- Section colors in sidebar: Violet (My Music), Teal (Anatomy), Orange (Bin), Pink (Suno Studio)
+- Section colors in sidebar: Violet (My Music), Teal (Lab), Orange (Bin), Pink (Suno Studio)
 
 ### Fonts
 - **Poppins** (body and headings): Set globally in the Mantine theme. Available weights: 300, 400, 500, 600, 700.
@@ -397,7 +397,7 @@ All icons from `@tabler/icons-react`. Section icons:
 | Icon | Usage |
 |------|-------|
 | `IconMusic` | My Music section |
-| `IconDna` | Anatomy section |
+| `IconDna` | Lab section |
 | `IconTrash` | Bin section (section icon, not delete) |
 | `IconBrain` | Suno Studio section |
 | `IconMicrophone2` | Artists |

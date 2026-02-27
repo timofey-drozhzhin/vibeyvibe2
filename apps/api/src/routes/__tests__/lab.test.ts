@@ -35,18 +35,18 @@ function jsonPut(body: object) {
   };
 }
 
-// ─── Anatomy Songs ────────────────────────────────────────────────────────────
+// ─── Lab Songs ────────────────────────────────────────────────────────────
 
-describe("Anatomy Songs", () => {
+describe("Lab Songs", () => {
   let createdSongId: string;
 
-  describe("POST /api/anatomy/songs", () => {
+  describe("POST /api/lab/songs", () => {
     it("creates a song with valid data", async () => {
       const isrc = uniqueIsrc(300);
       const res = await app.request(
-        "/api/anatomy/songs",
+        "/api/lab/songs",
         json({
-          name: `Anatomy Song ${ts}`,
+          name: `Lab Song ${ts}`,
           isrc,
           releaseDate: "2024-03-01",
           rating: 8,
@@ -54,15 +54,15 @@ describe("Anatomy Songs", () => {
       );
       expect(res.status).toBe(201);
       const body = await res.json();
-      expect(body.data.name).toBe(`Anatomy Song ${ts}`);
+      expect(body.data.name).toBe(`Lab Song ${ts}`);
       expect(body.data.isrc).toBe(isrc);
       expect(body.data.id).toBeDefined();
       createdSongId = body.data.id;
     });
 
-    it("returns 400 for missing ISRC (required in anatomy)", async () => {
+    it("returns 400 for missing ISRC (required in lab)", async () => {
       const res = await app.request(
-        "/api/anatomy/songs",
+        "/api/lab/songs",
         json({
           name: "No ISRC",
           releaseDate: "2024-01-01",
@@ -71,9 +71,9 @@ describe("Anatomy Songs", () => {
       expect(res.status).toBe(400);
     });
 
-    it("returns 400 for missing release date (required in anatomy)", async () => {
+    it("returns 400 for missing release date (required in lab)", async () => {
       const res = await app.request(
-        "/api/anatomy/songs",
+        "/api/lab/songs",
         json({
           name: "No Date",
           isrc: uniqueIsrc(301),
@@ -84,7 +84,7 @@ describe("Anatomy Songs", () => {
 
     it("returns 400 for empty name", async () => {
       const res = await app.request(
-        "/api/anatomy/songs",
+        "/api/lab/songs",
         json({
           name: "",
           isrc: uniqueIsrc(302),
@@ -96,7 +96,7 @@ describe("Anatomy Songs", () => {
 
     it("returns 400 for invalid ISRC format", async () => {
       const res = await app.request(
-        "/api/anatomy/songs",
+        "/api/lab/songs",
         json({
           name: "Bad ISRC",
           isrc: "INVALID",
@@ -107,9 +107,9 @@ describe("Anatomy Songs", () => {
     });
   });
 
-  describe("GET /api/anatomy/songs", () => {
+  describe("GET /api/lab/songs", () => {
     it("returns paginated list", async () => {
-      const res = await app.request("/api/anatomy/songs");
+      const res = await app.request("/api/lab/songs");
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data).toBeInstanceOf(Array);
@@ -119,7 +119,7 @@ describe("Anatomy Songs", () => {
 
     it("supports search by name", async () => {
       const res = await app.request(
-        `/api/anatomy/songs?q=Anatomy Song ${ts}`
+        `/api/lab/songs?q=Lab Song ${ts}`
       );
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -128,7 +128,7 @@ describe("Anatomy Songs", () => {
 
     it("supports pagination", async () => {
       const res = await app.request(
-        "/api/anatomy/songs?page=1&pageSize=5"
+        "/api/lab/songs?page=1&pageSize=5"
       );
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -136,28 +136,28 @@ describe("Anatomy Songs", () => {
     });
   });
 
-  describe("GET /api/anatomy/songs/:id", () => {
+  describe("GET /api/lab/songs/:id", () => {
     it("returns a single song with activeProfile and artists", async () => {
-      const res = await app.request(`/api/anatomy/songs/${createdSongId}`);
+      const res = await app.request(`/api/lab/songs/${createdSongId}`);
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data.id).toBe(createdSongId);
-      expect(body.data.name).toBe(`Anatomy Song ${ts}`);
+      expect(body.data.name).toBe(`Lab Song ${ts}`);
       expect(body.data).toHaveProperty("activeProfile");
       expect(body.data).toHaveProperty("artists");
       expect(body.data.artists).toBeInstanceOf(Array);
     });
 
     it("returns 404 for non-existent song", async () => {
-      const res = await app.request("/api/anatomy/songs/nonexistent-xyz");
+      const res = await app.request("/api/lab/songs/nonexistent-xyz");
       expect(res.status).toBe(404);
     });
   });
 
-  describe("PUT /api/anatomy/songs/:id", () => {
+  describe("PUT /api/lab/songs/:id", () => {
     it("updates song rating", async () => {
       const res = await app.request(
-        `/api/anatomy/songs/${createdSongId}`,
+        `/api/lab/songs/${createdSongId}`,
         jsonPut({ rating: 10 })
       );
       expect(res.status).toBe(200);
@@ -167,7 +167,7 @@ describe("Anatomy Songs", () => {
 
     it("archives a song", async () => {
       const res = await app.request(
-        `/api/anatomy/songs/${createdSongId}`,
+        `/api/lab/songs/${createdSongId}`,
         jsonPut({ archived: true })
       );
       expect(res.status).toBe(200);
@@ -177,7 +177,7 @@ describe("Anatomy Songs", () => {
 
     it("unarchives a song", async () => {
       const res = await app.request(
-        `/api/anatomy/songs/${createdSongId}`,
+        `/api/lab/songs/${createdSongId}`,
         jsonPut({ archived: false })
       );
       expect(res.status).toBe(200);
@@ -187,7 +187,7 @@ describe("Anatomy Songs", () => {
 
     it("returns 404 for non-existent song", async () => {
       const res = await app.request(
-        "/api/anatomy/songs/nonexistent-xyz",
+        "/api/lab/songs/nonexistent-xyz",
         jsonPut({ rating: 5 })
       );
       expect(res.status).toBe(404);
@@ -195,33 +195,33 @@ describe("Anatomy Songs", () => {
   });
 });
 
-// ─── Anatomy Artists ──────────────────────────────────────────────────────────
+// ─── Lab Artists ──────────────────────────────────────────────────────────
 
-describe("Anatomy Artists", () => {
+describe("Lab Artists", () => {
   let createdArtistId: string;
 
-  describe("POST /api/anatomy/artists", () => {
+  describe("POST /api/lab/artists", () => {
     it("creates an artist with valid data", async () => {
       const isni = uniqueIsni(400);
       const res = await app.request(
-        "/api/anatomy/artists",
+        "/api/lab/artists",
         json({
-          name: `Anatomy Artist ${ts}`,
+          name: `Lab Artist ${ts}`,
           isni,
           rating: 7,
         })
       );
       expect(res.status).toBe(201);
       const body = await res.json();
-      expect(body.data.name).toBe(`Anatomy Artist ${ts}`);
+      expect(body.data.name).toBe(`Lab Artist ${ts}`);
       expect(body.data.isni).toBe(isni);
       expect(body.data.id).toBeDefined();
       createdArtistId = body.data.id;
     });
 
-    it("returns 400 for missing ISNI (required in anatomy)", async () => {
+    it("returns 400 for missing ISNI (required in lab)", async () => {
       const res = await app.request(
-        "/api/anatomy/artists",
+        "/api/lab/artists",
         json({ name: "No ISNI" })
       );
       expect(res.status).toBe(400);
@@ -229,7 +229,7 @@ describe("Anatomy Artists", () => {
 
     it("returns 400 for invalid ISNI", async () => {
       const res = await app.request(
-        "/api/anatomy/artists",
+        "/api/lab/artists",
         json({ name: "Bad ISNI", isni: "12345" })
       );
       expect(res.status).toBe(400);
@@ -237,16 +237,16 @@ describe("Anatomy Artists", () => {
 
     it("returns 400 for empty name", async () => {
       const res = await app.request(
-        "/api/anatomy/artists",
+        "/api/lab/artists",
         json({ name: "", isni: uniqueIsni(401) })
       );
       expect(res.status).toBe(400);
     });
   });
 
-  describe("GET /api/anatomy/artists", () => {
+  describe("GET /api/lab/artists", () => {
     it("returns paginated list", async () => {
-      const res = await app.request("/api/anatomy/artists");
+      const res = await app.request("/api/lab/artists");
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data).toBeInstanceOf(Array);
@@ -255,7 +255,7 @@ describe("Anatomy Artists", () => {
 
     it("supports search by name", async () => {
       const res = await app.request(
-        `/api/anatomy/artists?q=Anatomy Artist ${ts}`
+        `/api/lab/artists?q=Lab Artist ${ts}`
       );
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -263,10 +263,10 @@ describe("Anatomy Artists", () => {
     });
   });
 
-  describe("GET /api/anatomy/artists/:id", () => {
+  describe("GET /api/lab/artists/:id", () => {
     it("returns single artist with songs", async () => {
       const res = await app.request(
-        `/api/anatomy/artists/${createdArtistId}`
+        `/api/lab/artists/${createdArtistId}`
       );
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -275,25 +275,25 @@ describe("Anatomy Artists", () => {
     });
 
     it("returns 404 for non-existent artist", async () => {
-      const res = await app.request("/api/anatomy/artists/nonexistent-xyz");
+      const res = await app.request("/api/lab/artists/nonexistent-xyz");
       expect(res.status).toBe(404);
     });
   });
 
-  describe("PUT /api/anatomy/artists/:id", () => {
+  describe("PUT /api/lab/artists/:id", () => {
     it("updates an artist", async () => {
       const res = await app.request(
-        `/api/anatomy/artists/${createdArtistId}`,
-        jsonPut({ name: `Updated Anatomy Artist ${ts}` })
+        `/api/lab/artists/${createdArtistId}`,
+        jsonPut({ name: `Updated Lab Artist ${ts}` })
       );
       expect(res.status).toBe(200);
       const body = await res.json();
-      expect(body.data.name).toBe(`Updated Anatomy Artist ${ts}`);
+      expect(body.data.name).toBe(`Updated Lab Artist ${ts}`);
     });
 
     it("archives an artist", async () => {
       const res = await app.request(
-        `/api/anatomy/artists/${createdArtistId}`,
+        `/api/lab/artists/${createdArtistId}`,
         jsonPut({ archived: true })
       );
       expect(res.status).toBe(200);
@@ -303,7 +303,7 @@ describe("Anatomy Artists", () => {
 
     it("returns 404 for non-existent artist", async () => {
       const res = await app.request(
-        "/api/anatomy/artists/nonexistent-xyz",
+        "/api/lab/artists/nonexistent-xyz",
         jsonPut({ name: "Nope" })
       );
       expect(res.status).toBe(404);
@@ -311,15 +311,15 @@ describe("Anatomy Artists", () => {
   });
 });
 
-// ─── Anatomy Attributes ──────────────────────────────────────────────────────
+// ─── Lab Attributes ──────────────────────────────────────────────────────
 
-describe("Anatomy Attributes", () => {
+describe("Lab Attributes", () => {
   let createdAttrId: string;
 
-  describe("POST /api/anatomy/attributes", () => {
+  describe("POST /api/lab/attributes", () => {
     it("creates an attribute with all fields", async () => {
       const res = await app.request(
-        "/api/anatomy/attributes",
+        "/api/lab/attributes",
         json({
           name: `Tempo ${ts}`,
           description: "Song tempo in BPM",
@@ -337,7 +337,7 @@ describe("Anatomy Attributes", () => {
 
     it("creates an attribute with only name", async () => {
       const res = await app.request(
-        "/api/anatomy/attributes",
+        "/api/lab/attributes",
         json({ name: `Mood ${ts}` })
       );
       expect(res.status).toBe(201);
@@ -345,7 +345,7 @@ describe("Anatomy Attributes", () => {
 
     it("returns 400 for empty name", async () => {
       const res = await app.request(
-        "/api/anatomy/attributes",
+        "/api/lab/attributes",
         json({ name: "" })
       );
       expect(res.status).toBe(400);
@@ -353,16 +353,16 @@ describe("Anatomy Attributes", () => {
 
     it("returns 400 for name exceeding 100 chars", async () => {
       const res = await app.request(
-        "/api/anatomy/attributes",
+        "/api/lab/attributes",
         json({ name: "x".repeat(101) })
       );
       expect(res.status).toBe(400);
     });
   });
 
-  describe("GET /api/anatomy/attributes", () => {
+  describe("GET /api/lab/attributes", () => {
     it("returns paginated list", async () => {
-      const res = await app.request("/api/anatomy/attributes");
+      const res = await app.request("/api/lab/attributes");
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data).toBeInstanceOf(Array);
@@ -371,7 +371,7 @@ describe("Anatomy Attributes", () => {
 
     it("supports search by name", async () => {
       const res = await app.request(
-        `/api/anatomy/attributes?q=Tempo ${ts}`
+        `/api/lab/attributes?q=Tempo ${ts}`
       );
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -379,10 +379,10 @@ describe("Anatomy Attributes", () => {
     });
   });
 
-  describe("GET /api/anatomy/attributes/:id", () => {
+  describe("GET /api/lab/attributes/:id", () => {
     it("returns a single attribute", async () => {
       const res = await app.request(
-        `/api/anatomy/attributes/${createdAttrId}`
+        `/api/lab/attributes/${createdAttrId}`
       );
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -392,16 +392,16 @@ describe("Anatomy Attributes", () => {
 
     it("returns 404 for non-existent attribute", async () => {
       const res = await app.request(
-        "/api/anatomy/attributes/nonexistent-xyz"
+        "/api/lab/attributes/nonexistent-xyz"
       );
       expect(res.status).toBe(404);
     });
   });
 
-  describe("PUT /api/anatomy/attributes/:id", () => {
+  describe("PUT /api/lab/attributes/:id", () => {
     it("updates an attribute", async () => {
       const res = await app.request(
-        `/api/anatomy/attributes/${createdAttrId}`,
+        `/api/lab/attributes/${createdAttrId}`,
         jsonPut({ description: "Updated description" })
       );
       expect(res.status).toBe(200);
@@ -411,7 +411,7 @@ describe("Anatomy Attributes", () => {
 
     it("archives an attribute", async () => {
       const res = await app.request(
-        `/api/anatomy/attributes/${createdAttrId}`,
+        `/api/lab/attributes/${createdAttrId}`,
         jsonPut({ archived: true })
       );
       expect(res.status).toBe(200);
@@ -421,7 +421,7 @@ describe("Anatomy Attributes", () => {
 
     it("returns 404 for non-existent attribute", async () => {
       const res = await app.request(
-        "/api/anatomy/attributes/nonexistent-xyz",
+        "/api/lab/attributes/nonexistent-xyz",
         jsonPut({ name: "Nope" })
       );
       expect(res.status).toBe(404);
@@ -429,16 +429,16 @@ describe("Anatomy Attributes", () => {
   });
 });
 
-// ─── Anatomy Profiles ─────────────────────────────────────────────────────────
+// ─── Lab Profiles ─────────────────────────────────────────────────────────
 
-describe("Anatomy Profiles", () => {
+describe("Lab Profiles", () => {
   let songId: string;
   let profileId: string;
 
   it("creates a song for profile testing", async () => {
     const isrc = uniqueIsrc(500);
     const res = await app.request(
-      "/api/anatomy/songs",
+      "/api/lab/songs",
       json({
         name: `Profile Song ${ts}`,
         isrc,
@@ -450,10 +450,10 @@ describe("Anatomy Profiles", () => {
     songId = (await res.json()).data.id;
   });
 
-  describe("POST /api/anatomy/songs/:id/profiles", () => {
+  describe("POST /api/lab/songs/:id/profiles", () => {
     it("creates a profile for a song", async () => {
       const res = await app.request(
-        `/api/anatomy/songs/${songId}/profiles`,
+        `/api/lab/songs/${songId}/profiles`,
         json({
           value: JSON.stringify({ Tempo: "120 BPM", Mood: "energetic" }),
         })
@@ -467,7 +467,7 @@ describe("Anatomy Profiles", () => {
 
     it("creates a second profile version for the same song", async () => {
       const res = await app.request(
-        `/api/anatomy/songs/${songId}/profiles`,
+        `/api/lab/songs/${songId}/profiles`,
         json({
           value: JSON.stringify({ Tempo: "125 BPM", Mood: "upbeat" }),
         })
@@ -479,7 +479,7 @@ describe("Anatomy Profiles", () => {
 
     it("returns 404 for non-existent song", async () => {
       const res = await app.request(
-        "/api/anatomy/songs/nonexistent-xyz/profiles",
+        "/api/lab/songs/nonexistent-xyz/profiles",
         json({
           value: JSON.stringify({ Key: "value" }),
         })
@@ -489,7 +489,7 @@ describe("Anatomy Profiles", () => {
 
     it("returns 400 for invalid JSON value", async () => {
       const res = await app.request(
-        `/api/anatomy/songs/${songId}/profiles`,
+        `/api/lab/songs/${songId}/profiles`,
         json({ value: "not valid json" })
       );
       expect(res.status).toBe(400);
@@ -497,17 +497,17 @@ describe("Anatomy Profiles", () => {
 
     it("returns 400 for JSON array value", async () => {
       const res = await app.request(
-        `/api/anatomy/songs/${songId}/profiles`,
+        `/api/lab/songs/${songId}/profiles`,
         json({ value: "[]" })
       );
       expect(res.status).toBe(400);
     });
   });
 
-  describe("GET /api/anatomy/songs/:id/profiles", () => {
+  describe("GET /api/lab/songs/:id/profiles", () => {
     it("lists all profiles for a song", async () => {
       const res = await app.request(
-        `/api/anatomy/songs/${songId}/profiles`
+        `/api/lab/songs/${songId}/profiles`
       );
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -518,16 +518,16 @@ describe("Anatomy Profiles", () => {
 
     it("returns 404 for non-existent song", async () => {
       const res = await app.request(
-        "/api/anatomy/songs/nonexistent-xyz/profiles"
+        "/api/lab/songs/nonexistent-xyz/profiles"
       );
       expect(res.status).toBe(404);
     });
   });
 
-  describe("PUT /api/anatomy/profiles/:id", () => {
+  describe("PUT /api/lab/profiles/:id", () => {
     it("updates a profile value", async () => {
       const res = await app.request(
-        `/api/anatomy/profiles/${profileId}`,
+        `/api/lab/profiles/${profileId}`,
         jsonPut({
           value: JSON.stringify({ Tempo: "130 BPM" }),
         })
@@ -539,7 +539,7 @@ describe("Anatomy Profiles", () => {
 
     it("archives a profile", async () => {
       const res = await app.request(
-        `/api/anatomy/profiles/${profileId}`,
+        `/api/lab/profiles/${profileId}`,
         jsonPut({ archived: true })
       );
       expect(res.status).toBe(200);
@@ -549,7 +549,7 @@ describe("Anatomy Profiles", () => {
 
     it("returns 404 for non-existent profile", async () => {
       const res = await app.request(
-        "/api/anatomy/profiles/nonexistent-xyz",
+        "/api/lab/profiles/nonexistent-xyz",
         jsonPut({ archived: true })
       );
       expect(res.status).toBe(404);
@@ -559,11 +559,11 @@ describe("Anatomy Profiles", () => {
   it("verifies song show includes active profile", async () => {
     // Unarchive the first profile so activeProfile is present
     await app.request(
-      `/api/anatomy/profiles/${profileId}`,
+      `/api/lab/profiles/${profileId}`,
       jsonPut({ archived: false })
     );
 
-    const res = await app.request(`/api/anatomy/songs/${songId}`);
+    const res = await app.request(`/api/lab/songs/${songId}`);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data.activeProfile).not.toBeNull();
@@ -571,13 +571,13 @@ describe("Anatomy Profiles", () => {
   });
 });
 
-// ─── Anatomy Import ───────────────────────────────────────────────────────────
+// ─── Lab Import ───────────────────────────────────────────────────────────
 
-describe("Anatomy Import", () => {
-  describe("POST /api/anatomy/import", () => {
+describe("Lab Import", () => {
+  describe("POST /api/lab/import", () => {
     it("recognizes a Spotify URL (returns 422 without network)", async () => {
       const res = await app.request(
-        "/api/anatomy/import",
+        "/api/lab/import",
         json({ url: "https://open.spotify.com/track/abc123" })
       );
       // fetchSpotifyData fails without network, returning 422
@@ -589,7 +589,7 @@ describe("Anatomy Import", () => {
 
     it("recognizes a spotify.link URL (returns 422 without network)", async () => {
       const res = await app.request(
-        "/api/anatomy/import",
+        "/api/lab/import",
         json({ url: "https://spotify.link/abc123" })
       );
       expect(res.status).toBe(422);
@@ -599,7 +599,7 @@ describe("Anatomy Import", () => {
 
     it("returns 400 for unsupported URL", async () => {
       const res = await app.request(
-        "/api/anatomy/import",
+        "/api/lab/import",
         json({ url: "https://example.com/track" })
       );
       expect(res.status).toBe(400);
@@ -609,7 +609,7 @@ describe("Anatomy Import", () => {
 
     it("returns 400 for invalid URL", async () => {
       const res = await app.request(
-        "/api/anatomy/import",
+        "/api/lab/import",
         json({ url: "not-a-url" })
       );
       expect(res.status).toBe(400);

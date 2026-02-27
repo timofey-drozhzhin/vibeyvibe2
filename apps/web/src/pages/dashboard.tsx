@@ -26,7 +26,7 @@ import {
 
 interface DashboardStats {
   myMusic: { songs: number; artists: number; albums: number };
-  anatomy: { songs: number; artists: number };
+  lab: { songs: number; artists: number };
   bin: { songs: number };
   suno: { prompts: number; collections: number; generations: number };
 }
@@ -101,7 +101,7 @@ export const DashboardPage = () => {
           </Stack>
         </Card>
 
-        {/* Anatomy */}
+        {/* Lab */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Stack gap="sm">
             <Group>
@@ -109,7 +109,7 @@ export const DashboardPage = () => {
                 size={28}
                 color="var(--mantine-color-teal-6)"
               />
-              <Title order={4}>Anatomy</Title>
+              <Title order={4}>Lab</Title>
             </Group>
             <Text size="sm" c="dimmed">
               Reverse-engineer popular music by profiling songs.
@@ -121,13 +121,13 @@ export const DashboardPage = () => {
                 <Group gap={4}>
                   <IconMusicBolt size={14} />
                   <Text size="sm">
-                    {stats?.anatomy?.songs ?? 0} songs
+                    {stats?.lab?.songs ?? 0} songs
                   </Text>
                 </Group>
                 <Group gap={4}>
                   <IconMicrophone2 size={14} />
                   <Text size="sm">
-                    {stats?.anatomy?.artists ?? 0} artists
+                    {stats?.lab?.artists ?? 0} artists
                   </Text>
                 </Group>
               </Group>
@@ -138,7 +138,7 @@ export const DashboardPage = () => {
                 variant="light"
                 color="teal"
                 leftSection={<IconPlus size={14} />}
-                onClick={() => navigate("/anatomy/songs/create")}
+                onClick={() => navigate("/lab/songs/create")}
               >
                 Add Song
               </Button>

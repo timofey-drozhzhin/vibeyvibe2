@@ -14,7 +14,7 @@ import {
   sunoSongPlaylists, sunoSongs,
 } from "./schema/index.js";
 import { user, account } from "./schema/auth.js";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 // ─── Song Attributes ───────────────────────────────────────────────────────
 const attributesSeedData = [
@@ -105,6 +105,19 @@ async function seed() {
 
   console.log("Seeding database...");
 
+  // ─── Migrate context: "anatomy" → "lab" for existing data ─────────────────
+  // Wrapped in try/catch for fresh databases where tables may not exist yet
+  try {
+    await db.run(sql`UPDATE songs SET context = 'lab' WHERE context = 'anatomy'`);
+    await db.run(sql`UPDATE artists SET context = 'lab' WHERE context = 'anatomy'`);
+    await db.run(sql`UPDATE albums SET context = 'lab' WHERE context = 'anatomy'`);
+    await db.run(sql`UPDATE song_profiles SET context = 'lab' WHERE context = 'anatomy'`);
+    await db.run(sql`UPDATE song_attributes SET context = 'lab' WHERE context = 'anatomy'`);
+    console.log("  Context migration (anatomy → lab) applied");
+  } catch {
+    console.log("  Context migration skipped (tables not yet created)");
+  }
+
   // ─── Dev User ──────────────────────────────────────────────────────────────
   const userId = "seed-admin-user-001";
   await db.insert(user).values({
@@ -142,15 +155,15 @@ async function seed() {
 
   console.log("  My Music artists created");
 
-  // ─── Artists (Anatomy) ───────────────────────────────────────────────────
+  // ─── Artists (Lab) ──────────────────────────────────────────────────────
   const [daftPunk] = await db.insert(artists).values({
-    name: "Daft Punk", context: "anatomy", isni: "0000000118779068", image_path: null, rating: 0.9,
+    name: "Daft Punk", context: "lab", isni: "0000000118779068", image_path: null, rating: 0.9,
   }).returning();
   const [radiohead] = await db.insert(artists).values({
-    name: "Radiohead", context: "anatomy", isni: "0000000121070864", image_path: null, rating: 0.9,
+    name: "Radiohead", context: "lab", isni: "0000000121070864", image_path: null, rating: 0.9,
   }).returning();
 
-  console.log("  Anatomy artists created");
+  console.log("  Lab artists created");
 
   // ─── Albums (My Music) ───────────────────────────────────────────────────
   const [midnightFrequencies] = await db.insert(albums).values({
@@ -181,15 +194,15 @@ async function seed() {
 
   console.log("  My Music songs created");
 
-  // ─── Songs (Anatomy) ────────────────────────────────────────────────────
+  // ─── Songs (Lab) ────────────────────────────────────────────────────────
   const [aroundTheWorld] = await db.insert(songs).values({
-    name: "Around the World", context: "anatomy", isrc: "FRZ039800212", release_date: "1997-03-17", rating: 0.8, spotify_uid: "3nsfB1vus2qaloUdcBZvDu",
+    name: "Around the World", context: "lab", isrc: "FRZ039800212", release_date: "1997-03-17", rating: 0.8, spotify_uid: "3nsfB1vus2qaloUdcBZvDu",
   }).returning();
   const [everythingInItsRightPlace] = await db.insert(songs).values({
-    name: "Everything In Its Right Place", context: "anatomy", isrc: "GBAYE0000696", release_date: "2000-10-02", rating: 0.9, spotify_uid: "2kJwzbxV2ppN0wnMTKaqnC",
+    name: "Everything In Its Right Place", context: "lab", isrc: "GBAYE0000696", release_date: "2000-10-02", rating: 0.9, spotify_uid: "2kJwzbxV2ppN0wnMTKaqnC",
   }).returning();
 
-  console.log("  Anatomy songs created");
+  console.log("  Lab songs created");
 
   // ─── Artist-Song Relationships ───────────────────────────────────────────
   await db.insert(artistSongs).values([
@@ -284,7 +297,7 @@ async function seed() {
       .where(
         and(
           eq(songAttributes.name, attr.name),
-          eq(songAttributes.context, "anatomy")
+          eq(songAttributes.context, "lab")
         )
       )
       .limit(1);
@@ -315,7 +328,7 @@ async function seed() {
     } else {
       await db.insert(songAttributes).values({
         name: attr.name,
-        context: "anatomy",
+        context: "lab",
         attribute_category: attr.attribute_category,
         description: attr.description,
         instructions: attr.instructions ?? null,
@@ -333,7 +346,7 @@ async function seed() {
       .where(
         and(
           eq(songAttributes.name, oldName),
-          eq(songAttributes.context, "anatomy")
+          eq(songAttributes.context, "lab")
         )
       )
       .limit(1);

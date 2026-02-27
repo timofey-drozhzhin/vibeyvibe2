@@ -10,7 +10,7 @@ import {
   artistSongs,
   albumSongs,
 } from "../../db/schema/index.js";
-import { importUrlSchema } from "../../validators/anatomy.js";
+import { importUrlSchema } from "../../validators/lab.js";
 import {
   fetchSpotifyData,
   detectSpotifyType,
@@ -18,7 +18,7 @@ import {
 import { createStorageClient } from "../../services/storage/index.js";
 import { processImage } from "../../services/image/index.js";
 
-const anatomyImport = new Hono();
+const labImport = new Hono();
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -78,7 +78,7 @@ function detectUrlType(url: string): "spotify" | "unknown" {
 // POST /import -- Preview: parse a Spotify URL and return extracted tracks
 // ---------------------------------------------------------------------------
 
-anatomyImport.post(
+labImport.post(
   "/import",
   zValidator("json", importUrlSchema),
   async (c) => {
@@ -135,7 +135,7 @@ const confirmSchema = z.object({
   tracks: z.array(confirmTrackSchema).min(1),
 });
 
-anatomyImport.post(
+labImport.post(
   "/import/confirm",
   zValidator("json", confirmSchema),
   async (c) => {
@@ -147,7 +147,7 @@ anatomyImport.post(
     const imageCache = new Map<string, string>(); // url -> storagePath
 
     for (const track of tracks) {
-      // Check if a song with this spotifyId already exists in anatomy context
+      // Check if a song with this spotifyId already exists in lab context
       if (track.spotifyId) {
         const existing = await db
           .select()
@@ -155,8 +155,8 @@ anatomyImport.post(
           .where(eq(songs.spotify_uid, track.spotifyId))
           .limit(1);
 
-        const anatomyExisting = existing.filter((s: any) => s.context === "anatomy");
-        if (anatomyExisting.length > 0) {
+        const labExisting = existing.filter((s: any) => s.context === "lab");
+        if (labExisting.length > 0) {
           skippedSongs.push({
             name: track.name,
             reason: "Song with this Spotify ID already exists",
@@ -165,7 +165,7 @@ anatomyImport.post(
         }
       }
 
-      // Check if an ISRC already exists in anatomy context
+      // Check if an ISRC already exists in lab context
       if (track.isrc) {
         const existingIsrc = await db
           .select()
@@ -173,8 +173,8 @@ anatomyImport.post(
           .where(eq(songs.isrc, track.isrc))
           .limit(1);
 
-        const anatomyExistingIsrc = existingIsrc.filter((s: any) => s.context === "anatomy");
-        if (anatomyExistingIsrc.length > 0) {
+        const labExistingIsrc = existingIsrc.filter((s: any) => s.context === "lab");
+        if (labExistingIsrc.length > 0) {
           skippedSongs.push({
             name: track.name,
             reason: "Song with this ISRC already exists",
@@ -188,7 +188,7 @@ anatomyImport.post(
         .insert(songs)
         .values({
           name: track.name,
-          context: "anatomy",
+          context: "lab",
           isrc: track.isrc || null,
           release_date: track.releaseDate || null,
           spotify_uid: track.spotifyId || null,
@@ -214,12 +214,12 @@ anatomyImport.post(
 
       // Resolve or create artists and link them
       for (const artistData of track.artists) {
-        // Look for an existing artist by name (case-insensitive) in anatomy context
+        // Look for an existing artist by name (case-insensitive) in lab context
         const existingArtist = await db
           .select()
           .from(artists)
           .where(
-            sql`LOWER(${artists.name}) = LOWER(${artistData.name}) AND ${artists.context} = 'anatomy'`
+            sql`LOWER(${artists.name}) = LOWER(${artistData.name}) AND ${artists.context} = 'lab'`
           )
           .limit(1);
 
@@ -231,7 +231,7 @@ anatomyImport.post(
           // Create a new artist
           const [newArtist] = await db.insert(artists).values({
             name: artistData.name,
-            context: "anatomy",
+            context: "lab",
           }).returning();
           artistId = newArtist.id;
         }
@@ -266,12 +266,12 @@ anatomyImport.post(
       if (track.album?.name) {
         const albumName = track.album.name;
 
-        // Look for an existing album by name (case-insensitive) in anatomy context
+        // Look for an existing album by name (case-insensitive) in lab context
         const existingAlbum = await db
           .select()
           .from(albums)
           .where(
-            sql`LOWER(${albums.name}) = LOWER(${albumName}) AND ${albums.context} = 'anatomy'`
+            sql`LOWER(${albums.name}) = LOWER(${albumName}) AND ${albums.context} = 'lab'`
           )
           .limit(1);
 
@@ -283,7 +283,7 @@ anatomyImport.post(
           // Create a new album
           const [newAlbum] = await db.insert(albums).values({
             name: albumName,
-            context: "anatomy",
+            context: "lab",
             release_date: track.releaseDate || null,
           }).returning();
           albumId = newAlbum.id;
@@ -329,4 +329,4 @@ anatomyImport.post(
   }
 );
 
-export default anatomyImport;
+export default labImport;

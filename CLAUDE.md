@@ -45,7 +45,7 @@ apps/api/src/routes/
     types.ts              # Route factory types
     create-routes.ts      # Generic CRUD route factory
   extensions/
-    anatomy-import.ts     # Spotify import
+    lab-import.ts          # Spotify import
     upload.ts             # File upload
     storage.ts            # File serving
   registry.ts             # All entity route configurations
@@ -100,10 +100,10 @@ There are NO delete operations anywhere in the system. Every record that needs t
 This is a personal tool. There is no registration flow after initial setup. Only one user account exists. Auth exists to protect the deployment, not to manage multiple users.
 
 ### Database Table Naming
-Tables are now unified. Shared entity tables (`songs`, `artists`, `albums`) use a `context` column to differentiate sections (values: `"my_music"`, `"anatomy"`).
+Tables are now unified. Shared entity tables (`songs`, `artists`, `albums`) use a `context` column to differentiate sections (values: `"my_music"`, `"lab"`).
 - Shared tables: `songs`, `artists`, `albums` (with `context` column)
 - Pivot tables: `artist_songs`, `album_songs`, `suno_collection_prompts`
-- Anatomy-specific: `song_profiles`, `song_attributes`
+- Lab-specific: `song_profiles`, `song_attributes`
 - Bin: `bin_sources`, `bin_songs`
 - Suno: `suno_prompt_collections`, `suno_prompts`, `suno_collection_prompts`, `suno_song_playlists`, `suno_songs`
 - Auth tables (user, session, account, verification) are managed by Better Auth and have no prefix.
@@ -214,14 +214,14 @@ Routes follow the pattern: `/{context}/{entity-slug}` for list pages, `/{context
 ### My Music
 Personal music library. Track songs, artists, and albums with metadata (ISRC, ISNI, EAN), ratings, and links to Spotify/Apple Music/YouTube.
 
-### Anatomy
-Song analysis workspace. Study song structure through attributes (tempo, mood, instrumentation, etc.) and build anatomy profiles for reference songs.
+### Lab
+Song analysis workspace. Study song structure through attributes (tempo, mood, instrumentation, etc.) and build lab profiles for reference songs.
 
 ### Bin
 Collection point for song discoveries and sources. Track where songs come from and store raw assets before they are processed.
 
 ### Suno Studio
-AI music generation workflow. Craft text prompts (lyrics + style), organize them into collections, and track generation results from Suno. Links to anatomy profiles for reference and bin songs for output.
+AI music generation workflow. Craft text prompts (lyrics + style), organize them into collections, and track generation results from Suno. Links to lab profiles for reference and bin songs for output.
 
 ## Security
 
@@ -240,10 +240,10 @@ The Spotify metadata extraction service (`apps/api/src/services/spotify/index.ts
 - `detectSpotifyType(url)` -- Detects whether a URL points to a track, album, playlist, or is unknown.
 
 ### Import Flow
-1. User enters a Spotify URL on the Import page (`/anatomy/import`)
-2. `POST /api/anatomy/import` validates the URL and calls `fetchSpotifyData` to return a preview of extracted tracks
+1. User enters a Spotify URL on the Import page (`/lab/import`)
+2. `POST /api/lab/import` validates the URL and calls `fetchSpotifyData` to return a preview of extracted tracks
 3. User reviews and selects tracks to import
-4. `POST /api/anatomy/import/confirm` creates `songs` and `artists` records (with `context = "anatomy"`) from the selected tracks, with duplicate detection by Spotify ID and ISRC. Also downloads cover art images to storage and updates `image_path` on created records.
+4. `POST /api/lab/import/confirm` creates `songs` and `artists` records (with `context = "lab"`) from the selected tracks, with duplicate detection by Spotify ID and ISRC. Also downloads cover art images to storage and updates `image_path` on created records.
 
 ## File Upload Routes
 
@@ -260,29 +260,29 @@ Serve uploaded files by storage path. Sets immutable cache headers. Supports ima
 
 ## Profile Management
 
-Anatomy profiles store structured analysis data as JSON objects keyed by attribute name (e.g., `{"Tempo": "120 BPM", "Mood": "melancholic"}`). Profiles are stored in the `song_profiles` table with a `song_id` foreign key and a `value` text column containing the JSON string.
+Lab profiles store structured analysis data as JSON objects keyed by attribute name (e.g., `{"Tempo": "120 BPM", "Mood": "melancholic"}`). Profiles are stored in the `song_profiles` table with a `song_id` foreign key and a `value` text column containing the JSON string.
 
 ### API Routes
-Factory-generated CRUD routes at `/api/anatomy/song-profiles`:
-- `GET /api/anatomy/song-profiles` -- List profiles (filterable by `song_id` query parameter)
-- `POST /api/anatomy/song-profiles` -- Create profile (`{ name, song_id, value }`)
-- `GET /api/anatomy/song-profiles/:id` -- Get profile (enriched with song name via detail enricher)
-- `PUT /api/anatomy/song-profiles/:id` -- Update/archive profile
+Factory-generated CRUD routes at `/api/lab/song-profiles`:
+- `GET /api/lab/song-profiles` -- List profiles (filterable by `song_id` query parameter)
+- `POST /api/lab/song-profiles` -- Create profile (`{ name, song_id, value }`)
+- `GET /api/lab/song-profiles/:id` -- Get profile (enriched with song name via detail enricher)
+- `PUT /api/lab/song-profiles/:id` -- Update/archive profile
 
 ### ProfileEditor Component
-The `ProfileEditor` component (`components/anatomy/profile-editor.tsx`) fetches all active attributes and renders a textarea for each one. Supports creating new profiles and editing existing ones. Used on the Anatomy Song show page.
+The `ProfileEditor` component (`components/lab/profile-editor.tsx`) fetches all active attributes and renders a textarea for each one. Supports creating new profiles and editing existing ones. Used on the Lab Song show page.
 
 ## Import Functionality
 
-These are extension routes defined in `apps/api/src/routes/extensions/anatomy-import.ts`, not factory-generated.
+These are extension routes defined in `apps/api/src/routes/extensions/lab-import.ts`, not factory-generated.
 
-### POST /api/anatomy/import
+### POST /api/lab/import
 Accepts a Spotify URL and returns a preview of extracted track metadata using the Spotify import service. Validates that the URL is a supported Spotify URL (`open.spotify.com`, `spotify.link`). Returns track name, artists, album, release date, ISRC, image URL, and Spotify ID.
 
-**Schema**: `{ url: string }` (must be a valid URL, validated by `importUrlSchema` from `validators/anatomy.ts`)
+**Schema**: `{ url: string }` (must be a valid URL, validated by `importUrlSchema` from `validators/lab.ts`)
 
-### POST /api/anatomy/import/confirm
-Accepts an array of tracks (from the preview step) and creates `songs`, `artists`, and `albums` records with `context = "anatomy"`. Links them via `artist_songs` and `album_songs` pivot tables. Skips duplicates by Spotify ID or ISRC. Artists and albums are matched case-insensitively by name within the anatomy context.
+### POST /api/lab/import/confirm
+Accepts an array of tracks (from the preview step) and creates `songs`, `artists`, and `albums` records with `context = "lab"`. Links them via `artist_songs` and `album_songs` pivot tables. Skips duplicates by Spotify ID or ISRC. Artists and albums are matched case-insensitively by name within the lab context.
 
 **Schema**: `{ tracks: [{ name, artists: [{name}], album?: {name}, releaseDate?, isrc?, imageUrl?, spotifyId }] }`
 
@@ -290,7 +290,7 @@ Accepts an array of tracks (from the preview step) and creates `songs`, `artists
 
 Songs can be assigned to artists and albums through shared pivot tables (`artist_songs`, `album_songs`). These relationships are managed through the route factory and apply across all contexts. The `bodyField` in relationship configs uses camelCase (matching the JSON request body), while the underlying pivot table columns use snake_case.
 
-### Songs (My Music and Anatomy)
+### Songs (My Music and Lab)
 - `POST /api/{context}/songs/:id/artists` -- Assign artist (`{ artistId }`)
 - `PUT /api/{context}/songs/:id/artists/:relatedId` -- Remove artist assignment
 - `POST /api/{context}/songs/:id/albums` -- Assign album (`{ albumId }`)
@@ -358,25 +358,25 @@ Supporting components used by the generic pages, located in `apps/web/src/compon
 | `RelationshipSection` | `relationship-section.tsx` | Displays and manages entity relationships (e.g., artists on a song, prompts in a collection). |
 | `ListCell` | `list-cell.tsx` | Renders a single table cell on list pages based on column type configuration from the registry. |
 
-### Anatomy Components
+### Lab Components
 
-Located in `apps/web/src/components/anatomy/`:
+Located in `apps/web/src/components/lab/`:
 
 | Component | File | Description |
 |-----------|------|-------------|
-| `ProfileEditor` | `profile-editor.tsx` | Form for creating/editing anatomy profiles. Fetches all active attributes and renders a textarea per attribute. Saves as JSON. |
+| `ProfileEditor` | `profile-editor.tsx` | Form for creating/editing lab profiles. Fetches all active attributes and renders a textarea per attribute. Saves as JSON. |
 
 ## API Validation Schemas
 
 All Zod validation schemas used by the route factory are defined inline in `apps/api/src/routes/registry.ts`. Each entity's `createSchema` and `updateSchema` are declared alongside the registry entry. List query schemas are auto-generated by the factory based on entity configuration (sortable columns, extra filters). Update schemas are typically `createSchema.partial().extend({ archived: z.boolean().optional() })` unless explicitly overridden.
 
-Legacy validator files still exist in `apps/api/src/validators/` (my-music.ts, anatomy.ts, bin.ts, suno.ts) but are **not consumed by the route factory**. The only active use is `importUrlSchema` from `validators/anatomy.ts`, which is referenced by the import extension route (`routes/extensions/anatomy-import.ts`).
+Legacy validator files still exist in `apps/api/src/validators/` (my-music.ts, lab.ts, bin.ts, suno.ts) but are **not consumed by the route factory**. The only active use is `importUrlSchema` from `validators/lab.ts`, which is referenced by the import extension route (`routes/extensions/lab-import.ts`).
 
 ## API Route Factory
 
 CRUD routes are generated by a factory function (`apps/api/src/routes/factory/create-routes.ts`) from a centralized registry (`apps/api/src/routes/registry.ts`). The registry defines each entity's table, allowed columns, searchable fields, and relationships. The factory produces standard GET (list), GET (single), POST (create), and PUT (update) endpoints.
 
 Special routes that do not fit the CRUD pattern live in `apps/api/src/routes/extensions/`:
-- `anatomy-import.ts` -- Spotify import preview and confirm
+- `lab-import.ts` -- Spotify import preview and confirm
 - `upload.ts` -- File upload endpoint
 - `storage.ts` -- File serving endpoint

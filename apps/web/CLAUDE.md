@@ -30,19 +30,19 @@ src/
 │   │   ├── aside-panel.tsx         # Right panel (image upload + media embeds)
 │   │   ├── relationship-section.tsx # M:N relationship table + assign modal
 │   │   └── list-cell.tsx           # Field type renderer for list table cells
-│   └── anatomy/          # Anatomy-specific components (ProfileEditor)
+│   └── lab/              # Lab-specific components (ProfileEditor)
 ├── pages/
 │   ├── login.tsx         # Login page: email/password form + optional Google OAuth
 │   ├── dashboard.tsx     # Dashboard page: section overview cards
 │   ├── generic/
 │   │   ├── list.tsx      # GenericEntityList -- handles ALL entity list pages
 │   │   └── show.tsx      # GenericEntityDetail -- handles ALL entity detail pages
-│   └── anatomy/
+│   └── lab/
 │       └── import.tsx    # Spotify import (standalone page, not registry-driven)
 └── utils/                # Utility functions and helpers
 ```
 
-There are NO per-entity page directories. The old `pages/my-music/songs/`, `pages/anatomy/artists/`, etc. directories are all gone. Everything is driven by the entity registry and the two generic page components.
+There are NO per-entity page directories. The old `pages/my-music/songs/`, `pages/lab/artists/`, etc. directories are all gone. Everything is driven by the entity registry and the two generic page components.
 
 ## Entity Registry
 
@@ -54,7 +54,7 @@ The entity registry at `config/entity-registry.ts` is the **single source of tru
 type FieldType = "text" | "textarea" | "date" | "rating" | "uid"
                | "image" | "audio" | "fk" | "url" | "select" | "readonly";
 
-type SectionContext = "my-music" | "anatomy" | "bin" | "suno";
+type SectionContext = "my-music" | "lab" | "bin" | "suno";
 
 interface FieldDef {
   key: string;           // DB column name (e.g. "spotify_uid", "release_date")
@@ -111,11 +111,11 @@ interface EntityDef {
 | 1 | `my-music/songs` | Song | my-music |
 | 2 | `my-music/artists` | Artist | my-music |
 | 3 | `my-music/albums` | Album | my-music |
-| 4 | `anatomy/songs` | Song | anatomy |
-| 5 | `anatomy/artists` | Artist | anatomy |
-| 6 | `anatomy/albums` | Album | anatomy |
-| 7 | `anatomy/song-attributes` | Song Attribute | anatomy |
-| 8 | `anatomy/song-profiles` | Song Profile | anatomy |
+| 4 | `lab/songs` | Song | lab |
+| 5 | `lab/artists` | Artist | lab |
+| 6 | `lab/albums` | Album | lab |
+| 7 | `lab/song-attributes` | Song Attribute | lab |
+| 8 | `lab/song-profiles` | Song Profile | lab |
 | 9 | `bin/sources` | Source | bin |
 | 10 | `bin/songs` | Song | bin |
 | 11 | `suno/prompt-collections` | Prompt Collection | suno |
@@ -132,7 +132,7 @@ The registry uses factory functions to avoid duplication across sections that sh
 - `albumFields(storageDir)` -- EAN, release date, rating, image, Spotify/Apple Music/YouTube UIDs
 - `songRelationships` -- M:N relationships to artists and albums
 
-These are reused by my-music and anatomy song/artist/album entities.
+These are reused by my-music and lab song/artist/album entities.
 
 ### Utility Functions
 
@@ -155,7 +155,7 @@ entityExtensions: Record<string, ExtensionDef[]>
 ```
 
 Currently registered:
-- `anatomy/songs` -> `ProfileEditor` component (placement: `"show-section"`)
+- `lab/songs` -> `ProfileEditor` component (placement: `"show-section"`)
 
 ### Standalone Pages
 
@@ -166,7 +166,7 @@ standalonePages: StandalonePageDef[]
 ```
 
 Currently registered:
-- Anatomy Import page at `/anatomy/import` (Spotify URL import flow)
+- Lab Import page at `/lab/import` (Spotify URL import flow)
 
 ## Routing
 
@@ -181,8 +181,8 @@ Routing is handled by React Router v7 via the `@refinedev/react-router` integrat
 
 ### Route Pattern
 
-- List: `/{context}/{slug}` (e.g. `/anatomy/songs`)
-- Detail: `/{context}/{slug}/show/:id` (e.g. `/anatomy/songs/show/abc123`)
+- List: `/{context}/{slug}` (e.g. `/lab/songs`)
+- Detail: `/{context}/{slug}/show/:id` (e.g. `/lab/songs/show/abc123`)
 
 ### Route Map
 
@@ -192,7 +192,7 @@ Routing is handled by React Router v7 via the `@refinedev/react-router` integrat
 | `/login` | LoginPage | Email/password + Google OAuth |
 | `/{context}/{slug}` | GenericEntityList | List page for any entity |
 | `/{context}/{slug}/show/:id` | GenericEntityDetail | Detail page for any entity |
-| `/anatomy/import` | AnatomyImport | Import songs from Spotify URLs |
+| `/lab/import` | LabImport | Import songs from Spotify URLs |
 
 ### Notification Provider
 
@@ -256,7 +256,7 @@ Receives an `EntityDef` as a prop and renders:
   - Always appends Created/Updated timestamp rows
 - **Right panel** (300px): `AsidePanel` for aside fields (image upload + media embeds)
 - **Relationship sections**: One `RelationshipSection` per `entity.relationships` entry
-- **Extension sections**: Lazy-loaded components from `entityExtensions` (e.g. ProfileEditor for anatomy/songs)
+- **Extension sections**: Lazy-loaded components from `entityExtensions` (e.g. ProfileEditor for lab/songs)
 
 Inline editing is handled by `useUpdate` from Refine. Each field has an `onSave` callback that calls `updateRecord` and refetches.
 
@@ -329,7 +329,7 @@ The sidebar (`components/layout/sidebar.tsx`) is **dynamically generated** from 
 | Context | Icon | Color |
 |---------|------|-------|
 | my-music | `IconMusic` | violet |
-| anatomy | `IconDna` | teal |
+| lab | `IconDna` | teal |
 | bin | `IconTrash` | orange |
 | suno | `IconBrain` | pink |
 
@@ -357,13 +357,13 @@ Located in `components/shared/`:
 | `ArchiveBadge` | `archive-toggle.tsx` | Green "Active" / red "Archived" badge. |
 | `ShowPageHeader` | `show-page.tsx` | **Deprecated** -- use `EntityPage` instead. |
 
-### Anatomy Components
+### Lab Components
 
-Located in `components/anatomy/`:
+Located in `components/lab/`:
 
 | Component | File | Description |
 |-----------|------|-------------|
-| `ProfileEditor` | `profile-editor.tsx` | Form for creating/editing anatomy profiles. Fetches all active attributes and renders a textarea per attribute. Saves as JSON. Loaded as an extension for `anatomy/songs`. |
+| `ProfileEditor` | `profile-editor.tsx` | Form for creating/editing lab profiles. Fetches all active attributes and renders a textarea per attribute. Saves as JSON. Loaded as an extension for `lab/songs`. |
 
 ## Component Patterns
 
@@ -424,7 +424,7 @@ There are no delete buttons, delete actions, or delete confirmation dialogs anyw
 
 All icons come from `@tabler/icons-react`. Key icons:
 - `IconMusic` -- My Music section
-- `IconDna` -- Anatomy section
+- `IconDna` -- Lab section
 - `IconTrash` -- Bin section (section icon, not a delete action)
 - `IconBrain` -- Suno Studio section
 - `IconLayoutDashboard` -- Dashboard

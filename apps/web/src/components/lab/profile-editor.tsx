@@ -12,7 +12,7 @@ import {
 } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 
-interface AnatomyAttribute {
+interface LabAttribute {
   id: string;
   name: string;
   description: string | null;
@@ -38,8 +38,8 @@ export const ProfileEditor = ({
 }: ProfileEditorProps) => {
   const [values, setValues] = useState<Record<string, string>>({});
 
-  const { query: attributesQuery, result: attributesResult } = useList<AnatomyAttribute>({
-    resource: "anatomy/attributes",
+  const { query: attributesQuery, result: attributesResult } = useList<LabAttribute>({
+    resource: "lab/song-attributes",
     pagination: { pageSize: 100 },
     filters: [{ field: "archived", operator: "eq", value: false }],
   });
@@ -77,7 +77,7 @@ export const ProfileEditor = ({
     if (profileId) {
       updateProfile(
         {
-          resource: "anatomy/profiles",
+          resource: "lab/song-profiles",
           id: profileId,
           values: { value: jsonValue },
         },
@@ -90,7 +90,7 @@ export const ProfileEditor = ({
     } else {
       createProfile(
         {
-          resource: "anatomy/profiles",
+          resource: "lab/song-profiles",
           values: { songId, value: jsonValue },
         },
         {
@@ -113,14 +113,14 @@ export const ProfileEditor = ({
   if (attributes.length === 0) {
     return (
       <Text c="dimmed" ta="center" py="md">
-        No attributes defined. Create attributes first in the Anatomy Attributes section.
+        No attributes defined. Create attributes first in the Lab Song Attributes section.
       </Text>
     );
   }
 
   return (
     <Stack gap="md">
-      {attributes.map((attr: AnatomyAttribute) => (
+      {attributes.map((attr: LabAttribute) => (
         <div key={attr.id}>
           <Group gap="xs" mb={4}>
             <Text size="sm" fw={500}>

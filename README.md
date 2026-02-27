@@ -153,13 +153,13 @@ Tables are unified. Shared entity tables use a `context` column to differentiate
 
 | Table | Context Values | Description |
 |-------|---------------|-------------|
-| `songs` | my_music, anatomy | Merged songs table with context column |
-| `artists` | my_music, anatomy | Merged artists table |
-| `albums` | my_music, anatomy | Merged albums table |
+| `songs` | my_music, lab | Merged songs table with context column |
+| `artists` | my_music, lab | Merged artists table |
+| `albums` | my_music, lab | Merged albums table |
 | `artist_songs` | -- | Pivot: artist<>song (composite PK) |
 | `album_songs` | -- | Pivot: album<>song (composite PK) |
-| `song_profiles` | anatomy | Anatomy profiles with JSON value column |
-| `song_attributes` | anatomy | Analysis attributes by category |
+| `song_profiles` | lab | Lab profiles with JSON value column |
+| `song_attributes` | lab | Analysis attributes by category |
 | `bin_sources` | bin | Source playlists/channels |
 | `bin_songs` | bin | Bin song entries |
 | `suno_prompt_collections` | suno | Prompt collection groups |
@@ -204,14 +204,14 @@ The upload endpoint (`POST /api/upload`) accepts multipart form data with:
 ### My Music
 Personal music library. Catalog songs, artists, and albums with industry identifiers (ISRC, ISNI, EAN), ratings (0-1 real scale), cover art, and links to Spotify, Apple Music, and YouTube. Songs can be assigned to artists and albums through junction tables.
 
-### Anatomy
-Song analysis workspace. Study reference songs, artists, and albums through structured attributes (tempo, mood, instrumentation, etc.) organized by category. Build anatomy profiles that map attribute values to songs. Profiles store a JSON object keyed by attribute name. Supports smart search across ISRC codes, ISNI identifiers, and names. Includes Spotify import to extract song metadata from track, album, or playlist URLs.
+### Lab
+Song analysis workspace. Study reference songs, artists, and albums through structured attributes (tempo, mood, instrumentation, etc.) organized by category. Build lab profiles that map attribute values to songs. Profiles store a JSON object keyed by attribute name. Supports smart search across ISRC codes, ISNI identifiers, and names. Includes Spotify import to extract song metadata from track, album, or playlist URLs.
 
 ### Bin
 Collection point for song discoveries. Track where songs come from via sources (playlists, channels, recommendations) and store raw audio assets. Each bin song can link to a source and hold an uploaded audio file.
 
 ### Suno Studio
-AI music generation workflow. Craft text prompts with lyrics and style descriptions. Organize prompts into collections via a many-to-many pivot table. Track generation results from Suno, linking songs back to the prompts that produced them and optionally to bin songs for output storage. Prompts can reference anatomy profiles for style guidance.
+AI music generation workflow. Craft text prompts with lyrics and style descriptions. Organize prompts into collections via a many-to-many pivot table. Track generation results from Suno, linking songs back to the prompts that produced them and optionally to bin songs for output storage. Prompts can reference lab profiles for style guidance.
 
 ## Project Structure
 
@@ -241,7 +241,7 @@ AI music generation workflow. Craft text prompts with lyrics and style descripti
 │   │   │   │   │   ├── types.ts          # EntityRouteConfig types
 │   │   │   │   │   └── create-routes.ts  # Generic CRUD route factory
 │   │   │   │   └── extensions/
-│   │   │   │       ├── anatomy-import.ts # Spotify import endpoints
+│   │   │   │       ├── lab-import.ts    # Spotify import endpoints
 │   │   │   │       ├── upload.ts         # File upload endpoint
 │   │   │   │       └── storage.ts        # File serving endpoint
 │   │   │   ├── services/
@@ -269,14 +269,14 @@ AI music generation workflow. Craft text prompts with lyrics and style descripti
 │       │   │   │   ├── aside-panel.tsx           # Right-side panel (image, embeds)
 │       │   │   │   └── relationship-section.tsx  # M:N relationship management
 │       │   │   ├── shared/     # Reusable components
-│       │   │   └── anatomy/    # Anatomy-specific components (ProfileEditor)
+│       │   │   └── lab/        # Lab-specific components (ProfileEditor)
 │       │   ├── pages/
 │       │   │   ├── login.tsx       # Login page
 │       │   │   ├── dashboard.tsx   # Dashboard
 │       │   │   ├── generic/
 │       │   │   │   ├── list.tsx    # GenericEntityList (handles ALL entities)
 │       │   │   │   └── show.tsx    # GenericEntityDetail (handles ALL entities)
-│       │   │   └── anatomy/
+│       │   │   └── lab/
 │       │   │       └── import.tsx  # Spotify import (standalone page)
 │       │   └── utils/          # Utility functions
 │       ├── vite.config.ts      # Vite configuration with API proxy
@@ -298,7 +298,7 @@ AI music generation workflow. Craft text prompts with lyrics and style descripti
 
 - **Registry-Driven**: All entity CRUD is generated from configuration. Adding a new entity means adding a registry entry, not writing new route/page files. The API registry (`routes/registry.ts`) and frontend registry (`config/entity-registry.ts`) drive the entire system.
 - **DRY Schema**: A `baseEntityColumns` object provides shared columns (id, name, context, archived, timestamps) to all entity tables. One schema file defines all 14 domain tables.
-- **Context Filtering**: Shared tables (songs, artists, albums) use a `context` column to partition data between sections (my_music vs anatomy). The route factory automatically applies context filters.
+- **Context Filtering**: Shared tables (songs, artists, albums) use a `context` column to partition data between sections (my_music vs lab). The route factory automatically applies context filters.
 - **No Deletes**: Records are archived (`archived = true` via PUT), never deleted. No DELETE HTTP methods exist.
 - **Single User**: This is a personal tool. One user account. Auth protects the deployment.
 - **Libraries Over Custom Code**: Use Refine hooks, Mantine components, Drizzle queries, and Zod schemas over bespoke implementations.

@@ -13,19 +13,19 @@ import {
   listQuerySchema,
 } from "../my-music.js";
 
-// Anatomy validators
+// Lab validators
 import {
-  createAnatomySongSchema,
-  updateAnatomySongSchema,
-  createAnatomyArtistSchema,
-  updateAnatomyArtistSchema,
+  createLabSongSchema,
+  updateLabSongSchema,
+  createLabArtistSchema,
+  updateLabArtistSchema,
   createAttributeSchema,
   updateAttributeSchema,
   createProfileSchema,
   updateProfileSchema,
   importUrlSchema,
   smartSearchSchema,
-} from "../anatomy.js";
+} from "../lab.js";
 
 // Suno validators
 import {
@@ -461,13 +461,13 @@ describe("My Music Validators", () => {
   });
 });
 
-// ─── Anatomy Validators ────────────────────────────────────────────────────────
+// ─── Lab Validators ────────────────────────────────────────────────────────
 
-describe("Anatomy Validators", () => {
-  describe("createAnatomySongSchema", () => {
-    it("accepts valid anatomy song", () => {
-      const result = createAnatomySongSchema.safeParse({
-        name: "Anatomy Song",
+describe("Lab Validators", () => {
+  describe("createLabSongSchema", () => {
+    it("accepts valid lab song", () => {
+      const result = createLabSongSchema.safeParse({
+        name: "Lab Song",
         isrc: "USRC17607839",
         releaseDate: "2024-06-01",
         rating: 8,
@@ -476,7 +476,7 @@ describe("Anatomy Validators", () => {
     });
 
     it("rejects missing required ISRC", () => {
-      const result = createAnatomySongSchema.safeParse({
+      const result = createLabSongSchema.safeParse({
         name: "Song",
         releaseDate: "2024-01-01",
       });
@@ -484,7 +484,7 @@ describe("Anatomy Validators", () => {
     });
 
     it("rejects missing required release date", () => {
-      const result = createAnatomySongSchema.safeParse({
+      const result = createLabSongSchema.safeParse({
         name: "Song",
         isrc: "USRC17607839",
       });
@@ -492,7 +492,7 @@ describe("Anatomy Validators", () => {
     });
 
     it("rejects empty release date", () => {
-      const result = createAnatomySongSchema.safeParse({
+      const result = createLabSongSchema.safeParse({
         name: "Song",
         isrc: "USRC17607839",
         releaseDate: "",
@@ -501,7 +501,7 @@ describe("Anatomy Validators", () => {
     });
 
     it("rejects invalid ISRC format", () => {
-      const result = createAnatomySongSchema.safeParse({
+      const result = createLabSongSchema.safeParse({
         name: "Song",
         isrc: "INVALID",
         releaseDate: "2024-01-01",
@@ -510,22 +510,22 @@ describe("Anatomy Validators", () => {
     });
   });
 
-  describe("updateAnatomySongSchema", () => {
+  describe("updateLabSongSchema", () => {
     it("accepts partial update", () => {
-      const result = updateAnatomySongSchema.safeParse({ rating: 9 });
+      const result = updateLabSongSchema.safeParse({ rating: 9 });
       expect(result.success).toBe(true);
     });
 
     it("accepts archived field", () => {
-      const result = updateAnatomySongSchema.safeParse({ archived: true });
+      const result = updateLabSongSchema.safeParse({ archived: true });
       expect(result.success).toBe(true);
     });
   });
 
-  describe("createAnatomyArtistSchema", () => {
-    it("accepts valid anatomy artist", () => {
-      const result = createAnatomyArtistSchema.safeParse({
-        name: "Anatomy Artist",
+  describe("createLabArtistSchema", () => {
+    it("accepts valid lab artist", () => {
+      const result = createLabArtistSchema.safeParse({
+        name: "Lab Artist",
         isni: "0000000081266381",
         rating: 5,
       });
@@ -533,14 +533,14 @@ describe("Anatomy Validators", () => {
     });
 
     it("rejects missing required ISNI", () => {
-      const result = createAnatomyArtistSchema.safeParse({
+      const result = createLabArtistSchema.safeParse({
         name: "Artist",
       });
       expect(result.success).toBe(false);
     });
 
     it("rejects invalid ISNI format", () => {
-      const result = createAnatomyArtistSchema.safeParse({
+      const result = createLabArtistSchema.safeParse({
         name: "Artist",
         isni: "INVALID",
       });
@@ -548,14 +548,14 @@ describe("Anatomy Validators", () => {
     });
   });
 
-  describe("updateAnatomyArtistSchema", () => {
+  describe("updateLabArtistSchema", () => {
     it("accepts partial update", () => {
-      const result = updateAnatomyArtistSchema.safeParse({ name: "Updated" });
+      const result = updateLabArtistSchema.safeParse({ name: "Updated" });
       expect(result.success).toBe(true);
     });
 
     it("accepts archived field", () => {
-      const result = updateAnatomyArtistSchema.safeParse({ archived: true });
+      const result = updateLabArtistSchema.safeParse({ archived: true });
       expect(result.success).toBe(true);
     });
   });

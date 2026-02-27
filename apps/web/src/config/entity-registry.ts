@@ -17,7 +17,7 @@ export type FieldType =
   | "select"
   | "readonly";
 
-export type SectionContext = "my-music" | "anatomy" | "bin" | "suno";
+export type SectionContext = "my-music" | "lab" | "bin" | "suno";
 
 export interface FieldDef {
   key: string;
@@ -92,7 +92,7 @@ export interface StandalonePageDef {
 
 export const sections: SectionDef[] = [
   { context: "my-music", label: "My Music", color: "violet" },
-  { context: "anatomy", label: "Anatomy", color: "teal" },
+  { context: "lab", label: "Lab", color: "teal" },
   { context: "bin", label: "Bin", color: "orange" },
   { context: "suno", label: "Suno Studio", color: "pink" },
 ];
@@ -361,14 +361,14 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 4. anatomy/songs
+  // 4. lab/songs
   // =========================================================================
   {
     slug: "songs",
     tableName: "songs",
     name: "Song",
     pluralName: "Songs",
-    context: "anatomy",
+    context: "lab",
     storageDirectory: "songs",
     fields: songFields("songs"),
     relationships: songRelationships,
@@ -390,14 +390,14 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 5. anatomy/artists
+  // 5. lab/artists
   // =========================================================================
   {
     slug: "artists",
     tableName: "artists",
     name: "Artist",
     pluralName: "Artists",
-    context: "anatomy",
+    context: "lab",
     storageDirectory: "artists",
     fields: artistFields("artists"),
     relationships: artistRelationships,
@@ -412,14 +412,14 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 6. anatomy/albums
+  // 6. lab/albums
   // =========================================================================
   {
     slug: "albums",
     tableName: "albums",
     name: "Album",
     pluralName: "Albums",
-    context: "anatomy",
+    context: "lab",
     storageDirectory: "albums",
     fields: albumFields("albums"),
     relationships: albumRelationships,
@@ -441,14 +441,14 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 7. anatomy/song-profiles
+  // 7. lab/song-profiles
   // =========================================================================
   {
     slug: "song-profiles",
     tableName: "song_profiles",
     name: "Song Profile",
     pluralName: "Song Profiles",
-    context: "anatomy",
+    context: "lab",
     fields: [
       {
         key: "song_id",
@@ -475,14 +475,14 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 8. anatomy/song-attributes
+  // 8. lab/song-attributes
   // =========================================================================
   {
     slug: "song-attributes",
     tableName: "song_attributes",
     name: "Song Attribute",
     pluralName: "Song Attributes",
-    context: "anatomy",
+    context: "lab",
     fields: [
       {
         key: "attribute_category",
@@ -655,7 +655,7 @@ export const entityRegistry: EntityDef[] = [
         key: "song_profile_id",
         label: "Song Profile",
         type: "fk",
-        target: "anatomy/song-profiles",
+        target: "lab/song-profiles",
       },
     ],
     relationships: [],
@@ -713,12 +713,12 @@ export function resolveRelationshipTarget(
 // ---------------------------------------------------------------------------
 
 export const entityExtensions: Record<string, ExtensionDef[]> = {
-  "anatomy/songs": [
+  "lab/songs": [
     {
       key: "profiles",
       placement: "show-section",
       label: "Profiles",
-      component: () => import("../components/anatomy/profile-editor.js").then(m => ({ default: (m as any).ProfileEditor ?? (m as any).default })),
+      component: () => import("../components/lab/profile-editor.js").then(m => ({ default: (m as any).ProfileEditor ?? (m as any).default })),
     },
   ],
 };
@@ -729,9 +729,9 @@ export const entityExtensions: Record<string, ExtensionDef[]> = {
 
 export const standalonePages: StandalonePageDef[] = [
   {
-    context: "anatomy",
+    context: "lab",
     label: "Import",
-    path: "/anatomy/import",
-    component: () => import("../pages/anatomy/import.js").then(m => ({ default: (m as any).AnatomyImport ?? (m as any).default })),
+    path: "/lab/import",
+    component: () => import("../pages/lab/import.js").then(m => ({ default: (m as any).LabImport ?? (m as any).default })),
   },
 ];

@@ -65,7 +65,7 @@ interface ImportConfirmResponse {
 // Component
 // ---------------------------------------------------------------------------
 
-export const AnatomyImport = () => {
+export const LabImport = () => {
   const { list } = useNavigation();
   const apiUrl = useApiUrl();
 
@@ -123,7 +123,7 @@ export const AnatomyImport = () => {
     setSelectedIds(new Set());
 
     try {
-      const res = await fetch(`${apiUrl}/anatomy/import`, {
+      const res = await fetch(`${apiUrl}/lab/import`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -163,7 +163,7 @@ export const AnatomyImport = () => {
     setIsConfirming(true);
 
     try {
-      const res = await fetch(`${apiUrl}/anatomy/import/confirm`, {
+      const res = await fetch(`${apiUrl}/lab/import/confirm`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -263,7 +263,7 @@ export const AnatomyImport = () => {
         <Button
           variant="subtle"
           leftSection={<IconArrowLeft size={16} />}
-          onClick={() => list("anatomy/songs")}
+          onClick={() => list("lab/songs")}
         >
           Back to Songs
         </Button>
@@ -344,7 +344,7 @@ export const AnatomyImport = () => {
               <Button
                 size="xs"
                 variant="light"
-                onClick={() => list("anatomy/songs")}
+                onClick={() => list("lab/songs")}
               >
                 View Songs
               </Button>
