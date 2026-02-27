@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Table,
   Text,
+  Anchor,
   ActionIcon,
   Tooltip,
   Badge,
@@ -13,6 +14,7 @@ import { IconUnlink } from "@tabler/icons-react";
 import { SectionCard } from "../shared/entity-page.js";
 import { AssignModal } from "../shared/assign-modal.js";
 import { RatingDisplay } from "../shared/rating-field.js";
+import { EditableField } from "../shared/editable-field.js";
 import type { RelationshipDef, EntityDef } from "../../config/entity-registry.js";
 import {
   resolveRelationshipTarget,
@@ -46,6 +48,12 @@ export const RelationshipSection = ({
   const targetResource = targetEntity ? getResourceName(targetEntity) : "";
   const labelField = relationship.targetLabelField || "name";
 
+  // Determine which columns are payload (editable pivot data)
+  const payloadKeys = useMemo(
+    () => new Set(relationship.payloadFields?.map((pf) => pf.key) ?? []),
+    [relationship.payloadFields],
+  );
+
   // Get related items from the record
   const items: any[] = record[relationship.subResource] ?? [];
 
@@ -74,6 +82,33 @@ export const RelationshipSection = ({
     }
   };
 
+  const handlePayloadUpdate = async (
+    relatedId: string | number,
+    fieldKey: string,
+    newValue: string,
+  ) => {
+    try {
+      await mutateAsync({
+        url: `/api/${sourceResource}/${record.id}/${relationship.subResource}/${relatedId}`,
+        method: "put",
+        values: { [fieldKey]: newValue },
+        successNotification: false,
+        errorNotification: false,
+      });
+      notifications.show({
+        title: "Updated",
+        message: "Value updated successfully.",
+        color: "green",
+      });
+      onRefresh();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to update.";
+      notifications.show({ title: "Error", message, color: "red" });
+      throw err;
+    }
+  };
+
   return (
     <>
       <SectionCard
@@ -83,7 +118,7 @@ export const RelationshipSection = ({
           onClick: openAssign,
         }}
       >
-        <Table striped highlightOnHover>
+        <Table striped>
           <Table.Thead>
             <Table.Tr>
               {relationship.columns.map((col) => (
@@ -103,19 +138,27 @@ export const RelationshipSection = ({
               </Table.Tr>
             )}
             {items.map((item) => (
-              <Table.Tr
-                key={item.id}
-                className="clickable-name"
-                style={{ cursor: "pointer" }}
-                onClick={() => {
-                  if (targetResource) {
-                    show(targetResource, item.id);
-                  }
-                }}
-              >
+              <Table.Tr key={item.id}>
                 {relationship.columns.map((col) => (
                   <Table.Td key={col.key}>
-                    {renderColumnValue(col, item[col.key])}
+                    {payloadKeys.has(col.key) ? (
+                      <EditableField
+                        value={item[col.key] ?? ""}
+                        onSave={(newValue) =>
+                          handlePayloadUpdate(item.id, col.key, newValue)
+                        }
+                      />
+                    ) : col.key === "name" && targetResource ? (
+                      <Anchor
+                        size="sm"
+                        fw={500}
+                        onClick={() => show(targetResource, item.id)}
+                      >
+                        {item[col.key] != null ? String(item[col.key]) : ""}
+                      </Anchor>
+                    ) : (
+                      renderColumnValue(col, item[col.key])
+                    )}
                   </Table.Td>
                 ))}
                 <Table.Td>
@@ -126,10 +169,7 @@ export const RelationshipSection = ({
                       variant="subtle"
                       color="red"
                       loading={removingId === item.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemove(item.id);
-                      }}
+                      onClick={() => handleRemove(item.id)}
                     >
                       <IconUnlink size={16} />
                     </ActionIcon>
@@ -151,6 +191,7 @@ export const RelationshipSection = ({
           fieldName={relationship.assignFieldName}
           labelField={labelField}
           onSuccess={onRefresh}
+          payloadFields={relationship.payloadFields}
         />
       )}
     </>

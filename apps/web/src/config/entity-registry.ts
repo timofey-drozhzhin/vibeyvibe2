@@ -35,6 +35,14 @@ export interface FieldDef {
   accept?: string;
 }
 
+export interface PayloadFieldDef {
+  key: string;
+  label: string;
+  type: "text" | "textarea";
+  required?: boolean;
+  placeholder?: string;
+}
+
 export interface RelationshipDef {
   type: "many-to-many" | "one-to-many";
   target: string;
@@ -48,6 +56,7 @@ export interface RelationshipDef {
     type?: "text" | "rating" | "badge" | "date";
   }>;
   targetLabelField?: string;
+  payloadFields?: PayloadFieldDef[];
 }
 
 export interface SectionDef {
@@ -178,6 +187,22 @@ const songRelationships: RelationshipDef[] = [
       { key: "name", label: "Name", type: "text" },
       { key: "release_date", label: "Release Date", type: "date" },
       { key: "rating", label: "Rating", type: "rating" },
+    ],
+  },
+  {
+    type: "many-to-many",
+    target: "lab/vibes",
+    label: "Vibes",
+    subResource: "vibes",
+    assignFieldName: "vibeId",
+    pivotTable: "song_vibes",
+    columns: [
+      { key: "name", label: "Name", type: "text" },
+      { key: "vibe_category", label: "Category", type: "badge" },
+      { key: "value", label: "Value", type: "text" },
+    ],
+    payloadFields: [
+      { key: "value", label: "Value", type: "text", required: true },
     ],
   },
 ];

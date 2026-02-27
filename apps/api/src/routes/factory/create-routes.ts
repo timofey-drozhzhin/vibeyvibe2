@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, like, and, or, desc as descFn, asc as ascFn, sql } from "drizzle-orm";
+import { eq, like, and, or, desc as descFn, asc as ascFn, sql, getTableColumns } from "drizzle-orm";
 import { getDb } from "../../db/index.js";
 import type { EntityRouteConfig, RelationshipRouteConfig, FkEnrichment } from "./types.js";
 
@@ -196,6 +196,38 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
       const custom = await config.detailEnricher(db, entity);
       enrichments = { ...enrichments, ...custom };
     }
+
+    // Auto-enrich associative relationships (those with payloadColumns)
+    if (config.relationships) {
+      for (const rel of config.relationships) {
+        if (rel.payloadColumns && rel.payloadColumns.length > 0 && !enrichments[rel.slug]) {
+          const relatedCols = getTableColumns(rel.relatedTable);
+          const selectObj: any = { ...relatedCols };
+          for (const pc of rel.payloadColumns) {
+            selectObj[`_pivot_${pc.name}`] = pc.column;
+          }
+
+          const pivotRows = await db
+            .select(selectObj)
+            .from(rel.pivotTable)
+            .innerJoin(rel.relatedTable, eq(rel.relatedFk, rel.relatedTable.id))
+            .where(eq(rel.parentFk, entity.id));
+
+          enrichments[rel.slug] = pivotRows.map((row: any) => {
+            const result: any = {};
+            for (const [k, v] of Object.entries(row)) {
+              if (k.startsWith("_pivot_")) {
+                result[k.slice(7)] = v;
+              } else {
+                result[k] = v;
+              }
+            }
+            return result;
+          });
+        }
+      }
+    }
+
     return c.json({ ...entity, ...enrichments });
   });
 
@@ -235,7 +267,11 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
 }
 
 function registerRelationshipRoutes(router: Hono, config: EntityRouteConfig, rel: RelationshipRouteConfig) {
-  const assignSchema = z.object({ [rel.bodyField]: z.number().int().positive() });
+  // Build assign schema: relatedId field + optional payload fields
+  const baseAssignSchema = z.object({ [rel.bodyField]: z.number().int().positive() });
+  const assignSchema = rel.payloadSchema
+    ? baseAssignSchema.merge(rel.payloadSchema as z.ZodObject<any>)
+    : baseAssignSchema;
 
   // POST /:id/:slug -- Assign
   router.post(`/:id/${rel.slug}`, zValidator("json", assignSchema), async (c) => {
@@ -262,16 +298,23 @@ function registerRelationshipRoutes(router: Hono, config: EntityRouteConfig, rel
       .where(and(eq(rel.parentFk, parentId), eq(rel.relatedFk, relatedId))).get();
     if (existing) return c.json({ error: "Already assigned" }, 409);
 
-    // Insert
+    // Insert with optional payload columns
     const values: any = {};
     values[rel.parentFk.name] = parentId;
     values[rel.relatedFk.name] = relatedId;
+    if (rel.payloadColumns) {
+      for (const pc of rel.payloadColumns) {
+        if (body[pc.name] !== undefined) {
+          values[pc.name] = body[pc.name];
+        }
+      }
+    }
     await db.insert(rel.pivotTable).values(values);
 
     return c.json({ message: "Assigned" }, 201);
   });
 
-  // PUT /:id/:slug/:relatedId -- Remove
+  // PUT /:id/:slug/:relatedId -- Update payload or Remove
   router.put(`/:id/${rel.slug}/:relatedId`, async (c) => {
     const parentId = Number(c.req.param("id"));
     const relatedId = Number(c.req.param("relatedId"));
@@ -282,6 +325,44 @@ function registerRelationshipRoutes(router: Hono, config: EntityRouteConfig, rel
       .where(and(eq(rel.parentFk, parentId), eq(rel.relatedFk, relatedId))).get();
     if (!existing) return c.json({ error: "Assignment not found" }, 404);
 
+    // Check if body contains payload fields (update) vs empty (remove)
+    let body: any = {};
+    try {
+      body = await c.req.json();
+    } catch {
+      body = {};
+    }
+
+    const hasPayloadFields = rel.payloadColumns?.some(pc => pc.name in body) ?? false;
+
+    if (hasPayloadFields && rel.payloadColumns) {
+      // Validate payload if schema is provided
+      if (rel.payloadSchema) {
+        const partialSchema = (rel.payloadSchema as z.ZodObject<any>).partial();
+        const parsed = partialSchema.safeParse(body);
+        if (!parsed.success) {
+          return c.json({ error: "Validation error", details: parsed.error.flatten() }, 400);
+        }
+        body = parsed.data;
+      }
+
+      // Update pivot row with payload values
+      const updateValues: any = {};
+      for (const pc of rel.payloadColumns) {
+        if (body[pc.name] !== undefined) {
+          updateValues[pc.name] = body[pc.name];
+        }
+      }
+
+      if (Object.keys(updateValues).length > 0) {
+        await db.update(rel.pivotTable)
+          .set(updateValues)
+          .where(and(eq(rel.parentFk, parentId), eq(rel.relatedFk, relatedId)));
+        return c.json({ message: "Updated" });
+      }
+    }
+
+    // Default: remove assignment
     await db.delete(rel.pivotTable)
       .where(and(eq(rel.parentFk, parentId), eq(rel.relatedFk, relatedId)));
 

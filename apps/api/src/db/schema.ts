@@ -46,6 +46,7 @@ export const songsRelations = relations(songs, ({ many }) => ({
   artistSongs: many(artistSongs),
   albumSongs: many(albumSongs),
   songProfiles: many(songProfiles),
+  songVibes: many(songVibes),
 }));
 
 // ===========================================================================
@@ -178,7 +179,38 @@ export const vibes = sqliteTable("vibes", {
   examples: text("examples"),
 });
 
-export const vibesRelations = relations(vibes, () => ({}));
+export const vibesRelations = relations(vibes, ({ many }) => ({
+  songVibes: many(songVibes),
+}));
+
+// ===========================================================================
+// 7b. Song Vibes (ASSOCIATIVE PIVOT — has payload columns)
+// ===========================================================================
+export const songVibes = sqliteTable(
+  "song_vibes",
+  {
+    song_id: integer("song_id")
+      .notNull()
+      .references(() => songs.id, { onDelete: "cascade" }),
+    vibe_id: integer("vibe_id")
+      .notNull()
+      .references(() => vibes.id, { onDelete: "cascade" }),
+    value: text("value").notNull(),
+    created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [primaryKey({ columns: [table.song_id, table.vibe_id] })]
+);
+
+export const songVibesRelations = relations(songVibes, ({ one }) => ({
+  song: one(songs, {
+    fields: [songVibes.song_id],
+    references: [songs.id],
+  }),
+  vibe: one(vibes, {
+    fields: [songVibes.vibe_id],
+    references: [vibes.id],
+  }),
+}));
 
 // ===========================================================================
 // 8. Bin Sources

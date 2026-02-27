@@ -8,6 +8,7 @@ import {
   albumSongs,
   songProfiles,
   vibes,
+  songVibes,
   binSources,
   binSongs,
   sunoPromptCollections,
@@ -315,6 +316,10 @@ async function albumDetailEnricher(db: any, entity: any) {
 // Song relationship configs (reused for my_music and lab)
 // ---------------------------------------------------------------------------
 
+const songVibePayloadSchema = z.object({
+  value: z.string().min(1),
+});
+
 const songRelationships = [
   {
     slug: "artists",
@@ -331,6 +336,18 @@ const songRelationships = [
     parentFk: albumSongs.song_id,
     relatedFk: albumSongs.album_id,
     bodyField: "albumId",
+  },
+  {
+    slug: "vibes",
+    pivotTable: songVibes,
+    relatedTable: vibes,
+    parentFk: songVibes.song_id,
+    relatedFk: songVibes.vibe_id,
+    bodyField: "vibeId",
+    payloadColumns: [
+      { name: "value", column: songVibes.value },
+    ],
+    payloadSchema: songVibePayloadSchema,
   },
 ];
 

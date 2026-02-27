@@ -8,6 +8,11 @@ export interface ExtraFilter {
   mode: "eq" | "like";
 }
 
+export interface PayloadColumnDef {
+  name: string;             // Column name on the pivot table (e.g., "value")
+  column: any;              // Drizzle column reference (e.g., songVibes.value)
+}
+
 export interface RelationshipRouteConfig {
   slug: string;             // URL path segment (e.g., "artists")
   pivotTable: any;          // Drizzle pivot table
@@ -15,6 +20,10 @@ export interface RelationshipRouteConfig {
   parentFk: any;            // Column on pivot for parent (e.g., artistSongs.song_id)
   relatedFk: any;           // Column on pivot for related (e.g., artistSongs.artist_id)
   bodyField: string;        // POST body field name (e.g., "artistId")
+
+  // Associative entity support (pivot tables with payload)
+  payloadColumns?: PayloadColumnDef[];  // Extra columns on the pivot to read/write
+  payloadSchema?: z.ZodTypeAny;         // Zod schema for payload fields in POST/PUT body
 }
 
 export interface FkEnrichment {

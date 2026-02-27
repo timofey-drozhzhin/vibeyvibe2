@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useList, useCustomMutation } from "@refinedev/core";
-import { Modal, Select, Button, Group, Stack, Text } from "@mantine/core";
+import { Modal, Select, Button, Group, Stack, Text, TextInput, Textarea } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import type { PayloadFieldDef } from "../../config/entity-registry.js";
 
 interface AssignModalProps {
   opened: boolean;
@@ -12,6 +13,7 @@ interface AssignModalProps {
   fieldName: string;
   labelField: string;
   onSuccess: () => void;
+  payloadFields?: PayloadFieldDef[];
 }
 
 export const AssignModal = ({
@@ -23,8 +25,10 @@ export const AssignModal = ({
   fieldName,
   labelField,
   onSuccess,
+  payloadFields,
 }: AssignModalProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [payloadValues, setPayloadValues] = useState<Record<string, string>>({});
 
   const listResult = useList({
     resource,
@@ -46,11 +50,28 @@ export const AssignModal = ({
   const handleConfirm = async () => {
     if (!selectedId) return;
 
+    // Validate required payload fields
+    if (payloadFields) {
+      for (const pf of payloadFields) {
+        if (pf.required && !payloadValues[pf.key]?.trim()) {
+          notifications.show({
+            title: "Validation Error",
+            message: `${pf.label} is required.`,
+            color: "red",
+          });
+          return;
+        }
+      }
+    }
+
     try {
       await mutateAsync({
         url: assignUrl,
         method: "post",
-        values: { [fieldName]: Number(selectedId) },
+        values: {
+          [fieldName]: Number(selectedId),
+          ...payloadValues,
+        },
         successNotification: false,
         errorNotification: false,
       });
@@ -62,6 +83,7 @@ export const AssignModal = ({
       });
       onSuccess();
       setSelectedId(null);
+      setPayloadValues({});
       onClose();
     } catch (err: any) {
       const msg = err?.message || "";
@@ -72,6 +94,7 @@ export const AssignModal = ({
           color: "yellow",
         });
         setSelectedId(null);
+        setPayloadValues({});
         onClose();
       } else {
         notifications.show({
@@ -85,6 +108,7 @@ export const AssignModal = ({
 
   const handleClose = () => {
     setSelectedId(null);
+    setPayloadValues({});
     onClose();
   };
 
@@ -104,6 +128,37 @@ export const AssignModal = ({
           nothingFoundMessage="No items found"
           disabled={isLoading}
         />
+        {payloadFields?.map((pf) =>
+          pf.type === "textarea" ? (
+            <Textarea
+              key={pf.key}
+              label={pf.label}
+              placeholder={pf.placeholder}
+              value={payloadValues[pf.key] || ""}
+              onChange={(e) =>
+                setPayloadValues((prev) => ({
+                  ...prev,
+                  [pf.key]: e.currentTarget.value,
+                }))
+              }
+              required={pf.required}
+            />
+          ) : (
+            <TextInput
+              key={pf.key}
+              label={pf.label}
+              placeholder={pf.placeholder}
+              value={payloadValues[pf.key] || ""}
+              onChange={(e) =>
+                setPayloadValues((prev) => ({
+                  ...prev,
+                  [pf.key]: e.currentTarget.value,
+                }))
+              }
+              required={pf.required}
+            />
+          ),
+        )}
         <Group justify="flex-end">
           <Button variant="default" onClick={handleClose}>
             Cancel

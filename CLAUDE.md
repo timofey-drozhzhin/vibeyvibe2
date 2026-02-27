@@ -103,6 +103,7 @@ This is a personal tool. There is no registration flow after initial setup. Only
 Tables are now unified. Shared entity tables (`songs`, `artists`, `albums`) use a `context` column to differentiate sections (values: `"my_music"`, `"lab"`).
 - Shared tables: `songs`, `artists`, `albums` (with `context` column)
 - Pivot tables: `artist_songs`, `album_songs`, `suno_collection_prompts`
+- Associative pivots (with payload): `song_vibes` (has `value` column)
 - Lab-specific: `song_profiles`, `vibes`
 - Bin: `bin_sources`, `bin_songs`
 - Suno: `suno_prompt_collections`, `suno_prompts`, `suno_collection_prompts`, `suno_song_playlists`, `suno_songs`
@@ -295,10 +296,20 @@ Songs can be assigned to artists and albums through shared pivot tables (`artist
 - `PUT /api/{context}/songs/:id/artists/:relatedId` -- Remove artist assignment
 - `POST /api/{context}/songs/:id/albums` -- Assign album (`{ albumId }`)
 - `PUT /api/{context}/songs/:id/albums/:relatedId` -- Remove album assignment
+- `POST /api/{context}/songs/:id/vibes` -- Assign vibe with payload (`{ vibeId, value }`)
+- `PUT /api/{context}/songs/:id/vibes/:relatedId` -- Update payload (`{ value }`) or remove (empty body)
 
 ### Suno Studio
 - `POST /api/suno/prompt-collections/:id/prompts` -- Assign prompt (`{ promptId }`)
 - `PUT /api/suno/prompt-collections/:id/prompts/:relatedId` -- Remove prompt assignment
+
+### Associative Entities (Pivot Tables with Payload)
+
+Associative entities are M:N pivot tables that carry extra payload columns beyond the two foreign keys. They are configured via `payloadColumns` and `payloadSchema` on `RelationshipRouteConfig` (API) and `payloadFields` on `RelationshipDef` (UI).
+
+**API behavior**: The route factory auto-enriches associative relationships in GET detail responses (no manual `detailEnricher` needed). POST assign accepts payload fields alongside the relatedId. PUT with payload fields updates the pivot row; PUT with empty body removes it.
+
+**UI behavior**: The `AssignModal` renders additional inputs for payload fields. The `RelationshipSection` renders payload columns as inline-editable `EditableField` components.
 
 ## Show Page Standards
 
