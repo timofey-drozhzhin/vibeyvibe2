@@ -182,9 +182,30 @@ async function songListEnricher(db: any, rows: any[]) {
     artistMap[row.songId].push({ id: row.artistId, name: row.artistName });
   }
 
+  // Batch-load vibe counts per song
+  const vibeCountRows = await db
+    .select({
+      songId: songVibes.song_id,
+      count: sql<number>`count(*)`,
+    })
+    .from(songVibes)
+    .where(
+      sql`${songVibes.song_id} IN (${sql.join(
+        songIds.map((id: number) => sql`${id}`),
+        sql`, `,
+      )})`,
+    )
+    .groupBy(songVibes.song_id);
+
+  const vibeCountMap: Record<number, number> = {};
+  for (const row of vibeCountRows) {
+    vibeCountMap[row.songId] = row.count;
+  }
+
   return rows.map((song: any) => ({
     ...song,
     artists: artistMap[song.id] || [],
+    vibes_count: vibeCountMap[song.id] || 0,
   }));
 }
 
