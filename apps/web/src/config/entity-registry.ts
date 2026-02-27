@@ -301,7 +301,7 @@ const albumFields = (storageDir: string): FieldDef[] => [
 ];
 
 // ---------------------------------------------------------------------------
-// Entity Registry (15 entities)
+// Entity Registry (13 entities)
 // ---------------------------------------------------------------------------
 
 export const entityRegistry: EntityDef[] = [
@@ -466,41 +466,7 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 7. lab/song-profiles
-  // =========================================================================
-  {
-    slug: "song-profiles",
-    tableName: "song_profiles",
-    name: "Song Profile",
-    pluralName: "Song Profiles",
-    context: "lab",
-    fields: [
-      {
-        key: "song_id",
-        label: "Song",
-        type: "fk",
-        target: "songs",
-        targetLabelField: "name",
-      },
-      {
-        key: "rating",
-        label: "Rating",
-        type: "rating",
-      },
-      {
-        key: "value",
-        label: "Value",
-        type: "textarea",
-        placeholder: "JSON attribute\u2192value pairs",
-      },
-    ],
-    relationships: [],
-    listColumns: ["name", "song_id", "rating", "archived", "created_at"],
-    asideFields: [],
-  },
-
-  // =========================================================================
-  // 8. lab/vibes
+  // 7. lab/vibes
   // =========================================================================
   {
     slug: "vibes",
@@ -676,12 +642,6 @@ export const entityRegistry: EntityDef[] = [
         label: "Notes",
         type: "textarea",
       },
-      {
-        key: "song_profile_id",
-        label: "Song Profile",
-        type: "fk",
-        target: "lab/song-profiles",
-      },
     ],
     relationships: [],
     listColumns: ["name", "archived", "created_at"],
@@ -737,16 +697,7 @@ export function resolveRelationshipTarget(
 // Extensions Registry
 // ---------------------------------------------------------------------------
 
-export const entityExtensions: Record<string, ExtensionDef[]> = {
-  "lab/songs": [
-    {
-      key: "profiles",
-      placement: "show-section",
-      label: "Profiles",
-      component: () => import("../components/lab/profile-editor.js").then(m => ({ default: (m as any).ProfileEditor ?? (m as any).default })),
-    },
-  ],
-};
+export const entityExtensions: Record<string, ExtensionDef[]> = {};
 
 // ---------------------------------------------------------------------------
 // Standalone Pages

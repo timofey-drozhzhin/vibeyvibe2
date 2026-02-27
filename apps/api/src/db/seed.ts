@@ -8,7 +8,7 @@ config({ path: resolve(__dirname, "../../../../.env") });
 import { getDb } from "./index.js";
 import {
   songs, artists, albums, artistSongs, albumSongs,
-  songProfiles, vibes,
+  vibes,
   binSources, binSongs,
   sunoPromptCollections, sunoPrompts, sunoCollectionPrompts,
   sunoSongPlaylists, sunoSongs,
@@ -243,10 +243,10 @@ async function seed() {
 
   // ─── Suno Prompts ────────────────────────────────────────────────────────
   const [lofiSunset] = await db.insert(sunoPrompts).values({
-    name: "Lo-fi Sunset", context: "suno", lyrics: "Watching the sun go down...", prompt: "lo-fi hip hop, warm, vinyl crackle, sunset vibes", notes: "For chill collection", song_profile_id: null,
+    name: "Lo-fi Sunset", context: "suno", lyrics: "Watching the sun go down...", prompt: "lo-fi hip hop, warm, vinyl crackle, sunset vibes", notes: "For chill collection",
   }).returning();
   const [danceFloor] = await db.insert(sunoPrompts).values({
-    name: "Dance Floor", context: "suno", lyrics: "Feel the beat drop...", prompt: "electronic dance, heavy bass, 128 BPM, festival energy", notes: "For energetic collection", song_profile_id: null,
+    name: "Dance Floor", context: "suno", lyrics: "Feel the beat drop...", prompt: "electronic dance, heavy bass, 128 BPM, festival energy", notes: "For energetic collection",
   }).returning();
 
   console.log("  Suno prompts created");

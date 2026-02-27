@@ -39,8 +39,8 @@ The system uses a **registry-driven architecture**:
 - A unified Drizzle schema defines all tables in one file with shared base columns
 - An API route factory generates standard CRUD endpoints from entity configurations in a centralized registry
 - A frontend entity registry drives all UI generation (routes, sidebar navigation, pages, forms, list columns)
-- Two generic page components (list + show) handle all 14 entity types
-- Extensions (Spotify import, ProfileEditor) are loaded for specific entities via the registry
+- Two generic page components (list + show) handle all 13 entity types
+- Extensions (e.g. Spotify import) are loaded for specific entities via the registry
 
 ## Tech Stack
 
@@ -158,7 +158,6 @@ Tables are unified. Shared entity tables use a `context` column to differentiate
 | `albums` | my_music, lab | Merged albums table |
 | `artist_songs` | -- | Pivot: artist<>song (composite PK) |
 | `album_songs` | -- | Pivot: album<>song (composite PK) |
-| `song_profiles` | lab | Lab profiles with JSON value column |
 | `vibes` | lab | Analysis vibes by category |
 | `bin_sources` | bin | Source playlists/channels |
 | `bin_songs` | bin | Bin song entries |
@@ -268,8 +267,7 @@ AI music generation workflow. Craft text prompts with lyrics and style descripti
 │       │   │   │   ├── field-row.tsx             # Detail field renderer
 │       │   │   │   ├── aside-panel.tsx           # Right-side panel (image, embeds)
 │       │   │   │   └── relationship-section.tsx  # M:N relationship management
-│       │   │   ├── shared/     # Reusable components
-│       │   │   └── lab/        # Lab-specific components (ProfileEditor)
+│       │   │   └── shared/     # Reusable components
 │       │   ├── pages/
 │       │   │   ├── login.tsx       # Login page
 │       │   │   ├── dashboard.tsx   # Dashboard

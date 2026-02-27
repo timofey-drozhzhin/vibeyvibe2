@@ -6,7 +6,6 @@ import {
   albums,
   artistSongs,
   albumSongs,
-  songProfiles,
   vibes,
   songVibes,
   binSources,
@@ -80,18 +79,6 @@ const updateVibeSchema = createVibeSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
-// Song Profiles
-const createProfileSchema = z.object({
-  name: z.string().min(1).max(200),
-  song_id: z.number().int().positive(),
-  rating: z.number().min(0).max(5).nullable().optional(),
-  value: z.string().nullable().optional(),
-});
-
-const updateProfileSchema = createProfileSchema.partial().extend({
-  archived: z.boolean().optional(),
-});
-
 // Bin Sources
 const createBinSourceSchema = z.object({
   name: z.string().min(1).max(200),
@@ -132,7 +119,6 @@ const createSunoPromptSchema = z.object({
   lyrics: z.string().nullable().optional(),
   prompt: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
-  song_profile_id: z.number().int().positive().nullable().optional(),
 });
 
 const updateSunoPromptSchema = createSunoPromptSchema.partial().extend({
@@ -555,37 +541,7 @@ export const registry: EntityRouteConfig[] = [
   },
 
   // =========================================================================
-  // 8. lab/song-profiles
-  // =========================================================================
-  {
-    context: "lab",
-    slug: "song-profiles",
-    table: songProfiles,
-    entityName: "Profile",
-    createSchema: createProfileSchema,
-    updateSchema: updateProfileSchema,
-    defaultSort: songProfiles.created_at,
-    defaultOrder: "desc",
-    sortableColumns: {
-      name: songProfiles.name,
-      created_at: songProfiles.created_at,
-    },
-    contextColumnValue: "lab",
-    extraFilters: [
-      {
-        param: "song_id",
-        column: songProfiles.song_id,
-        schema: z.coerce.number().int().positive().optional(),
-        mode: "eq",
-      },
-    ],
-    fkEnrichments: [
-      { column: "song_id", targetTable: songs },
-    ],
-  },
-
-  // =========================================================================
-  // 9. bin/sources
+  // 8. bin/sources
   // =========================================================================
   {
     context: "bin",
@@ -681,9 +637,6 @@ export const registry: EntityRouteConfig[] = [
       created_at: sunoPrompts.created_at,
     },
     contextColumnValue: "suno",
-    fkEnrichments: [
-      { column: "song_profile_id", targetTable: songProfiles },
-    ],
   },
 
   // =========================================================================

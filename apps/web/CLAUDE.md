@@ -6,7 +6,7 @@ Refine v5 (headless) + Mantine UI v8 single-page application for the vibeyvibe m
 
 The web app is a React 19 SPA built with Refine (headless CRUD framework) and Mantine (component library). It communicates with the API backend through a REST data provider. Authentication is handled via Better Auth session cookies. The app uses Vite for development and production builds, and deploys as static files to Bunny CDN.
 
-The UI is entirely **registry-driven**. A single entity registry (`config/entity-registry.ts`) defines all 14 entities across 4 sections. Two generic page components (`GenericEntityList`, `GenericEntityDetail`) handle every entity -- there are no per-entity page files.
+The UI is entirely **registry-driven**. A single entity registry (`config/entity-registry.ts`) defines all 13 entities across 4 sections. Two generic page components (`GenericEntityList`, `GenericEntityDetail`) handle every entity -- there are no per-entity page files.
 
 ## Directory Structure
 
@@ -16,7 +16,7 @@ src/
 ├── App.tsx               # Refine config: dynamic resources + routes from entity registry
 ├── theme.ts              # Mantine theme overrides: Poppins font, violet primary color
 ├── config/
-│   └── entity-registry.ts  # Entity definitions driving all UI (14 entities, 4 sections)
+│   └── entity-registry.ts  # Entity definitions driving all UI (13 entities, 4 sections)
 ├── providers/
 │   ├── auth-provider.ts  # Refine AuthProvider: login, logout, check, getIdentity, onError
 │   └── data-provider.ts  # Refine DataProvider: @refinedev/simple-rest wrapping /api
@@ -30,7 +30,6 @@ src/
 │   │   ├── aside-panel.tsx         # Right panel (image upload + media embeds)
 │   │   ├── relationship-section.tsx # M:N relationship table + assign modal
 │   │   └── list-cell.tsx           # Field type renderer for list table cells
-│   └── lab/              # Lab-specific components (ProfileEditor)
 ├── pages/
 │   ├── login.tsx         # Login page: email/password form + optional Google OAuth
 │   ├── dashboard.tsx     # Dashboard page: section overview cards
@@ -104,7 +103,7 @@ interface EntityDef {
 }
 ```
 
-### 14 Entity Definitions
+### 13 Entity Definitions
 
 | # | Resource Name | Entity Name | Context |
 |---|---------------|-------------|---------|
@@ -115,13 +114,12 @@ interface EntityDef {
 | 5 | `lab/artists` | Artist | lab |
 | 6 | `lab/albums` | Album | lab |
 | 7 | `lab/vibes` | Vibe | lab |
-| 8 | `lab/song-profiles` | Song Profile | lab |
-| 9 | `bin/sources` | Source | bin |
-| 10 | `bin/songs` | Song | bin |
-| 11 | `suno/prompt-collections` | Prompt Collection | suno |
-| 12 | `suno/prompts` | Prompt | suno |
-| 13 | `suno/song-playlists` | Song Playlist | suno |
-| 14 | `suno/songs` | Song | suno |
+| 8 | `bin/sources` | Source | bin |
+| 9 | `bin/songs` | Song | bin |
+| 10 | `suno/prompt-collections` | Prompt Collection | suno |
+| 11 | `suno/prompts` | Prompt | suno |
+| 12 | `suno/song-playlists` | Song Playlist | suno |
+| 13 | `suno/songs` | Song | suno |
 
 ### Reusable Field Sets
 
@@ -154,8 +152,7 @@ Extensions add entity-specific functionality beyond what the generic components 
 entityExtensions: Record<string, ExtensionDef[]>
 ```
 
-Currently registered:
-- `lab/songs` -> `ProfileEditor` component (placement: `"show-section"`)
+Currently registered: none.
 
 ### Standalone Pages
 
@@ -256,7 +253,7 @@ Receives an `EntityDef` as a prop and renders:
   - Always appends Created/Updated timestamp rows
 - **Right panel** (300px): `AsidePanel` for aside fields (image upload + media embeds)
 - **Relationship sections**: One `RelationshipSection` per `entity.relationships` entry
-- **Extension sections**: Lazy-loaded components from `entityExtensions` (e.g. ProfileEditor for lab/songs)
+- **Extension sections**: Lazy-loaded components from `entityExtensions` (if any registered)
 
 Inline editing is handled by `useUpdate` from Refine. Each field has an `onSave` callback that calls `updateRecord` and refetches.
 
@@ -356,14 +353,6 @@ Located in `components/shared/`:
 | `ArchiveButton` | `archive-toggle.tsx` | Red "Archive" / green "Restore" button with confirmation modal. |
 | `ArchiveBadge` | `archive-toggle.tsx` | Green "Active" / red "Archived" badge. |
 | `ShowPageHeader` | `show-page.tsx` | **Deprecated** -- use `EntityPage` instead. |
-
-### Lab Components
-
-Located in `components/lab/`:
-
-| Component | File | Description |
-|-----------|------|-------------|
-| `ProfileEditor` | `profile-editor.tsx` | Form for creating/editing lab profiles. Fetches all active attributes and renders a textarea per attribute. Saves as JSON. Loaded as an extension for `lab/songs`. |
 
 ## Component Patterns
 

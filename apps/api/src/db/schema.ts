@@ -45,7 +45,6 @@ export const songs = sqliteTable(
 export const songsRelations = relations(songs, ({ many }) => ({
   artistSongs: many(artistSongs),
   albumSongs: many(albumSongs),
-  songProfiles: many(songProfiles),
   songVibes: many(songVibes),
 }));
 
@@ -146,30 +145,7 @@ export const albumSongsRelations = relations(albumSongs, ({ one }) => ({
 }));
 
 // ===========================================================================
-// 6. Song Profiles
-// ===========================================================================
-export const songProfiles = sqliteTable(
-  "song_profiles",
-  {
-    ...baseEntityColumns,
-    song_id: integer("song_id")
-      .notNull()
-      .references(() => songs.id),
-    rating: real("rating"),
-    value: text("value"),
-  },
-  (table) => [index("song_profiles_song_id_idx").on(table.song_id)]
-);
-
-export const songProfilesRelations = relations(songProfiles, ({ one }) => ({
-  song: one(songs, {
-    fields: [songProfiles.song_id],
-    references: [songs.id],
-  }),
-}));
-
-// ===========================================================================
-// 7. Vibes
+// 6. Vibes
 // ===========================================================================
 export const vibes = sqliteTable("vibes", {
   ...baseEntityColumns,
@@ -273,22 +249,12 @@ export const sunoPrompts = sqliteTable(
     lyrics: text("lyrics"),
     prompt: text("prompt"),
     notes: text("notes"),
-    song_profile_id: integer("song_profile_id").references(
-      () => songProfiles.id
-    ),
   },
-  (table) => [
-    index("suno_prompts_song_profile_id_idx").on(table.song_profile_id),
-  ]
 );
 
 export const sunoPromptsRelations = relations(
   sunoPrompts,
-  ({ one, many }) => ({
-    songProfile: one(songProfiles, {
-      fields: [sunoPrompts.song_profile_id],
-      references: [songProfiles.id],
-    }),
+  ({ many }) => ({
     sunoCollectionPrompts: many(sunoCollectionPrompts),
     sunoSongs: many(sunoSongs),
   })

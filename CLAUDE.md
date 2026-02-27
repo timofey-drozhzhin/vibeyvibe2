@@ -104,7 +104,7 @@ Tables are now unified. Shared entity tables (`songs`, `artists`, `albums`) use 
 - Shared tables: `songs`, `artists`, `albums` (with `context` column)
 - Pivot tables: `artist_songs`, `album_songs`, `suno_collection_prompts`
 - Associative pivots (with payload): `song_vibes` (has `value` column)
-- Lab-specific: `song_profiles`, `vibes`
+- Lab-specific: `vibes`
 - Bin: `bin_sources`, `bin_songs`
 - Suno: `suno_prompt_collections`, `suno_prompts`, `suno_collection_prompts`, `suno_song_playlists`, `suno_songs`
 - Auth tables (user, session, account, verification) are managed by Better Auth and have no prefix.
@@ -259,20 +259,6 @@ Upload a file via multipart form data. Accepts `file` (required) and `directory`
 ### GET /api/storage/*
 Serve uploaded files by storage path. Sets immutable cache headers. Supports image formats (JPEG, PNG, GIF, WebP, SVG) and audio formats (MP3, WAV, OGG, FLAC, AAC, M4A).
 
-## Profile Management
-
-Lab profiles store structured analysis data as JSON objects keyed by attribute name (e.g., `{"Tempo": "120 BPM", "Mood": "melancholic"}`). Profiles are stored in the `song_profiles` table with a `song_id` foreign key and a `value` text column containing the JSON string.
-
-### API Routes
-Factory-generated CRUD routes at `/api/lab/song-profiles`:
-- `GET /api/lab/song-profiles` -- List profiles (filterable by `song_id` query parameter)
-- `POST /api/lab/song-profiles` -- Create profile (`{ name, song_id, value }`)
-- `GET /api/lab/song-profiles/:id` -- Get profile (enriched with song name via detail enricher)
-- `PUT /api/lab/song-profiles/:id` -- Update/archive profile
-
-### ProfileEditor Component
-The `ProfileEditor` component (`components/lab/profile-editor.tsx`) fetches all active attributes and renders a textarea for each one. Supports creating new profiles and editing existing ones. Used on the Lab Song show page.
-
 ## Import Functionality
 
 These are extension routes defined in `apps/api/src/routes/extensions/lab-import.ts`, not factory-generated.
@@ -369,13 +355,6 @@ Supporting components used by the generic pages, located in `apps/web/src/compon
 | `RelationshipSection` | `relationship-section.tsx` | Displays and manages entity relationships (e.g., artists on a song, prompts in a collection). |
 | `ListCell` | `list-cell.tsx` | Renders a single table cell on list pages based on column type configuration from the registry. |
 
-### Lab Components
-
-Located in `apps/web/src/components/lab/`:
-
-| Component | File | Description |
-|-----------|------|-------------|
-| `ProfileEditor` | `profile-editor.tsx` | Form for creating/editing lab profiles. Fetches all active attributes and renders a textarea per attribute. Saves as JSON. |
 
 ## API Validation Schemas
 
