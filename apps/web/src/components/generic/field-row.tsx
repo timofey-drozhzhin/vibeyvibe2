@@ -1,7 +1,20 @@
 import { useState } from "react";
-import { Table, Text, Anchor, Select, Group, ActionIcon, Box } from "@mantine/core";
+import {
+  Table,
+  Text,
+  Anchor,
+  Select,
+  Group,
+  ActionIcon,
+  Box,
+  Textarea,
+  Button,
+  Tooltip,
+  Stack,
+} from "@mantine/core";
 import { useList, useNavigation } from "@refinedev/core";
-import { IconEdit } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
+import { IconEdit, IconCopy } from "@tabler/icons-react";
 import { EditableField } from "../shared/editable-field.js";
 import { RatingField } from "../shared/rating-field.js";
 import { ImageUpload } from "../shared/image-upload.js";
@@ -54,13 +67,10 @@ function renderFieldContent(
 
     case "textarea":
       return (
-        <EditableField
+        <TextareaField
+          field={field}
           value={value ?? null}
-          onSave={(v) => onSave(v)}
-          placeholder={field.placeholder}
-          renderDisplay={(v) => (
-            <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>{v}</Text>
-          )}
+          onSave={onSave}
         />
       );
 
@@ -139,6 +149,128 @@ function renderFieldContent(
       return <Text size="sm">{value != null ? String(value) : ""}</Text>;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Textarea Field — read-only display with Copy and inline Edit
+// ---------------------------------------------------------------------------
+
+interface TextareaFieldProps {
+  field: FieldDef;
+  value: string | null;
+  onSave: (value: any) => Promise<void>;
+}
+
+const TextareaField = ({ field, value, onSave }: TextareaFieldProps) => {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const handleStartEdit = () => {
+    setEditValue(value ?? "");
+    setEditing(true);
+  };
+
+  const handleCancel = () => {
+    setEditing(false);
+    setEditValue(value ?? "");
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave(editValue);
+      setEditing(false);
+    } catch {
+      // error handled by parent
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      notifications.show({
+        title: "Copied",
+        message: `${field.label} copied to clipboard.`,
+        color: "green",
+        autoClose: 2000,
+      });
+    } catch {
+      // fallback ignored
+    }
+  };
+
+  if (editing) {
+    return (
+      <Stack gap="xs">
+        <Textarea
+          value={editValue}
+          onChange={(e) => setEditValue(e.currentTarget.value)}
+          placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
+          autosize
+          minRows={4}
+          maxRows={20}
+          autoFocus
+          disabled={saving}
+        />
+        <Group gap="xs">
+          <Button size="xs" onClick={handleSave} loading={saving}>
+            Save
+          </Button>
+          <Button size="xs" variant="subtle" onClick={handleCancel} disabled={saving}>
+            Cancel
+          </Button>
+        </Group>
+      </Stack>
+    );
+  }
+
+  const hasValue = !!value;
+
+  return (
+    <Box className="editable-field">
+      <Group gap="xs" wrap="nowrap" align="flex-start">
+        {hasValue ? (
+          <Text size="sm" style={{ whiteSpace: "pre-wrap", flex: 1 }}>
+            {value}
+          </Text>
+        ) : (
+          <Text size="sm" c="dimmed" fs="italic">
+            No {field.label.toLowerCase()}
+          </Text>
+        )}
+        <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+          {hasValue && (
+            <Tooltip label="Copy">
+              <ActionIcon
+                className="edit-icon"
+                size="xs"
+                variant="subtle"
+                color="gray"
+                onClick={handleCopy}
+              >
+                <IconCopy size={14} />
+              </ActionIcon>
+            </Tooltip>
+          )}
+          <Tooltip label="Edit">
+            <ActionIcon
+              className="edit-icon"
+              size="xs"
+              variant="subtle"
+              color="gray"
+              onClick={handleStartEdit}
+            >
+              <IconEdit size={14} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+      </Group>
+    </Box>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // FK Field with Select dropdown
