@@ -35,7 +35,6 @@ const defaultLabels: Record<string, string> = {
   vibe_category: "Category",
   description: "Description",
   url: "URL",
-  vibes_count: "Vibes",
 };
 
 /** Fields that support server-side sorting. */

@@ -26,6 +26,7 @@ const envSchema = z.object({
   OPENROUTER_API_KEY: optionalString,
   VIBES_GENERATION_OPENROUTER_MODEL: optionalString,
   VIBES_SUNO_PROMPT_OPENROUTER_MODEL: optionalString,
+  PROFILE_GENERATION_OPENROUTER_MODEL: optionalString,
 });
 
 export type Env = z.infer<typeof envSchema>;

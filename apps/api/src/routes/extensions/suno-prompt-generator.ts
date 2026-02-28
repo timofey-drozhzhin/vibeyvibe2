@@ -1,24 +1,19 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb } from "../../db/index.js";
 import {
   songs,
   artists,
   artistSongs,
-  vibes,
-  songVibes,
   sunoPrompts,
+  profiles,
 } from "../../db/schema/index.js";
 import { chatCompletion } from "../../services/openrouter/index.js";
 import { getEnv } from "../../env.js";
 
 const sunoPromptGenerator = new Hono();
-
-const generateSchema = z.object({
-  songId: z.number().int().positive(),
-});
 
 // ---------------------------------------------------------------------------
 // Prompt Builder
@@ -131,61 +126,75 @@ Your final output should be in JSON format. It should not contain attribute cate
 }
 
 // ---------------------------------------------------------------------------
-// POST /generate — Generate a Suno prompt from song vibes
+// POST /generate-from-profile — Generate a Suno prompt from a profile's JSON
 // ---------------------------------------------------------------------------
 
+const generateFromProfileSchema = z.object({
+  profileId: z.number().int().positive(),
+});
+
 sunoPromptGenerator.post(
-  "/generate",
-  zValidator("json", generateSchema),
+  "/generate-from-profile",
+  zValidator("json", generateFromProfileSchema),
   async (c) => {
-    const { songId } = c.req.valid("json");
+    const { profileId } = c.req.valid("json");
     const db = getDb();
 
-    // 1. Fetch the song (any context)
+    // 1. Fetch the profile
+    const [profile] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.id, profileId))
+      .limit(1);
+
+    if (!profile) {
+      return c.json({ error: "Profile not found" }, 404);
+    }
+
+    // 2. Parse the profile's JSON value
+    let profileVibes: Array<{ name: string; category: string; value: string }>;
+    try {
+      profileVibes = JSON.parse(profile.value);
+    } catch {
+      return c.json({ error: "Profile contains invalid JSON data" }, 422);
+    }
+
+    if (!Array.isArray(profileVibes) || profileVibes.length === 0) {
+      return c.json(
+        { error: "Profile has no vibe data. Generate a profile first." },
+        400,
+      );
+    }
+
+    // 3. Fetch the song
     const [song] = await db
       .select()
       .from(songs)
-      .where(eq(songs.id, songId))
+      .where(eq(songs.id, profile.song_id))
       .limit(1);
 
     if (!song) {
       return c.json({ error: "Song not found" }, 404);
     }
 
-    // 2. Fetch artists for this song
+    // 4. Fetch artists for this song
     const songArtists = await db
       .select({ name: artists.name })
       .from(artistSongs)
       .innerJoin(artists, eq(artistSongs.artist_id, artists.id))
-      .where(eq(artistSongs.song_id, songId));
+      .where(eq(artistSongs.song_id, profile.song_id));
 
     const artistNames = songArtists.map((a) => a.name);
 
-    // 3. Fetch this song's vibes (song_vibes joined with vibes)
-    const songVibeRows = await db
-      .select({
-        vibeName: vibes.name,
-        vibeCategory: vibes.vibe_category,
-        value: songVibes.value,
-      })
-      .from(songVibes)
-      .innerJoin(vibes, eq(songVibes.vibe_id, vibes.id))
-      .where(
-        and(
-          eq(songVibes.song_id, songId),
-          eq(vibes.archived, false),
-        ),
-      );
+    // 5. Map profile vibes to the format expected by the prompt builder
+    const songVibeEntries = profileVibes.map((pv) => ({
+      vibeName: pv.name,
+      vibeCategory: pv.category,
+      value: pv.value,
+    }));
 
-    if (songVibeRows.length === 0) {
-      return c.json(
-        { error: "No vibes found for this song. Generate vibes first." },
-        400,
-      );
-    }
-
-    // 4. Build prompt and call OpenRouter
-    const prompt = buildPrompt(song, artistNames, songVibeRows);
+    // 6. Build prompt and call OpenRouter
+    const prompt = buildPrompt(song, artistNames, songVibeEntries);
 
     const env = getEnv();
     const model = env.VIBES_SUNO_PROMPT_OPENROUTER_MODEL;
@@ -213,7 +222,7 @@ sunoPromptGenerator.post(
       return c.json({ error: message }, 502);
     }
 
-    // 5. Parse JSON response (handle potential markdown code fences)
+    // 7. Parse JSON response
     let parsed: { lyrics?: string; style?: string };
     try {
       let cleaned = rawResponse.trim();
@@ -230,7 +239,7 @@ sunoPromptGenerator.post(
       );
     }
 
-    // 6. Create a suno_prompts record linked to the song
+    // 8. Create a suno_prompts record linked to the song
     const promptName = `${song.name} - Suno Prompt`;
     const [created] = await db
       .insert(sunoPrompts)
@@ -239,7 +248,7 @@ sunoPromptGenerator.post(
         context: "suno",
         lyrics: parsed.lyrics?.trim() || null,
         prompt: parsed.style?.trim() || null,
-        song_id: songId,
+        song_id: profile.song_id,
       })
       .returning();
 
@@ -247,7 +256,7 @@ sunoPromptGenerator.post(
       data: {
         id: created.id,
         name: created.name,
-        songId,
+        songId: profile.song_id,
       },
     });
   },

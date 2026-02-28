@@ -53,6 +53,21 @@ export interface GenerateActionDef {
   successNavigate?: string;
 }
 
+export interface RowActionDef {
+  label: string;
+  icon: "eye" | "music" | "sparkles";
+  type: "view-json" | "generate";
+  /** For view-json: which field contains the JSON to display */
+  viewField?: string;
+  /** For generate: API endpoint to POST to */
+  endpoint?: string;
+  /** For generate: field name for row ID in request body */
+  bodyField?: string;
+  /** For generate: navigate to this resource on success */
+  successNavigate?: string;
+  color?: string;
+}
+
 export interface RelationshipDef {
   type: "many-to-many" | "one-to-many";
   target: string;
@@ -73,6 +88,14 @@ export interface RelationshipDef {
     type: "unlink" | "delete";
   };
   hideAssign?: boolean;
+  /** Max items to display (rest hidden behind "View all") */
+  maxItems?: number;
+  /** Per-row action buttons */
+  rowActions?: RowActionDef[];
+  /** Show archive/restore toggle per row */
+  archivable?: boolean;
+  /** API endpoint for archiving rows (PUT /{endpoint}/{id}) */
+  archiveEndpoint?: string;
 }
 
 export interface SectionDef {
@@ -206,40 +229,43 @@ const songRelationships: RelationshipDef[] = [
     ],
   },
   {
-    type: "many-to-many",
-    target: "lab/vibes",
-    label: "Vibes",
-    subResource: "vibes",
-    assignFieldName: "vibeId",
-    pivotTable: "song_vibes",
+    type: "one-to-many",
+    target: "profiles",
+    label: "Profiles",
+    subResource: "profiles",
+    assignFieldName: "",
+    hideAssign: true,
     columns: [
-      { key: "name", label: "Name", type: "text" },
-      { key: "vibe_category", label: "Category", type: "badge" },
-      { key: "value", label: "Value", type: "text" },
+      { key: "created_at", label: "Date", type: "date" },
+      { key: "method", label: "Method", type: "badge" },
     ],
-    payloadFields: [
-      { key: "value", label: "Value", type: "text", required: true },
-    ],
-    generateAction: [
+    maxItems: 10,
+    archivable: true,
+    archiveEndpoint: "/api/profiles",
+    generateAction: {
+      label: "Generate from Vibes",
+      endpoint: "/api/profile-generator/generate",
+      bodyField: "songId",
+      color: "violet",
+      icon: "sparkles",
+    },
+    rowActions: [
       {
-        label: "Generate",
-        endpoint: "/api/vibes-generator/generate",
-        bodyField: "songId",
+        label: "View",
+        icon: "eye",
+        type: "view-json",
+        viewField: "value",
       },
       {
         label: "Suno Prompt",
-        endpoint: "/api/suno-prompt-generator/generate",
-        bodyField: "songId",
-        color: "pink",
         icon: "music",
+        type: "generate",
+        endpoint: "/api/suno-prompt-generator/generate-from-profile",
+        bodyField: "profileId",
         successNavigate: "suno/prompts",
+        color: "pink",
       },
     ],
-    removeAction: {
-      label: "Delete",
-      type: "delete",
-    },
-    hideAssign: true,
   },
 ];
 
@@ -359,7 +385,7 @@ export const entityRegistry: EntityDef[] = [
       "artists",
       "release_date",
       "rating",
-      "vibes_count",
+
       "archived",
       "created_at",
     ],
@@ -440,7 +466,7 @@ export const entityRegistry: EntityDef[] = [
       "artists",
       "release_date",
       "rating",
-      "vibes_count",
+
       "archived",
       "created_at",
     ],

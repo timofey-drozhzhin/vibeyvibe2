@@ -8,16 +8,32 @@ import {
   Badge,
   Button,
   Group,
+  Modal,
+  ScrollArea,
+  Stack,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useNavigation, useCustomMutation } from "@refinedev/core";
 import { notifications } from "@mantine/notifications";
-import { IconUnlink, IconPlus, IconSparkles, IconMusic, IconTrash } from "@tabler/icons-react";
+import {
+  IconUnlink,
+  IconPlus,
+  IconSparkles,
+  IconMusic,
+  IconTrash,
+  IconEye,
+  IconArchive,
+} from "@tabler/icons-react";
 import { SectionCard } from "../shared/entity-page.js";
 import { AssignModal } from "../shared/assign-modal.js";
 import { RatingDisplay } from "../shared/rating-field.js";
 import { EditableField } from "../shared/editable-field.js";
-import type { RelationshipDef, EntityDef, GenerateActionDef } from "../../config/entity-registry.js";
+import type {
+  RelationshipDef,
+  EntityDef,
+  GenerateActionDef,
+  RowActionDef,
+} from "../../config/entity-registry.js";
 import {
   resolveRelationshipTarget,
   getResourceName,
@@ -41,6 +57,9 @@ export const RelationshipSection = ({
     useDisclosure(false);
   const [removingId, setRemovingId] = useState<string | number | null>(null);
   const [generatingIdx, setGeneratingIdx] = useState<number | null>(null);
+  const [rowGeneratingId, setRowGeneratingId] = useState<string | number | null>(null);
+  const [archivingId, setArchivingId] = useState<string | number | null>(null);
+  const [viewModalData, setViewModalData] = useState<any[] | null>(null);
   const { mutateAsync } = useCustomMutation();
 
   // Normalize generateAction to always be an array
@@ -65,8 +84,16 @@ export const RelationshipSection = ({
     [relationship.payloadFields],
   );
 
-  // Get related items from the record
-  const items: any[] = record[relationship.subResource] ?? [];
+  // Get related items from the record, apply maxItems limit
+  const allItems: any[] = record[relationship.subResource] ?? [];
+  const hasMore = relationship.maxItems != null && allItems.length > relationship.maxItems;
+  const items = relationship.maxItems != null ? allItems.slice(0, relationship.maxItems) : allItems;
+
+  // Check if this relationship has row actions or archivable
+  const hasRowActions = (relationship.rowActions?.length ?? 0) > 0;
+  const actionsColWidth = relationship.archivable || relationship.removeAction
+    ? 60 + (hasRowActions ? (relationship.rowActions!.length * 36) : 0)
+    : hasRowActions ? (relationship.rowActions!.length * 36) : 60;
 
   const handleRemove = async (relatedId: string | number) => {
     setRemovingId(relatedId);
@@ -115,7 +142,7 @@ export const RelationshipSection = ({
       } else {
         notifications.show({
           title: "Generated",
-          message: `${relationship.label} generated successfully.`,
+          message: `${relationship.label.replace(/s$/, "")} generated successfully.`,
           color: "green",
         });
         onRefresh();
@@ -130,6 +157,80 @@ export const RelationshipSection = ({
       });
     } finally {
       setGeneratingIdx(null);
+    }
+  };
+
+  const handleRowAction = async (action: RowActionDef, item: any) => {
+    if (action.type === "view-json" && action.viewField) {
+      try {
+        const parsed = typeof item[action.viewField] === "string"
+          ? JSON.parse(item[action.viewField])
+          : item[action.viewField];
+        setViewModalData(Array.isArray(parsed) ? parsed : [parsed]);
+      } catch {
+        setViewModalData([{ value: item[action.viewField] }]);
+      }
+      return;
+    }
+
+    if (action.type === "generate" && action.endpoint && action.bodyField) {
+      setRowGeneratingId(item.id);
+      try {
+        const result = await mutateAsync({
+          url: action.endpoint,
+          method: "post",
+          values: { [action.bodyField]: item.id },
+          successNotification: false,
+          errorNotification: false,
+        });
+        if (action.successNavigate && result?.data?.data?.id) {
+          notifications.show({
+            title: "Generated",
+            message: `${action.label} created successfully. Navigating...`,
+            color: "green",
+          });
+          show(action.successNavigate, result.data.data.id);
+        } else {
+          notifications.show({
+            title: "Generated",
+            message: `${action.label} generated successfully.`,
+            color: "green",
+          });
+          onRefresh();
+        }
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Generation failed. Please try again.";
+        notifications.show({ title: "Error", message, color: "red" });
+      } finally {
+        setRowGeneratingId(null);
+      }
+    }
+  };
+
+  const handleArchive = async (itemId: string | number) => {
+    if (!relationship.archiveEndpoint) return;
+    setArchivingId(itemId);
+    try {
+      await mutateAsync({
+        url: `${relationship.archiveEndpoint}/${itemId}`,
+        method: "put",
+        values: { archived: true },
+        successNotification: false,
+        errorNotification: false,
+      });
+      notifications.show({
+        title: "Archived",
+        message: `${relationship.label.replace(/s$/, "")} archived.`,
+        color: "green",
+      });
+      onRefresh();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to archive.";
+      notifications.show({ title: "Error", message, color: "red" });
+    } finally {
+      setArchivingId(null);
     }
   };
 
@@ -157,6 +258,15 @@ export const RelationshipSection = ({
         err instanceof Error ? err.message : "Failed to update.";
       notifications.show({ title: "Error", message, color: "red" });
       throw err;
+    }
+  };
+
+  const rowActionIcon = (icon: string) => {
+    switch (icon) {
+      case "eye": return <IconEye size={16} />;
+      case "music": return <IconMusic size={16} />;
+      case "sparkles": return <IconSparkles size={16} />;
+      default: return <IconEye size={16} />;
     }
   };
 
@@ -214,7 +324,7 @@ export const RelationshipSection = ({
               {relationship.columns.map((col) => (
                 <Table.Th key={col.key}>{col.label}</Table.Th>
               ))}
-              <Table.Th w={60}>Actions</Table.Th>
+              <Table.Th w={actionsColWidth}>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -222,7 +332,7 @@ export const RelationshipSection = ({
               <Table.Tr>
                 <Table.Td colSpan={relationship.columns.length + 1}>
                   <Text c="dimmed" ta="center" py="md">
-                    No {relationship.label.toLowerCase()} assigned.
+                    No {relationship.label.toLowerCase()} yet.
                   </Text>
                 </Table.Td>
               </Table.Tr>
@@ -252,30 +362,79 @@ export const RelationshipSection = ({
                   </Table.Td>
                 ))}
                 <Table.Td>
-                  <Tooltip
-                    label={relationship.removeAction?.label ?? `Remove from ${sourceEntity.name.toLowerCase()}`}
-                  >
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      loading={removingId === item.id}
-                      onClick={() => handleRemove(item.id)}
-                    >
-                      {relationship.removeAction?.type === "delete" ? (
-                        <IconTrash size={16} />
-                      ) : (
-                        <IconUnlink size={16} />
-                      )}
-                    </ActionIcon>
-                  </Tooltip>
+                  <Group gap={4} wrap="nowrap">
+                    {/* Row actions */}
+                    {relationship.rowActions?.map((action, idx) => (
+                      <Tooltip key={idx} label={action.label}>
+                        <ActionIcon
+                          variant="subtle"
+                          color={action.color ?? "gray"}
+                          loading={action.type === "generate" && rowGeneratingId === item.id}
+                          onClick={() => handleRowAction(action, item)}
+                        >
+                          {rowActionIcon(action.icon)}
+                        </ActionIcon>
+                      </Tooltip>
+                    ))}
+                    {/* Archive action */}
+                    {relationship.archivable && relationship.archiveEndpoint && (
+                      <Tooltip label="Archive">
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          loading={archivingId === item.id}
+                          onClick={() => handleArchive(item.id)}
+                        >
+                          <IconArchive size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
+                    {/* Remove/unlink action (for M:N relationships) */}
+                    {relationship.removeAction && (
+                      <Tooltip
+                        label={relationship.removeAction.label ?? `Remove from ${sourceEntity.name.toLowerCase()}`}
+                      >
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          loading={removingId === item.id}
+                          onClick={() => handleRemove(item.id)}
+                        >
+                          {relationship.removeAction.type === "delete" ? (
+                            <IconTrash size={16} />
+                          ) : (
+                            <IconUnlink size={16} />
+                          )}
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
+                    {/* Default remove for relationships without explicit removeAction or archivable */}
+                    {!relationship.removeAction && !relationship.archivable && !hasRowActions && (
+                      <Tooltip label={`Remove from ${sourceEntity.name.toLowerCase()}`}>
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          loading={removingId === item.id}
+                          onClick={() => handleRemove(item.id)}
+                        >
+                          <IconUnlink size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
+                  </Group>
                 </Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
         </Table>
+        {hasMore && (
+          <Text c="dimmed" size="xs" ta="center" py="xs">
+            Showing {relationship.maxItems} of {allItems.length} {relationship.label.toLowerCase()}
+          </Text>
+        )}
       </SectionCard>
 
-      {record.id && (
+      {record.id && !relationship.hideAssign && (
         <AssignModal
           opened={assignOpened}
           onClose={closeAssign}
@@ -288,6 +447,32 @@ export const RelationshipSection = ({
           payloadFields={relationship.payloadFields}
         />
       )}
+
+      {/* View JSON Modal */}
+      <Modal
+        opened={viewModalData !== null}
+        onClose={() => setViewModalData(null)}
+        title="Profile Details"
+        size="lg"
+      >
+        {viewModalData && (
+          <ScrollArea h={400}>
+            <Stack gap="xs">
+              {viewModalData.map((entry: any, idx: number) => (
+                <div key={idx} style={{ borderBottom: idx < viewModalData.length - 1 ? '1px solid var(--mantine-color-dark-4)' : undefined, paddingBottom: 8 }}>
+                  <Group gap="xs" mb={4}>
+                    <Text size="sm" fw={600}>{entry.name || `Entry ${idx + 1}`}</Text>
+                    {entry.category && <Badge size="xs">{entry.category}</Badge>}
+                  </Group>
+                  <Text size="sm" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
+                    {entry.value || "—"}
+                  </Text>
+                </div>
+              ))}
+            </Stack>
+          </ScrollArea>
+        )}
+      </Modal>
     </>
   );
 };

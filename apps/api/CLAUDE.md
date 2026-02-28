@@ -37,7 +37,9 @@ src/
 │   └── extensions/
 │       ├── lab-import.ts   # Spotify import preview + confirm endpoints
 │       ├── vibes-generator.ts # AI vibes generation via OpenRouter
-│       ├── suno-prompt-generator.ts # AI Suno prompt generation from song vibes
+│       ├── suno-prompt-generator.ts # AI Suno prompt generation from song vibes or profiles
+│       ├── profile-generator.ts # AI profile generation (stores vibes as JSON)
+│       ├── profiles.ts   # Profile archive/restore endpoint
 │       ├── upload.ts     # File upload endpoint (multipart form data)
 │       └── storage.ts    # File serving endpoint (static file delivery)
 ├── services/
@@ -85,6 +87,7 @@ Complete table inventory:
 | `artist_songs` | Pivot | M:N link between artists and songs |
 | `album_songs` | Pivot | M:N link between albums and songs |
 | `suno_collection_prompts` | Pivot | M:N link between collections and prompts |
+| `profiles` | Relational | 1:N from songs, stores AI-generated vibes as JSON |
 | `user` | Auth | Better Auth user table |
 | `session` | Auth | Better Auth session table |
 | `account` | Auth | Better Auth account table |
@@ -526,6 +529,38 @@ Extension route at `routes/extensions/suno-prompt-generator.ts`. Mounted at `/ap
 
 Error codes: 404 (song not found), 400 (no vibes assigned to song), 503 (env not configured), 502 (OpenRouter error), 422 (unparseable response)
 
+**POST `/api/suno-prompt-generator/generate-from-profile`**
+- Accepts `{ profileId: number }`
+- Fetches the profile, parses its JSON value (`Array<{ name, category, value }>`), fetches the linked song and artists
+- Builds the same Suno prompt using the profile's vibe data instead of song_vibes
+- Creates a new `suno_prompts` record linked to the source song
+- Returns `{ data: { id, name, songId } }`
+
+Error codes: 404 (profile or song not found), 400 (empty profile data), 422 (invalid JSON), 503/502 (API errors)
+
+### Profile Generator Extension
+
+Extension route at `routes/extensions/profile-generator.ts`. Mounted at `/api/profile-generator`.
+
+**POST `/api/profile-generator/generate`**
+- Accepts `{ songId: number }`
+- Uses the same prompt and flow as the vibes generator
+- Calls OpenRouter using `PROFILE_GENERATION_OPENROUTER_MODEL`
+- Maps the AI response (vibe ID -> value) into a JSON array of `{ name, category, value }` objects using vibe metadata
+- Inserts a `profiles` record with `method: "vibes"` and the JSON array as `value`
+- Returns `{ data: { id, songId, method, totalVibes } }`
+
+Error codes: 404 (song not found), 400 (no active vibes), 503 (env not configured), 502 (OpenRouter error), 422 (unparseable response)
+
+### Profiles Extension
+
+Extension route at `routes/extensions/profiles.ts`. Mounted at `/api/profiles`.
+
+**PUT `/api/profiles/:id`**
+- Accepts `{ archived: boolean }`
+- Archives or restores a profile
+- Returns `{ data: { id, archived } }`
+
 ## Testing
 
 - Framework: Vitest
@@ -567,3 +602,4 @@ All env variables are validated by the Zod schema in `src/env.ts`. No defaults -
 | OPENROUTER_API_KEY | No | OpenRouter API key (enables AI generation) |
 | VIBES_GENERATION_OPENROUTER_MODEL | No | OpenRouter model ID for vibes generation |
 | VIBES_SUNO_PROMPT_OPENROUTER_MODEL | No | OpenRouter model ID for Suno prompt generation |
+| PROFILE_GENERATION_OPENROUTER_MODEL | No | OpenRouter model ID for profile generation |

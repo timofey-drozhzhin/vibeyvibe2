@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import {
   songs,
   artists,
@@ -7,7 +7,7 @@ import {
   artistSongs,
   albumSongs,
   vibes,
-  songVibes,
+  profiles,
   binSources,
   binSongs,
   sunoPrompts,
@@ -171,30 +171,9 @@ async function songListEnricher(db: any, rows: any[]) {
     artistMap[row.songId].push({ id: row.artistId, name: row.artistName });
   }
 
-  // Batch-load vibe counts per song
-  const vibeCountRows = await db
-    .select({
-      songId: songVibes.song_id,
-      count: sql<number>`count(*)`,
-    })
-    .from(songVibes)
-    .where(
-      sql`${songVibes.song_id} IN (${sql.join(
-        songIds.map((id: number) => sql`${id}`),
-        sql`, `,
-      )})`,
-    )
-    .groupBy(songVibes.song_id);
-
-  const vibeCountMap: Record<number, number> = {};
-  for (const row of vibeCountRows) {
-    vibeCountMap[row.songId] = row.count;
-  }
-
   return rows.map((song: any) => ({
     ...song,
     artists: artistMap[song.id] || [],
-    vibes_count: vibeCountMap[song.id] || 0,
   }));
 }
 
@@ -202,7 +181,7 @@ async function songListEnricher(db: any, rows: any[]) {
  * Load related artists and albums for a single song detail view.
  */
 async function songDetailEnricher(db: any, entity: any) {
-  const [relatedArtists, relatedAlbums] = await Promise.all([
+  const [relatedArtists, relatedAlbums, relatedProfiles] = await Promise.all([
     db
       .select()
       .from(artists)
@@ -213,11 +192,18 @@ async function songDetailEnricher(db: any, entity: any) {
       .from(albums)
       .innerJoin(albumSongs, eq(albumSongs.album_id, albums.id))
       .where(eq(albumSongs.song_id, entity.id)),
+    db
+      .select()
+      .from(profiles)
+      .where(and(eq(profiles.song_id, entity.id), eq(profiles.archived, false)))
+      .orderBy(desc(profiles.created_at))
+      .limit(10),
   ]);
 
   return {
     artists: relatedArtists.map((r: any) => r.artists),
     albums: relatedAlbums.map((r: any) => r.albums),
+    profiles: relatedProfiles,
   };
 }
 
@@ -310,10 +296,6 @@ async function albumDetailEnricher(db: any, entity: any) {
 // Song relationship configs (reused for my_music and lab)
 // ---------------------------------------------------------------------------
 
-const songVibePayloadSchema = z.object({
-  value: z.string().min(1),
-});
-
 const songRelationships = [
   {
     slug: "artists",
@@ -330,18 +312,6 @@ const songRelationships = [
     parentFk: albumSongs.song_id,
     relatedFk: albumSongs.album_id,
     bodyField: "albumId",
-  },
-  {
-    slug: "vibes",
-    pivotTable: songVibes,
-    relatedTable: vibes,
-    parentFk: songVibes.song_id,
-    relatedFk: songVibes.vibe_id,
-    bodyField: "vibeId",
-    payloadColumns: [
-      { name: "value", column: songVibes.value },
-    ],
-    payloadSchema: songVibePayloadSchema,
   },
 ];
 
@@ -620,7 +590,7 @@ export const registry: EntityRouteConfig[] = [
       {
         param: "song_id",
         column: sunoPrompts.song_id,
-        schema: z.coerce.number().int().positive(),
+        schema: z.coerce.number().int().positive().optional(),
         mode: "eq" as const,
       },
     ],

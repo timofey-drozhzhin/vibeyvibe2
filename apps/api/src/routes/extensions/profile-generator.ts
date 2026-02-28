@@ -1,18 +1,19 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb } from "../../db/index.js";
 import {
   songs,
   artists,
   artistSongs,
   vibes,
-  songVibes,
+  profiles,
 } from "../../db/schema/index.js";
 import { chatCompletion } from "../../services/openrouter/index.js";
+import { getEnv } from "../../env.js";
 
-const vibesGenerator = new Hono();
+const profileGenerator = new Hono();
 
 const generateSchema = z.object({
   songId: z.number().int().positive(),
@@ -92,17 +93,27 @@ Before you finalize your output, make sure to check the following:
 }
 
 // ---------------------------------------------------------------------------
-// POST /generate — Generate vibes for a song using AI
+// POST /generate — Generate a profile for a song using AI
 // ---------------------------------------------------------------------------
 
-vibesGenerator.post(
+profileGenerator.post(
   "/generate",
   zValidator("json", generateSchema),
   async (c) => {
     const { songId } = c.req.valid("json");
     const db = getDb();
+    const env = getEnv();
 
-    // 1. Fetch the song (any context)
+    // 1. Check model is configured
+    const model = env.PROFILE_GENERATION_OPENROUTER_MODEL;
+    if (!model) {
+      return c.json(
+        { error: "Profile generation is not configured. Set PROFILE_GENERATION_OPENROUTER_MODEL." },
+        503,
+      );
+    }
+
+    // 2. Fetch the song (any context)
     const [song] = await db
       .select()
       .from(songs)
@@ -113,7 +124,7 @@ vibesGenerator.post(
       return c.json({ error: "Song not found" }, 404);
     }
 
-    // 2. Fetch artists for this song
+    // 3. Fetch artists for this song
     const songArtists = await db
       .select({ name: artists.name })
       .from(artistSongs)
@@ -122,7 +133,7 @@ vibesGenerator.post(
 
     const artistNames = songArtists.map((a) => a.name);
 
-    // 3. Fetch all active (non-archived) vibes
+    // 4. Fetch all active (non-archived) vibes
     const activeVibes = await db
       .select()
       .from(vibes)
@@ -132,12 +143,15 @@ vibesGenerator.post(
       return c.json({ error: "No active vibes found" }, 400);
     }
 
-    // 4. Build prompt and call OpenRouter
+    // 5. Build prompt and call OpenRouter
     const prompt = buildPrompt(song, artistNames, activeVibes);
 
     let rawResponse: string;
     try {
-      rawResponse = await chatCompletion([{ role: "user", content: prompt }]);
+      rawResponse = await chatCompletion(
+        [{ role: "user", content: prompt }],
+        { model },
+      );
     } catch (err: any) {
       const message = err?.message ?? "AI generation failed";
       if (message.includes("not configured")) {
@@ -149,7 +163,7 @@ vibesGenerator.post(
       return c.json({ error: message }, 502);
     }
 
-    // 5. Parse JSON response (handle potential markdown code fences)
+    // 6. Parse JSON response (handle potential markdown code fences)
     let parsed: Record<string, string>;
     try {
       let cleaned = rawResponse.trim();
@@ -166,54 +180,44 @@ vibesGenerator.post(
       );
     }
 
-    // 6. Build a set of valid vibe IDs for validation
+    // 7. Map response to array with name, category, and value
     const vibeIdSet = new Set(activeVibes.map((v) => v.id));
+    const vibeMap = new Map(activeVibes.map((v) => [v.id, v]));
 
-    // 7. Upsert song_vibes rows
-    let upserted = 0;
-    let skipped = 0;
+    const profileEntries: Array<{ name: string; category: string; value: string }> = [];
 
     for (const [vibeIdStr, value] of Object.entries(parsed)) {
       const vibeId = Number(vibeIdStr);
       if (!vibeIdSet.has(vibeId) || typeof value !== "string" || !value.trim()) {
-        skipped++;
         continue;
       }
-
-      const [existing] = await db
-        .select()
-        .from(songVibes)
-        .where(
-          and(eq(songVibes.song_id, songId), eq(songVibes.vibe_id, vibeId)),
-        )
-        .limit(1);
-
-      if (existing) {
-        await db
-          .update(songVibes)
-          .set({ value: value.trim() })
-          .where(
-            and(eq(songVibes.song_id, songId), eq(songVibes.vibe_id, vibeId)),
-          );
-      } else {
-        await db.insert(songVibes).values({
-          song_id: songId,
-          vibe_id: vibeId,
-          value: value.trim(),
-        });
-      }
-      upserted++;
+      const vibe = vibeMap.get(vibeId)!;
+      profileEntries.push({
+        name: vibe.name,
+        category: vibe.vibe_category,
+        value: value.trim(),
+      });
     }
+
+    // 8. Insert profile record
+    const [created] = await db
+      .insert(profiles)
+      .values({
+        song_id: songId,
+        value: JSON.stringify(profileEntries),
+        method: "vibes",
+      })
+      .returning();
 
     return c.json({
       data: {
+        id: created.id,
         songId,
-        totalVibes: activeVibes.length,
-        upserted,
-        skipped,
+        method: "vibes",
+        totalVibes: profileEntries.length,
       },
     });
   },
 );
 
-export default vibesGenerator;
+export default profileGenerator;

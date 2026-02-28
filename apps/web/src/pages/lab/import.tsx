@@ -80,7 +80,7 @@ export const LabImport = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Options
-  const [generateVibes, setGenerateVibes] = useState(false);
+  const [generateProfiles, setGenerateProfiles] = useState(false);
 
   // Confirm state
   const [isConfirming, setIsConfirming] = useState(false);
@@ -198,13 +198,13 @@ export const LabImport = () => {
           color: "green",
         });
 
-        // Trigger vibe generation for each created song
-        if (generateVibes && result.created.length > 0) {
+        // Trigger profile generation for each created song
+        if (generateProfiles && result.created.length > 0) {
           for (const song of result.created) {
-            const notifId = `vibes-gen-${song.id}`;
+            const notifId = `profile-gen-${song.id}`;
             notifications.show({
               id: notifId,
-              title: "Generating vibes",
+              title: "Generating profile",
               message: `"${song.name}" — generating...`,
               color: "violet",
               loading: true,
@@ -213,7 +213,7 @@ export const LabImport = () => {
             });
 
             try {
-              const genRes = await fetch(`${apiUrl}/vibes-generator/generate`, {
+              const genRes = await fetch(`${apiUrl}/profile-generator/generate`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -222,7 +222,7 @@ export const LabImport = () => {
               if (genRes.ok) {
                 notifications.update({
                   id: notifId,
-                  title: "Vibes generated",
+                  title: "Profile generated",
                   message: `"${song.name}" — done. View: /lab/songs/show/${song.id}`,
                   color: "green",
                   loading: false,
@@ -233,7 +233,7 @@ export const LabImport = () => {
                 const errBody = await genRes.json().catch(() => ({}));
                 notifications.update({
                   id: notifId,
-                  title: "Vibes generation failed",
+                  title: "Profile generation failed",
                   message: `"${song.name}" — ${errBody?.error || `Error ${genRes.status}`}`,
                   color: "red",
                   loading: false,
@@ -244,7 +244,7 @@ export const LabImport = () => {
             } catch (err: any) {
               notifications.update({
                 id: notifId,
-                title: "Vibes generation failed",
+                title: "Profile generation failed",
                 message: `"${song.name}" — ${err?.message || "Network error"}`,
                 color: "red",
                 loading: false,
@@ -273,7 +273,7 @@ export const LabImport = () => {
     } finally {
       setIsConfirming(false);
     }
-  }, [previewTracks, selectedIds, apiUrl, generateVibes]);
+  }, [previewTracks, selectedIds, apiUrl, generateProfiles]);
 
   // ---------- Selection helpers ----------
 
@@ -444,9 +444,9 @@ export const LabImport = () => {
               </Group>
               <Group gap="md">
                 <Checkbox
-                  label="Generate Vibes"
-                  checked={generateVibes}
-                  onChange={(e) => setGenerateVibes(e.currentTarget.checked)}
+                  label="Generate Profiles"
+                  checked={generateProfiles}
+                  onChange={(e) => setGenerateProfiles(e.currentTarget.checked)}
                 />
                 <Button
                   leftSection={<IconCheck size={16} />}
