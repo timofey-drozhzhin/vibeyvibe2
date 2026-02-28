@@ -1,10 +1,9 @@
 import { useState, useCallback } from "react";
-import { useNavigation, useCustom, useApiUrl } from "@refinedev/core";
+import { useNavigation, useApiUrl } from "@refinedev/core";
 import {
   Alert,
   Avatar,
   Badge,
-  Box,
   Button,
   Card,
   Checkbox,
@@ -22,7 +21,6 @@ import {
   IconArrowLeft,
   IconClipboard,
   IconDownload,
-  IconAlertCircle,
   IconCheck,
 } from "@tabler/icons-react";
 

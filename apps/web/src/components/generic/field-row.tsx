@@ -230,7 +230,7 @@ const TextareaField = ({ field, value, onSave }: TextareaFieldProps) => {
   const hasValue = !!value;
 
   return (
-    <Box className="editable-field">
+    <Box className="editable-field" style={{ cursor: "default" }}>
       <Group gap="xs" wrap="nowrap" align="flex-start">
         {hasValue ? (
           <Text size="sm" style={{ whiteSpace: "pre-wrap", flex: 1 }}>

@@ -60,6 +60,7 @@ export const RelationshipSection = ({
   const [rowGeneratingId, setRowGeneratingId] = useState<string | number | null>(null);
   const [archivingId, setArchivingId] = useState<string | number | null>(null);
   const [viewModalData, setViewModalData] = useState<any[] | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const { mutateAsync } = useCustomMutation();
 
   // Normalize generateAction to always be an array
@@ -87,7 +88,7 @@ export const RelationshipSection = ({
   // Get related items from the record, apply maxItems limit
   const allItems: any[] = record[relationship.subResource] ?? [];
   const hasMore = relationship.maxItems != null && allItems.length > relationship.maxItems;
-  const items = relationship.maxItems != null ? allItems.slice(0, relationship.maxItems) : allItems;
+  const items = hasMore && !showAll ? allItems.slice(0, relationship.maxItems!) : allItems;
 
   // Check if this relationship has row actions or archivable
   const hasRowActions = (relationship.rowActions?.length ?? 0) > 0;
@@ -160,16 +161,20 @@ export const RelationshipSection = ({
     }
   };
 
+  const handleViewJson = (item: any, viewField: string) => {
+    try {
+      const parsed = typeof item[viewField] === "string"
+        ? JSON.parse(item[viewField])
+        : item[viewField];
+      setViewModalData(Array.isArray(parsed) ? parsed : [parsed]);
+    } catch {
+      setViewModalData([{ value: item[viewField] }]);
+    }
+  };
+
   const handleRowAction = async (action: RowActionDef, item: any) => {
     if (action.type === "view-json" && action.viewField) {
-      try {
-        const parsed = typeof item[action.viewField] === "string"
-          ? JSON.parse(item[action.viewField])
-          : item[action.viewField];
-        setViewModalData(Array.isArray(parsed) ? parsed : [parsed]);
-      } catch {
-        setViewModalData([{ value: item[action.viewField] }]);
-      }
+      handleViewJson(item, action.viewField);
       return;
     }
 
@@ -306,6 +311,15 @@ export const RelationshipSection = ({
                       {`Assign ${relationship.label.replace(/s$/, "")}`}
                     </Button>
                   )}
+                  {hasMore && (
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      onClick={() => setShowAll((v) => !v)}
+                    >
+                      {showAll ? "See less" : `See all (${allItems.length})`}
+                    </Button>
+                  )}
                 </Group>
               ),
             }
@@ -348,6 +362,13 @@ export const RelationshipSection = ({
                           handlePayloadUpdate(item.id, col.key, newValue)
                         }
                       />
+                    ) : col.action?.type === "view-json" && col.action.viewField ? (
+                      <Anchor
+                        size="sm"
+                        onClick={() => handleViewJson(item, col.action!.viewField!)}
+                      >
+                        {renderColumnText(col, item[col.key])}
+                      </Anchor>
                     ) : col.key === "name" && targetResource ? (
                       <Anchor
                         size="sm"
@@ -427,11 +448,6 @@ export const RelationshipSection = ({
             ))}
           </Table.Tbody>
         </Table>
-        {hasMore && (
-          <Text c="dimmed" size="xs" ta="center" py="xs">
-            Showing {relationship.maxItems} of {allItems.length} {relationship.label.toLowerCase()}
-          </Text>
-        )}
       </SectionCard>
 
       {record.id && !relationship.hideAssign && (
@@ -496,4 +512,12 @@ function renderColumnValue(
     default:
       return <Text size="sm" fw={col.key === "name" ? 500 : undefined}>{value != null ? String(value) : ""}</Text>;
   }
+}
+
+/** Returns a plain string for use inside an <Anchor> — no wrapping element. */
+function renderColumnText(
+  col: { key: string; label: string; type?: string },
+  value: any,
+): string {
+  return value != null ? String(value) : "";
 }

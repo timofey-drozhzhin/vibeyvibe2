@@ -105,12 +105,11 @@ This is a personal tool. There is no registration flow after initial setup. Only
 ### Database Table Naming
 Tables are now unified. Shared entity tables (`songs`, `artists`, `albums`) use a `context` column to differentiate sections (values: `"my_music"`, `"lab"`).
 - Shared tables: `songs`, `artists`, `albums` (with `context` column)
-- Pivot tables: `artist_songs`, `album_songs`, `suno_collection_prompts`
-- Associative pivots (with payload): `song_vibes` (has `value` column)
+- Pivot tables: `artist_songs`, `album_songs`
 - 1:N relational: `profiles` (song_id FK, stores AI-generated vibes as JSON)
 - Lab-specific: `vibes`
 - Bin: `bin_sources`, `bin_songs`
-- Suno: `suno_prompt_collections`, `suno_prompts`, `suno_collection_prompts`, `suno_song_playlists`, `suno_songs`
+- Suno: `suno_prompts`, `suno_song_playlists`, `suno_songs`
 - Auth tables (user, session, account, verification) are managed by Better Auth and have no prefix.
 
 ### Temporary Files
@@ -277,54 +276,9 @@ Accepts an array of tracks (from the preview step) and creates `songs`, `artists
 
 **Schema**: `{ tracks: [{ name, artists: [{name}], album?: {name}, releaseDate?, isrc?, imageUrl?, spotifyId }] }`
 
-## Vibes Generator
-
-AI-powered generation of vibe values for songs. Uses OpenRouter API to call an LLM that analyzes a song and produces values for all active vibes.
-
-### Configuration
-Requires environment variables in `.env`:
-- `OPENROUTER_API_KEY` -- API key for OpenRouter
-- `VIBES_GENERATION_OPENROUTER_MODEL` -- Model to use for vibes generation
-
-### POST /api/vibes-generator/generate
-Generates vibe values for a song using AI. Fetches the song, its artists, and all active vibes, builds a prompt, calls OpenRouter, and upserts `song_vibes` pivot rows.
-
-**Schema**: `{ songId: number }`
-**Returns**: `{ data: { songId, totalVibes, upserted, skipped } }`
-
-### Frontend
-The generate button is configured via a `generateAction` property on `RelationshipDef` in the entity registry. `generateAction` accepts a single `GenerateActionDef` or an array for multiple actions. The `RelationshipSection` component renders action buttons in the section header. Each action can specify `color`, `icon` ("sparkles" or "music"), and optional `successNavigate` (resource name to navigate to on success, using `data.id` from the response).
-
-## Suno Prompt Generator
-
-AI-powered generation of Suno AI prompts (lyrics + style) from a song's vibes. Uses OpenRouter API to analyze the song's vibe values and produce a ready-to-use Suno prompt.
-
-### Configuration
-Requires environment variables in `.env`:
-- `OPENROUTER_API_KEY` -- API key for OpenRouter
-- `VIBES_SUNO_PROMPT_OPENROUTER_MODEL` -- Model to use for Suno prompt generation
-- `PROFILE_GENERATION_OPENROUTER_MODEL` -- Model to use for profile generation
-
-### POST /api/suno-prompt-generator/generate
-Generates a Suno prompt from a song's vibes. Fetches the song, its artists, and its assigned vibe values (song_vibes joined with vibes), builds a detailed prompt instructing the AI to produce lyrics and style, calls OpenRouter, parses the JSON response, and creates a new `suno_prompts` record linked to the song via `song_id`.
-
-**Schema**: `{ songId: number }`
-**Returns**: `{ data: { id, name, songId } }`
-
-**Error codes**: 404 (song not found), 400 (no vibes assigned to song), 503 (env not configured), 502 (OpenRouter error), 422 (unparseable response)
-
-### POST /api/suno-prompt-generator/generate-from-profile
-Generates a Suno prompt from a profile's JSON data instead of song_vibes. Fetches the profile, parses its JSON value (array of `{ name, category, value }` entries), maps them to the prompt builder format, and follows the same generation flow.
-
-**Schema**: `{ profileId: number }`
-**Returns**: `{ data: { id, name, songId } }`
-
-### Frontend
-The "+ Suno Prompt" button appears alongside the "Generate" button in the Vibes section on song show pages. It's configured as a second entry in the `generateAction` array on the vibes relationship. On success, it navigates to the newly created suno prompt's show page.
-
 ## Profile Generator
 
-AI-powered generation of song profiles that store vibes as a single JSON blob. Uses OpenRouter API with the same prompt as the vibes generator, but stores the complete result as a JSON array in the `profiles` table instead of individual `song_vibes` rows.
+AI-powered generation of song profiles. Uses OpenRouter API to call an LLM that analyzes a song and all active vibes, producing a JSON array of `{ name, category, value }` entries stored in the `profiles` table (1:N from songs).
 
 ### Configuration
 Requires environment variables in `.env`:
@@ -332,7 +286,7 @@ Requires environment variables in `.env`:
 - `PROFILE_GENERATION_OPENROUTER_MODEL` -- Model to use for profile generation
 
 ### POST /api/profile-generator/generate
-Generates a profile for a song. Fetches the song, artists, and all active vibes, builds the same prompt as the vibes generator, calls OpenRouter, maps the response into a JSON array of `{ name, category, value }` objects (enriched from vibe metadata), and inserts a `profiles` record.
+Generates a profile for a song. Fetches the song, its artists, and all active vibes, builds a prompt, calls OpenRouter, maps the response into a JSON array of `{ name, category, value }` objects (enriched from vibe metadata), and inserts a `profiles` record with `method: "vibes"`.
 
 **Schema**: `{ songId: number }`
 **Returns**: `{ data: { id, songId, method, totalVibes } }`
@@ -346,7 +300,27 @@ Archive or restore a profile.
 **Returns**: `{ data: { id, archived } }`
 
 ### Frontend
-The Profiles widget appears on song show pages as a relationship section. It shows the last 10 non-archived profiles with columns for date and method. Each row has action buttons to view the full JSON data, generate a Suno prompt from the profile, and archive the profile. The "Generate from Vibes" button in the section header creates new profiles.
+The Profiles section appears on song show pages as a one-to-many relationship. It shows the last 10 non-archived profiles with columns for date (clickable to view full JSON) and method. Each row has a "Suno Prompt" action button and archive toggle. The "Generate from Vibes" button in the section header creates new profiles. The generate button is configured via a `generateAction` property on `RelationshipDef` in the entity registry. `generateAction` accepts a single `GenerateActionDef` or an array for multiple actions. The `RelationshipSection` component renders action buttons in the section header. Each action can specify `color`, `icon` ("sparkles" or "music"), and optional `successNavigate` (resource name to navigate to on success, using `data.id` from the response).
+
+## Suno Prompt Generator
+
+AI-powered generation of Suno AI prompts (lyrics + style) from a song profile. Uses OpenRouter API to analyze a profile's vibe data and produce a ready-to-use Suno prompt.
+
+### Configuration
+Requires environment variables in `.env`:
+- `OPENROUTER_API_KEY` -- API key for OpenRouter
+- `VIBES_SUNO_PROMPT_OPENROUTER_MODEL` -- Model to use for Suno prompt generation
+
+### POST /api/suno-prompt-generator/generate-from-profile
+Generates a Suno prompt from a profile's JSON data. Fetches the profile, parses its JSON value (array of `{ name, category, value }` entries), fetches the linked song and artists, builds a detailed prompt instructing the AI to produce lyrics and style, calls OpenRouter, parses the JSON response, and creates a new `suno_prompts` record linked to the source song via `song_id`.
+
+**Schema**: `{ profileId: number }`
+**Returns**: `{ data: { id, name, songId } }`
+
+**Error codes**: 404 (profile or song not found), 400 (empty profile data), 422 (invalid JSON), 503 (env not configured), 502 (OpenRouter error)
+
+### Frontend
+The "Suno Prompt" button appears as a row action on each profile in the Profiles section on song show pages. On success, it navigates to the newly created suno prompt's show page.
 
 ## Relationship Assignment Routes
 
@@ -357,20 +331,10 @@ Songs can be assigned to artists and albums through shared pivot tables (`artist
 - `PUT /api/{context}/songs/:id/artists/:relatedId` -- Remove artist assignment
 - `POST /api/{context}/songs/:id/albums` -- Assign album (`{ albumId }`)
 - `PUT /api/{context}/songs/:id/albums/:relatedId` -- Remove album assignment
-- `POST /api/{context}/songs/:id/vibes` -- Assign vibe with payload (`{ vibeId, value }`)
-- `PUT /api/{context}/songs/:id/vibes/:relatedId` -- Update payload (`{ value }`) or remove (empty body)
 
 ### Suno Studio
 - `POST /api/suno/prompt-collections/:id/prompts` -- Assign prompt (`{ promptId }`)
 - `PUT /api/suno/prompt-collections/:id/prompts/:relatedId` -- Remove prompt assignment
-
-### Associative Entities (Pivot Tables with Payload)
-
-Associative entities are M:N pivot tables that carry extra payload columns beyond the two foreign keys. They are configured via `payloadColumns` and `payloadSchema` on `RelationshipRouteConfig` (API) and `payloadFields` on `RelationshipDef` (UI).
-
-**API behavior**: The route factory auto-enriches associative relationships in GET detail responses (no manual `detailEnricher` needed). POST assign accepts payload fields alongside the relatedId. PUT with payload fields updates the pivot row; PUT with empty body removes it.
-
-**UI behavior**: The `AssignModal` renders additional inputs for payload fields. The `RelationshipSection` renders payload columns as inline-editable `EditableField` components.
 
 ## Show Page Standards
 

@@ -273,7 +273,7 @@ Renders a single `<Table.Tr>` with label and value cells. Dispatches rendering b
 | FieldType | Component Used | Behavior |
 |-----------|---------------|----------|
 | `text` | `EditableField` | Click-to-edit inline text |
-| `textarea` | `EditableField` | Click-to-edit with `whiteSpace: pre-wrap` display |
+| `textarea` | `TextareaField` (internal) | Read-only display with hover Copy/Edit icons. Edit mode uses inline `Textarea` (autosize) with Save/Cancel buttons |
 | `date` | `EditableField` (type="date") | Calendar date picker |
 | `rating` | `RatingField` | Interactive 0-5 star rating |
 | `url` | `EditableField` | Click-to-edit, displays as clickable `Anchor` |

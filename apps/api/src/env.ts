@@ -24,7 +24,6 @@ const envSchema = z.object({
   DEV_AUTH_BYPASS: optionalString,
   FRONTEND_URL: z.string().url(),
   OPENROUTER_API_KEY: optionalString,
-  VIBES_GENERATION_OPENROUTER_MODEL: optionalString,
   VIBES_SUNO_PROMPT_OPENROUTER_MODEL: optionalString,
   PROFILE_GENERATION_OPENROUTER_MODEL: optionalString,
 });

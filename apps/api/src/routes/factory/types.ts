@@ -10,7 +10,7 @@ export interface ExtraFilter {
 
 export interface PayloadColumnDef {
   name: string;             // Column name on the pivot table (e.g., "value")
-  column: any;              // Drizzle column reference (e.g., songVibes.value)
+  column: any;              // Drizzle column reference
 }
 
 export interface RelationshipRouteConfig {

@@ -79,6 +79,8 @@ export interface RelationshipDef {
     key: string;
     label: string;
     type?: "text" | "rating" | "badge" | "date";
+    /** Makes this column a clickable link that triggers the given action */
+    action?: Pick<RowActionDef, "type" | "viewField">;
   }>;
   targetLabelField?: string;
   payloadFields?: PayloadFieldDef[];
@@ -236,7 +238,7 @@ const songRelationships: RelationshipDef[] = [
     assignFieldName: "",
     hideAssign: true,
     columns: [
-      { key: "created_at", label: "Date", type: "date" },
+      { key: "created_at", label: "Date", type: "date", action: { type: "view-json", viewField: "value" } },
       { key: "method", label: "Method", type: "badge" },
     ],
     maxItems: 10,
@@ -250,12 +252,6 @@ const songRelationships: RelationshipDef[] = [
       icon: "sparkles",
     },
     rowActions: [
-      {
-        label: "View",
-        icon: "eye",
-        type: "view-json",
-        viewField: "value",
-      },
       {
         label: "Suno Prompt",
         icon: "music",
@@ -714,7 +710,7 @@ export const entityRegistry: EntityDef[] = [
       },
     ],
     relationships: [],
-    listColumns: ["name", "song_id", "archived", "created_at"],
+    listColumns: ["name", "archived", "created_at"],
     asideFields: [],
   },
 ];
