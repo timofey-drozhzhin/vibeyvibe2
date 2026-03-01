@@ -9,15 +9,34 @@ import {
   artistSongs,
   vibes,
   profiles,
+  aiQueue,
 } from "../../db/schema/index.js";
-import { chatCompletion } from "../../services/openrouter/index.js";
+import { processNextJob } from "../../services/ai-queue/index.js";
 import { getEnv } from "../../env.js";
+
+function getAutoprocessModels(): string[] {
+  const raw = getEnv().OPENROUTER_MODELS_AUTOPROCESS;
+  if (!raw) return [];
+  return raw.split(",").map((m) => m.trim()).filter(Boolean);
+}
 
 const profileGenerator = new Hono();
 
 const generateSchema = z.object({
   songId: z.number().int().positive(),
+  model: z.string().min(1),
 });
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function getAllowedModels(): string[] {
+  const env = getEnv();
+  const raw = env.PROFILE_GENERATION_OPENROUTER_MODELS;
+  if (!raw) return [];
+  return raw.split(",").map((m) => m.trim()).filter(Boolean);
+}
 
 // ---------------------------------------------------------------------------
 // Prompt Builder
@@ -93,27 +112,44 @@ Before you finalize your output, make sure to check the following:
 }
 
 // ---------------------------------------------------------------------------
-// POST /generate — Generate a profile for a song using AI
+// GET /models — List available models for profile generation
+// ---------------------------------------------------------------------------
+
+profileGenerator.get("/models", (c) => {
+  const models = getAllowedModels();
+  if (models.length === 0) {
+    return c.json(
+      { error: "Profile generation is not configured. Set PROFILE_GENERATION_OPENROUTER_MODELS." },
+      503,
+    );
+  }
+  return c.json({ data: models });
+});
+
+// ---------------------------------------------------------------------------
+// POST /generate — Queue a profile generation job
 // ---------------------------------------------------------------------------
 
 profileGenerator.post(
   "/generate",
   zValidator("json", generateSchema),
   async (c) => {
-    const { songId } = c.req.valid("json");
+    const { songId, model } = c.req.valid("json");
     const db = getDb();
-    const env = getEnv();
 
-    // 1. Check model is configured
-    const model = env.PROFILE_GENERATION_OPENROUTER_MODEL;
-    if (!model) {
+    // 1. Validate model is in the allowed list
+    const allowedModels = getAllowedModels();
+    if (allowedModels.length === 0) {
       return c.json(
-        { error: "Profile generation is not configured. Set PROFILE_GENERATION_OPENROUTER_MODEL." },
+        { error: "Profile generation is not configured. Set PROFILE_GENERATION_OPENROUTER_MODELS." },
         503,
       );
     }
+    if (!allowedModels.includes(model)) {
+      return c.json({ error: "Selected model is not allowed." }, 400);
+    }
 
-    // 2. Fetch the song (any context)
+    // 2. Fetch the song
     const [song] = await db
       .select()
       .from(songs)
@@ -133,7 +169,7 @@ profileGenerator.post(
 
     const artistNames = songArtists.map((a) => a.name);
 
-    // 4. Fetch all active (non-archived) vibes
+    // 4. Fetch all active vibes
     const activeVibes = await db
       .select()
       .from(vibes)
@@ -143,77 +179,45 @@ profileGenerator.post(
       return c.json({ error: "No active vibes found" }, 400);
     }
 
-    // 5. Build prompt and call OpenRouter
+    // 5. Build the prompt
     const prompt = buildPrompt(song, artistNames, activeVibes);
 
-    let rawResponse: string;
-    try {
-      rawResponse = await chatCompletion(
-        [{ role: "user", content: prompt }],
-        { model },
-      );
-    } catch (err: any) {
-      const message = err?.message ?? "AI generation failed";
-      if (message.includes("not configured")) {
-        return c.json(
-          { error: "AI generation is not configured. Set OPENROUTER_API_KEY." },
-          503,
-        );
-      }
-      return c.json({ error: message }, 502);
-    }
-
-    // 6. Parse JSON response (handle potential markdown code fences)
-    let parsed: Record<string, string>;
-    try {
-      let cleaned = rawResponse.trim();
-      if (cleaned.startsWith("```")) {
-        cleaned = cleaned
-          .replace(/^```(?:json)?\n?/, "")
-          .replace(/\n?```$/, "");
-      }
-      parsed = JSON.parse(cleaned);
-    } catch {
-      return c.json(
-        { error: "Failed to parse AI response as JSON", rawResponse },
-        422,
-      );
-    }
-
-    // 7. Map response to array with name, category, and value
-    const vibeIdSet = new Set(activeVibes.map((v) => v.id));
-    const vibeMap = new Map(activeVibes.map((v) => [v.id, v]));
-
-    const profileEntries: Array<{ name: string; category: string; value: string }> = [];
-
-    for (const [vibeIdStr, value] of Object.entries(parsed)) {
-      const vibeId = Number(vibeIdStr);
-      if (!vibeIdSet.has(vibeId) || typeof value !== "string" || !value.trim()) {
-        continue;
-      }
-      const vibe = vibeMap.get(vibeId)!;
-      profileEntries.push({
-        name: vibe.name,
-        category: vibe.vibe_category,
-        value: value.trim(),
-      });
-    }
-
-    // 8. Insert profile record
-    const [created] = await db
-      .insert(profiles)
+    // 6. Create queue job
+    const [queueItem] = await db
+      .insert(aiQueue)
       .values({
-        song_id: songId,
-        value: JSON.stringify(profileEntries),
+        name: `Profile: ${song.name}`,
+        type: "profile_generation",
+        status: "pending",
         model,
+        prompt,
       })
       .returning();
 
+    // 7. Create profile with null value (will be filled by queue processor)
+    const [profile] = await db
+      .insert(profiles)
+      .values({
+        song_id: songId,
+        value: null,
+        model,
+        ai_queue_id: queueItem.id,
+      })
+      .returning();
+
+    // 8. Fire-and-forget: trigger processing (only if model is autoprocessable)
+    if (getAutoprocessModels().includes(model)) {
+      processNextJob().catch((err) =>
+        console.error("[profile-generator] Fire-and-forget error:", err),
+      );
+    }
+
     return c.json({
       data: {
-        id: created.id,
+        id: profile.id,
         songId,
-        totalVibes: profileEntries.length,
+        queueId: queueItem.id,
+        status: "pending",
       },
     });
   },

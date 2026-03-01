@@ -9,6 +9,12 @@ config({ path: resolve(__dirname, "../../../.env") });
 
 import app from "./app.js";
 import { getEnv } from "./env.js";
+import {
+  registerHandler,
+  startQueueProcessor,
+  resetStaleJobs,
+} from "./services/ai-queue/index.js";
+import { profileGenerationHandler } from "./services/ai-queue/handlers/profile-generation.js";
 
 const env = getEnv();
 const port = parseInt(process.env.PORT || "3001", 10);
@@ -38,5 +44,10 @@ serve({
   fetch: app.fetch,
   port,
 });
+
+// Start AI queue processor
+registerHandler("profile_generation", profileGenerationHandler);
+resetStaleJobs().catch(console.error);
+startQueueProcessor(3000);
 
 console.log(`vibeyvibe API running at http://localhost:${port}`);

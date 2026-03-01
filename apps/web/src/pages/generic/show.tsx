@@ -1,10 +1,13 @@
-import { useShow, useUpdate, useNavigation } from "@refinedev/core";
-import { Table } from "@mantine/core";
+import { useState } from "react";
+import { useShow, useUpdate, useNavigation, useCustomMutation } from "@refinedev/core";
+import { Table, Button, Group } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { IconPlayerPlay, IconSparkles, IconRefresh } from "@tabler/icons-react";
 import { EntityPage, SectionCard } from "../../components/shared/entity-page.js";
 import { FieldRow } from "../../components/generic/field-row.js";
 import { AsidePanel } from "../../components/generic/aside-panel.js";
 import { RelationshipSection } from "../../components/generic/relationship-section.js";
-import type { EntityDef } from "../../config/entity-registry.js";
+import type { EntityDef, ShowActionDef } from "../../config/entity-registry.js";
 import { getResourceName } from "../../config/entity-registry.js";
 
 interface GenericEntityDetailProps {
@@ -16,6 +19,8 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
   const { query: showQuery } = useShow({ resource });
   const { list } = useNavigation();
   const { mutateAsync: updateRecord } = useUpdate();
+  const { mutateAsync: customMutate } = useCustomMutation();
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const record = showQuery?.data?.data;
   const isLoading = showQuery?.isPending;
@@ -28,6 +33,41 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
       values: { [field]: value ?? null },
     });
     showQuery.refetch();
+  };
+
+  // Show action handler
+  const handleShowAction = async (action: ShowActionDef) => {
+    if (!record) return;
+    setActionLoading(action.endpoint);
+    try {
+      await customMutate({
+        url: `${action.endpoint}/${record.id}`,
+        method: "post",
+        values: {},
+        successNotification: false,
+        errorNotification: false,
+      });
+      notifications.show({
+        title: "Started",
+        message: `${action.label} triggered successfully.`,
+        color: "green",
+      });
+      showQuery.refetch();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Action failed.";
+      notifications.show({ title: "Error", message, color: "red" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const showActionIcon = (icon?: string) => {
+    switch (icon) {
+      case "play": return <IconPlayerPlay size={14} />;
+      case "sparkles": return <IconSparkles size={14} />;
+      case "refresh": return <IconRefresh size={14} />;
+      default: return <IconPlayerPlay size={14} />;
+    }
   };
 
   // Determine which fields belong in the aside vs main body
@@ -102,7 +142,35 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
     >
       {/* Main details */}
       {mainFields.length > 0 && (
-        <SectionCard title={`${entity.name} Details`}>
+        <SectionCard
+          title={`${entity.name} Details`}
+          {...(entity.showActions && entity.showActions.length > 0
+            ? {
+                actions: (
+                  <Group gap="xs">
+                    {entity.showActions
+                      .filter((action) => {
+                        if (!action.conditionField || !action.conditionValues) return true;
+                        return action.conditionValues.includes(record[action.conditionField]);
+                      })
+                      .map((action) => (
+                        <Button
+                          key={action.endpoint}
+                          size="xs"
+                          variant="light"
+                          color={action.color ?? "violet"}
+                          leftSection={showActionIcon(action.icon)}
+                          loading={actionLoading === action.endpoint}
+                          onClick={() => handleShowAction(action)}
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
+                  </Group>
+                ),
+              }
+            : {})}
+        >
           <Table>
             <Table.Tbody>
               {mainFields.map((field) => (

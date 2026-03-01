@@ -51,6 +51,8 @@ export interface GenerateActionDef {
   icon?: "sparkles" | "music";
   /** Resource to navigate to on success (uses data.id from response) */
   successNavigate?: string;
+  /** API endpoint returning { data: string[] } of available models. Adds a model selector next to the button. */
+  modelsEndpoint?: string;
 }
 
 export interface RowActionDef {
@@ -100,12 +102,27 @@ export interface RelationshipDef {
   archivable?: boolean;
   /** API endpoint for archiving rows (PUT /{endpoint}/{id}) */
   archiveEndpoint?: string;
+  /** Auto-poll parent record when items have this status value */
+  pollWhileStatus?: string;
+  /** Poll interval in ms (default 4000) */
+  pollInterval?: number;
 }
 
 export interface SectionDef {
   context: SectionContext;
   label: string;
   color: string;
+}
+
+export interface ShowActionDef {
+  label: string;
+  /** POST endpoint — record ID is appended (e.g. "/api/ai-queue/process" → POST /api/ai-queue/process/123) */
+  endpoint: string;
+  color?: string;
+  icon?: "sparkles" | "play" | "refresh";
+  /** Only show when record[conditionField] matches one of conditionValues */
+  conditionField?: string;
+  conditionValues?: string[];
 }
 
 export interface EntityDef {
@@ -122,6 +139,8 @@ export interface EntityDef {
   titleField?: string;
   storageDirectory?: string;
   createExtraFields?: string[];
+  /** Action buttons shown on the show page */
+  showActions?: ShowActionDef[];
 }
 
 export interface ExtensionDef {
@@ -242,16 +261,20 @@ const songRelationships: RelationshipDef[] = [
     columns: [
       { key: "created_at", label: "Date", type: "date", action: { type: "view-json", viewField: "value" } },
       { key: "model", label: "Model", type: "text" },
+      { key: "status", label: "Status", type: "badge" },
     ],
     maxItems: 10,
     archivable: true,
     archiveEndpoint: "/api/profiles",
+    pollWhileStatus: "processing",
+    pollInterval: 4000,
     generateAction: {
       label: "Generate",
       endpoint: "/api/profile-generator/generate",
       bodyField: "songId",
       color: "violet",
       icon: "sparkles",
+      modelsEndpoint: "/api/profile-generator/models",
     },
     rowActions: [
       {
@@ -570,6 +593,67 @@ export const entityRegistry: EntityDef[] = [
     relationships: [],
     listColumns: ["name", "vibe_category", "archived", "created_at"],
     asideFields: [],
+  },
+
+  // =========================================================================
+  // 7b. lab/queue (AI Queue)
+  // =========================================================================
+  {
+    slug: "queue",
+    tableName: "ai_queue",
+    name: "Queue Item",
+    pluralName: "Queue",
+    context: "lab",
+    fields: [
+      {
+        key: "type",
+        label: "Type",
+        type: "readonly",
+      },
+      {
+        key: "status",
+        label: "Status",
+        type: "readonly",
+      },
+      {
+        key: "model",
+        label: "Model",
+        type: "readonly",
+      },
+      {
+        key: "attempts",
+        label: "Attempts",
+        type: "readonly",
+      },
+      {
+        key: "error",
+        label: "Error",
+        type: "textarea",
+      },
+      {
+        key: "prompt",
+        label: "Prompt",
+        type: "textarea",
+      },
+      {
+        key: "response",
+        label: "Response",
+        type: "textarea",
+      },
+    ],
+    relationships: [],
+    listColumns: ["name", "type", "status", "model", "attempts", "created_at"],
+    asideFields: [],
+    showActions: [
+      {
+        label: "Process",
+        endpoint: "/api/ai-queue/process",
+        color: "teal",
+        icon: "play",
+        conditionField: "status",
+        conditionValues: ["pending", "failed"],
+      },
+    ],
   },
 
   // =========================================================================

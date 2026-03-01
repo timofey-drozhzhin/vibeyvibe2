@@ -8,6 +8,7 @@ import {
   albumSongs,
   vibes,
   profiles,
+  aiQueue,
   binSources,
   binSongs,
   sunoPrompts,
@@ -193,17 +194,38 @@ async function songDetailEnricher(db: any, entity: any) {
       .innerJoin(albumSongs, eq(albumSongs.album_id, albums.id))
       .where(eq(albumSongs.song_id, entity.id)),
     db
-      .select()
+      .select({
+        id: profiles.id,
+        song_id: profiles.song_id,
+        value: profiles.value,
+        model: profiles.model,
+        ai_queue_id: profiles.ai_queue_id,
+        archived: profiles.archived,
+        created_at: profiles.created_at,
+        updated_at: profiles.updated_at,
+        queue_status: aiQueue.status,
+        queue_error: aiQueue.error,
+      })
       .from(profiles)
+      .leftJoin(aiQueue, eq(profiles.ai_queue_id, aiQueue.id))
       .where(and(eq(profiles.song_id, entity.id), eq(profiles.archived, false)))
       .orderBy(desc(profiles.created_at))
       .limit(10),
   ]);
 
+  const enrichedProfiles = relatedProfiles.map((p: any) => ({
+    ...p,
+    status: p.value !== null
+      ? "completed"
+      : p.queue_status === "failed"
+        ? "failed"
+        : "processing",
+  }));
+
   return {
     artists: relatedArtists.map((r: any) => r.artists),
     albums: relatedAlbums.map((r: any) => r.albums),
-    profiles: relatedProfiles,
+    profiles: enrichedProfiles,
   };
 }
 
@@ -344,6 +366,18 @@ const albumRelationships = [
     bodyField: "songId",
   },
 ];
+
+// Ai Queue
+const createAiQueueSchema = z.object({
+  name: z.string().min(1).max(200),
+  type: z.string().min(1),
+  model: z.string().min(1),
+  prompt: z.string().min(1),
+});
+
+const updateAiQueueSchema = createAiQueueSchema.partial().extend({
+  archived: z.boolean().optional(),
+});
 
 // ---------------------------------------------------------------------------
 // Registry
@@ -514,6 +548,41 @@ export const registry: EntityRouteConfig[] = [
         column: vibes.vibe_category,
         schema: z.string().optional(),
         mode: "eq",
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 7b. lab/queue (AI Queue)
+  // =========================================================================
+  {
+    context: "lab",
+    slug: "queue",
+    table: aiQueue,
+    entityName: "Queue Item",
+    createSchema: createAiQueueSchema,
+    updateSchema: updateAiQueueSchema,
+    defaultSort: aiQueue.created_at,
+    defaultOrder: "desc",
+    sortableColumns: {
+      name: aiQueue.name,
+      type: aiQueue.type,
+      status: aiQueue.status,
+      created_at: aiQueue.created_at,
+    },
+    searchColumns: [aiQueue.name, aiQueue.type],
+    extraFilters: [
+      {
+        param: "type",
+        column: aiQueue.type,
+        schema: z.string().optional(),
+        mode: "eq" as const,
+      },
+      {
+        param: "status",
+        column: aiQueue.status,
+        schema: z.string().optional(),
+        mode: "eq" as const,
       },
     ],
   },

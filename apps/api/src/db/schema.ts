@@ -156,6 +156,33 @@ export const vibes = sqliteTable("vibes", {
 });
 
 // ===========================================================================
+// 7a. AI Queue (generic background AI processing)
+// ===========================================================================
+export const aiQueue = sqliteTable(
+  "ai_queue",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    type: text("type").notNull(),
+    status: text("status").notNull().default("pending"),
+    model: text("model").notNull(),
+    prompt: text("prompt").notNull(),
+    response: text("response"),
+    error: text("error"),
+    attempts: integer("attempts").notNull().default(0),
+    archived: integer("archived", { mode: "boolean" as const }).default(false),
+    created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+    updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+    started_at: text("started_at"),
+    completed_at: text("completed_at"),
+  },
+  (table) => [
+    index("ai_queue_status_idx").on(table.status),
+    index("ai_queue_type_idx").on(table.type),
+  ]
+);
+
+// ===========================================================================
 // 7b. Profiles (1:N from songs — stores AI-generated vibes as JSON)
 // ===========================================================================
 export const profiles = sqliteTable(
@@ -165,19 +192,27 @@ export const profiles = sqliteTable(
     song_id: integer("song_id")
       .notNull()
       .references(() => songs.id, { onDelete: "cascade" }),
-    value: text("value").notNull(),
+    value: text("value"),
     model: text("model").notNull(),
+    ai_queue_id: integer("ai_queue_id").references(() => aiQueue.id),
     archived: integer("archived", { mode: "boolean" as const }).default(false),
     created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
     updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("profiles_song_id_idx").on(table.song_id)]
+  (table) => [
+    index("profiles_song_id_idx").on(table.song_id),
+    index("profiles_ai_queue_id_idx").on(table.ai_queue_id),
+  ]
 );
 
 export const profilesRelations = relations(profiles, ({ one }) => ({
   song: one(songs, {
     fields: [profiles.song_id],
     references: [songs.id],
+  }),
+  aiQueueItem: one(aiQueue, {
+    fields: [profiles.ai_queue_id],
+    references: [aiQueue.id],
   }),
 }));
 

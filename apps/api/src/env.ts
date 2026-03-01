@@ -25,7 +25,8 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().url(),
   OPENROUTER_API_KEY: optionalString,
   VIBES_SUNO_PROMPT_OPENROUTER_MODEL: optionalString,
-  PROFILE_GENERATION_OPENROUTER_MODEL: optionalString,
+  PROFILE_GENERATION_OPENROUTER_MODELS: optionalString,
+  OPENROUTER_MODELS_AUTOPROCESS: optionalString,
 });
 
 export type Env = z.infer<typeof envSchema>;

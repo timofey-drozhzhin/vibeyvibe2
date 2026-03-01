@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Table,
   Text,
@@ -12,6 +12,7 @@ import {
   ScrollArea,
   Stack,
   Textarea,
+  Select,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useNavigation, useCustomMutation } from "@refinedev/core";
@@ -75,6 +76,27 @@ export const RelationshipSection = ({
       : [relationship.generateAction];
   }, [relationship.generateAction]);
 
+  // Model selection state — keyed by generate action index
+  const [modelSelections, setModelSelections] = useState<Record<number, string>>({});
+  const [availableModels, setAvailableModels] = useState<Record<number, string[]>>({});
+
+  // Fetch models for generate actions that have modelsEndpoint
+  useEffect(() => {
+    generateActions.forEach((action, idx) => {
+      if (!action.modelsEndpoint) return;
+      fetch(action.modelsEndpoint)
+        .then((res) => res.json())
+        .then((json) => {
+          const models: string[] = json.data ?? [];
+          setAvailableModels((prev) => ({ ...prev, [idx]: models }));
+          if (models.length > 0) {
+            setModelSelections((prev) => prev[idx] ? prev : { ...prev, [idx]: models[0] });
+          }
+        })
+        .catch(() => {});
+    });
+  }, [generateActions.map((a) => a.modelsEndpoint).join(",")]);
+
   const sourceResource = getResourceName(sourceEntity);
   const targetEntity = resolveRelationshipTarget(
     sourceEntity,
@@ -93,6 +115,19 @@ export const RelationshipSection = ({
   const allItems: any[] = record[relationship.subResource] ?? [];
   const hasMore = relationship.maxItems != null && allItems.length > relationship.maxItems;
   const items = hasMore && !showAll ? allItems.slice(0, relationship.maxItems!) : allItems;
+
+  // Auto-poll while any items have the configured processing status
+  const stableRefresh = useCallback(() => onRefresh(), [onRefresh]);
+  const hasProcessingItems = useMemo(() => {
+    if (!relationship.pollWhileStatus) return false;
+    return allItems.some((item: any) => item.status === relationship.pollWhileStatus);
+  }, [allItems, relationship.pollWhileStatus]);
+
+  useEffect(() => {
+    if (!hasProcessingItems) return;
+    const interval = setInterval(stableRefresh, relationship.pollInterval ?? 4000);
+    return () => clearInterval(interval);
+  }, [hasProcessingItems, stableRefresh, relationship.pollInterval]);
 
   // Check if this relationship has row actions or archivable
   const hasRowActions = (relationship.rowActions?.length ?? 0) > 0;
@@ -130,10 +165,14 @@ export const RelationshipSection = ({
   const handleGenerate = async (action: GenerateActionDef, idx: number) => {
     setGeneratingIdx(idx);
     try {
+      const values: Record<string, any> = { [action.bodyField]: record.id };
+      if (action.modelsEndpoint && modelSelections[idx]) {
+        values.model = modelSelections[idx];
+      }
       const result = await mutateAsync({
         url: action.endpoint,
         method: "post",
-        values: { [action.bodyField]: record.id },
+        values,
         successNotification: false,
         errorNotification: false,
       });
@@ -341,19 +380,31 @@ export const RelationshipSection = ({
                   {generateActions.map((action, idx) => {
                     const ActionIcon_ =
                       action.icon === "music" ? IconMusic : IconSparkles;
+                    const models = action.modelsEndpoint ? (availableModels[idx] ?? []) : [];
                     return (
-                      <Button
-                        key={idx}
-                        size="xs"
-                        variant="light"
-                        color={action.color ?? "violet"}
-                        leftSection={<ActionIcon_ size={14} />}
-                        loading={generatingIdx === idx}
-                        disabled={generatingIdx !== null && generatingIdx !== idx}
-                        onClick={() => handleGenerate(action, idx)}
-                      >
-                        {action.label}
-                      </Button>
+                      <Group key={idx} gap={4} wrap="nowrap">
+                        {models.length > 0 && (
+                          <Select
+                            size="xs"
+                            w={200}
+                            data={models}
+                            value={modelSelections[idx] ?? null}
+                            onChange={(val) => val && setModelSelections((prev) => ({ ...prev, [idx]: val }))}
+                            allowDeselect={false}
+                          />
+                        )}
+                        <Button
+                          size="xs"
+                          variant="light"
+                          color={action.color ?? "violet"}
+                          leftSection={<ActionIcon_ size={14} />}
+                          loading={generatingIdx === idx}
+                          disabled={(generatingIdx !== null && generatingIdx !== idx) || (models.length > 0 && !modelSelections[idx])}
+                          onClick={() => handleGenerate(action, idx)}
+                        >
+                          {action.label}
+                        </Button>
+                      </Group>
                     );
                   })}
                   {!relationship.hideAssign && (
@@ -418,12 +469,16 @@ export const RelationshipSection = ({
                         }
                       />
                     ) : col.action?.type === "view-json" && col.action.viewField ? (
-                      <Anchor
-                        size="sm"
-                        onClick={() => handleViewJson(item, col.action!.viewField!)}
-                      >
-                        {renderColumnText(col, item[col.key])}
-                      </Anchor>
+                      item[col.action.viewField] != null ? (
+                        <Anchor
+                          size="sm"
+                          onClick={() => handleViewJson(item, col.action!.viewField!)}
+                        >
+                          {renderColumnText(col, item[col.key])}
+                        </Anchor>
+                      ) : (
+                        <Text size="sm">{renderColumnText(col, item[col.key])}</Text>
+                      )
                     ) : col.key === "name" && targetResource ? (
                       <Anchor
                         size="sm"
@@ -440,18 +495,24 @@ export const RelationshipSection = ({
                 <Table.Td>
                   <Group gap={4} wrap="nowrap">
                     {/* Row actions */}
-                    {relationship.rowActions?.map((action, idx) => (
-                      <Tooltip key={idx} label={action.label}>
-                        <ActionIcon
-                          variant="subtle"
-                          color={action.color ?? "gray"}
-                          loading={action.type === "generate" && rowGeneratingId === item.id}
-                          onClick={() => handleRowAction(action, item)}
-                        >
-                          {rowActionIcon(action.icon)}
-                        </ActionIcon>
-                      </Tooltip>
-                    ))}
+                    {relationship.rowActions?.map((action, idx) => {
+                      const isDisabled =
+                        (action.viewField && item[action.viewField] == null) ||
+                        (action.type === "generate" && action.bodyField && item.status === "processing");
+                      return (
+                        <Tooltip key={idx} label={action.label}>
+                          <ActionIcon
+                            variant="subtle"
+                            color={action.color ?? "gray"}
+                            loading={action.type === "generate" && rowGeneratingId === item.id}
+                            disabled={!!isDisabled}
+                            onClick={() => handleRowAction(action, item)}
+                          >
+                            {rowActionIcon(action.icon)}
+                          </ActionIcon>
+                        </Tooltip>
+                      );
+                    })}
                     {/* Archive action */}
                     {relationship.archivable && relationship.archiveEndpoint && (
                       <Tooltip label="Archive">
@@ -604,6 +665,24 @@ function renderColumnValue(
     case "rating":
       return <RatingDisplay value={value ?? 0} />;
     case "badge":
+      if (value === "processing") {
+        return (
+          <Badge
+            size="sm"
+            color="violet"
+            variant="light"
+            style={{ animation: "vv-pulse 1.5s ease-in-out infinite" }}
+          >
+            Processing
+          </Badge>
+        );
+      }
+      if (value === "failed") {
+        return <Badge size="sm" color="red">Failed</Badge>;
+      }
+      if (value === "completed") {
+        return <Badge size="sm" color="green">Completed</Badge>;
+      }
       return value ? <Badge size="sm">{String(value)}</Badge> : null;
     case "date":
       return <Text size="sm">{value || ""}</Text>;

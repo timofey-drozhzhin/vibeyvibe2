@@ -151,6 +151,10 @@ sunoPromptGenerator.post(
       return c.json({ error: "Profile not found" }, 404);
     }
 
+    if (!profile.value) {
+      return c.json({ error: "Profile is still processing. Please wait." }, 400);
+    }
+
     // 2. Parse the profile's JSON value
     let profileVibes: Array<{ name: string; category: string; value: string }>;
     try {
