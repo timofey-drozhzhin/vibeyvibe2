@@ -553,10 +553,10 @@ export const registry: EntityRouteConfig[] = [
   },
 
   // =========================================================================
-  // 7b. lab/queue (AI Queue)
+  // 7b. admin/queue (AI Queue)
   // =========================================================================
   {
-    context: "lab",
+    context: "admin",
     slug: "queue",
     table: aiQueue,
     entityName: "Queue Item",

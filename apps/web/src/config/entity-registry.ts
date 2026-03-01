@@ -17,7 +17,7 @@ export type FieldType =
   | "select"
   | "readonly";
 
-export type SectionContext = "my-music" | "lab" | "bin" | "suno";
+export type SectionContext = "my-music" | "lab" | "bin" | "suno" | "admin";
 
 export interface FieldDef {
   key: string;
@@ -112,11 +112,12 @@ export interface SectionDef {
   context: SectionContext;
   label: string;
   color: string;
+  requiredRole?: string;
 }
 
 export interface ShowActionDef {
   label: string;
-  /** POST endpoint — record ID is appended (e.g. "/api/ai-queue/process" → POST /api/ai-queue/process/123) */
+  /** POST endpoint — record ID is appended (e.g. "/api/admin/ai-queue/process" → POST /api/admin/ai-queue/process/123) */
   endpoint: string;
   color?: string;
   icon?: "sparkles" | "play" | "refresh";
@@ -166,6 +167,7 @@ export const sections: SectionDef[] = [
   { context: "lab", label: "Lab", color: "teal" },
   { context: "bin", label: "Bin", color: "orange" },
   { context: "suno", label: "Suno Studio", color: "pink" },
+  { context: "admin", label: "Admin", color: "red", requiredRole: "admin" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -596,14 +598,14 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 7b. lab/queue (AI Queue)
+  // 7b. admin/queue (AI Queue)
   // =========================================================================
   {
     slug: "queue",
     tableName: "ai_queue",
     name: "Queue Item",
     pluralName: "Queue",
-    context: "lab",
+    context: "admin",
     fields: [
       {
         key: "type",
@@ -647,7 +649,7 @@ export const entityRegistry: EntityDef[] = [
     showActions: [
       {
         label: "Process",
-        endpoint: "/api/ai-queue/process",
+        endpoint: "/api/admin/ai-queue/process",
         color: "teal",
         icon: "play",
         conditionField: "status",

@@ -24,7 +24,7 @@ routes.route("/profile-generator", profileGenerator);
 routes.route("/profiles", profileRoutes);
 routes.route("/upload", uploadRoutes);
 routes.route("/storage", storageRoutes);
-routes.route("/ai-queue", aiQueueRoutes);
+routes.route("/admin/ai-queue", aiQueueRoutes);
 
 // Dashboard stats
 routes.get("/dashboard/stats", async (c) => {

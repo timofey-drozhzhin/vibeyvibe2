@@ -74,6 +74,7 @@ const authProvider: AuthProvider = {
             name: user.name || user.email,
             email: user.email,
             avatar: user.image,
+            role: user.role || "editor",
           };
         }
       }

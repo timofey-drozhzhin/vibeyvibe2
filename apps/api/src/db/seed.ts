@@ -114,6 +114,7 @@ async function seed() {
     email: "admin@vibeyvibe.local",
     emailVerified: true,
     image: null,
+    role: "admin",
     createdAt: new Date(),
     updatedAt: new Date(),
   }).onConflictDoNothing();

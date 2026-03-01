@@ -20,6 +20,7 @@ import {
   IconDna,
   IconTrash,
   IconBrain,
+  IconShield,
   IconChevronRight,
   IconLayoutDashboard,
   IconLogout,
@@ -39,6 +40,7 @@ const sectionIcons: Record<SectionContext, React.ElementType> = {
   "lab": IconDna,
   "bin": IconTrash,
   "suno": IconBrain,
+  "admin": IconShield,
 };
 
 interface SidebarItem {
@@ -53,26 +55,32 @@ interface SidebarSection {
   items: SidebarItem[];
 }
 
-// Build sidebar sections from the entity registry
-const sidebarSections: SidebarSection[] = registrySections.map((section) => ({
-  label: section.label,
-  icon: sectionIcons[section.context],
-  color: section.color,
-  items: [
-    ...entityRegistry
-      .filter((e) => e.context === section.context)
-      .map((e) => ({
-        label: e.pluralName,
-        to: getRoutePath(e),
-      })),
-    ...standalonePages
-      .filter((p) => p.context === section.context)
-      .map((p) => ({
-        label: p.label,
-        to: p.path,
-      })),
-  ],
-}));
+function buildSidebarSections(userRole?: string): SidebarSection[] {
+  return registrySections
+    .filter((section) => {
+      if (!section.requiredRole) return true;
+      return userRole === section.requiredRole;
+    })
+    .map((section) => ({
+      label: section.label,
+      icon: sectionIcons[section.context],
+      color: section.color,
+      items: [
+        ...entityRegistry
+          .filter((e) => e.context === section.context)
+          .map((e) => ({
+            label: e.pluralName,
+            to: getRoutePath(e),
+          })),
+        ...standalonePages
+          .filter((p) => p.context === section.context)
+          .map((p) => ({
+            label: p.label,
+            to: p.path,
+          })),
+      ],
+    }));
+}
 
 const SectionGroup = ({ section }: { section: SidebarSection }) => {
   const location = useLocation();
@@ -132,6 +140,7 @@ interface Identity {
   name: string;
   email: string;
   avatar?: string;
+  role?: string;
 }
 
 export const Sider = () => {
@@ -140,6 +149,8 @@ export const Sider = () => {
   const { data: identity, isLoading: identityLoading } =
     useGetIdentity<Identity>();
   const { mutate: logout } = useLogout();
+
+  const sidebarSections = buildSidebarSections(identity?.role);
 
   return (
     <Box

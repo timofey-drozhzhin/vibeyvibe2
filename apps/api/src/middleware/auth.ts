@@ -8,6 +8,7 @@ type AuthVariables = {
     email: string;
     emailVerified: boolean;
     image: string | null;
+    role: string;
     createdAt: Date;
     updatedAt: Date;
   } | null;
@@ -42,6 +43,7 @@ export const authMiddleware = createMiddleware<{
       email: "dev@localhost",
       emailVerified: true,
       image: null,
+      role: "admin",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -74,5 +76,15 @@ export const authMiddleware = createMiddleware<{
     return c.json({ error: "Unauthorized" }, 401);
   }
 
+  return next();
+});
+
+export const adminMiddleware = createMiddleware<{
+  Variables: AuthVariables;
+}>(async (c, next) => {
+  const user = c.get("user");
+  if (!user || user.role !== "admin") {
+    return c.json({ error: "Forbidden" }, 403);
+  }
   return next();
 });

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
-import { authMiddleware } from "./middleware/auth.js";
+import { authMiddleware, adminMiddleware } from "./middleware/auth.js";
 import { rateLimiter } from "./middleware/rate-limit.js";
 import { errorHandler } from "./middleware/error.js";
 import { getAuth } from "./auth/index.js";
@@ -67,6 +67,7 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
           email: "dev@localhost",
           emailVerified: true,
           image: null,
+          role: "admin",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
@@ -77,6 +78,7 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
         email: "dev@localhost",
         emailVerified: true,
         image: null,
+        role: "admin",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -89,6 +91,9 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
 
 // Auth middleware for all protected routes
 app.use("/api/*", authMiddleware);
+
+// Admin guard for admin section routes
+app.use("/api/admin/*", adminMiddleware);
 
 // Mount all API routes
 app.route("/api", routes);

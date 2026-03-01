@@ -32,6 +32,16 @@ export function getAuth() {
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
     socialProviders,
+    user: {
+      additionalFields: {
+        role: {
+          type: "string",
+          required: false,
+          defaultValue: "editor",
+          input: false,
+        },
+      },
+    },
     session: {
       cookieCache: {
         enabled: true,
