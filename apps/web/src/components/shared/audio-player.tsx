@@ -1,7 +1,6 @@
 import { Box, Text } from "@mantine/core";
 import { IconMusic } from "@tabler/icons-react";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { API_URL } from "../../config/constants.js";
 
 interface AudioPlayerProps {
   path?: string | null;

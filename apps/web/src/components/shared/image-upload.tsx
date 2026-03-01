@@ -2,8 +2,7 @@ import { useState, useRef } from "react";
 import { Image, Box, Loader } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconPhoto, IconUpload } from "@tabler/icons-react";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { API_URL } from "../../config/constants.js";
 
 interface ImageUploadProps {
   /** Current storage path */

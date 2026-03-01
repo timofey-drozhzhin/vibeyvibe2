@@ -8,8 +8,7 @@ import {
   getResourceName,
   findEntity,
 } from "../../config/entity-registry.js";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { API_URL } from "../../config/constants.js";
 
 interface ListCellProps {
   fieldKey: string;

@@ -278,7 +278,7 @@ Renders a single `<Table.Tr>` with label and value cells. Dispatches rendering b
 | `rating` | `RatingField` | Interactive 0-5 star rating |
 | `url` | `EditableField` | Click-to-edit, displays as clickable `Anchor` |
 | `image` | `ImageUpload` | Inline image preview with click-to-upload (120px) |
-| `audio` | `AudioPlayer` + `FileUpload` | Audio player with file upload below |
+| `audio` | `AudioUpload` | Audio player with drag-drop upload and replace button |
 | `fk` | `ForeignKeyField` (internal) | Click-to-select dropdown; resolves display names from record enrichment |
 | `uid` | (skipped) | UID fields are rendered in the aside panel, not as table rows |
 | `select` | placeholder | Not yet fully implemented |
@@ -342,14 +342,13 @@ Located in `components/shared/`:
 | Component | File | Description |
 |-----------|------|-------------|
 | `EntityPage` | `entity-page.tsx` | Global show page layout: editable title, archive badge, optional right panel, archive button footer, loading/not-found states |
-| `SectionCard` | `entity-page.tsx` | Card section with `Title order={4}` header and optional action button(s). Supports `action` (single button with "+") or `actions` (custom ReactNode). Re-exported from entity-page. |
+| `SectionCard` | `entity-page.tsx` | Card section with `Title order={4}` header and optional action button(s). Supports `action` (single button with "+") or `actions` (custom ReactNode). |
 | `EditableField` | `editable-field.tsx` | Click-to-edit inline field with hover edit icon. Supports custom `renderDisplay`, validation, async save. Supports `type='date'` for calendar picker via @mantine/dates. |
 | `RatingField` | `rating-field.tsx` | Interactive star rating (0-1 decimal scale, 0=unrated). Click same star to reset. Emits 0-1 values. |
 | `RatingDisplay` | `rating-field.tsx` | Read-only star rating display (0-1 decimal scale). |
 | `ImageUpload` | `image-upload.tsx` | Click-to-upload image with preview. Hover overlay shows upload icon. |
-| `ImagePreview` | `image-preview.tsx` | Displays image from storage path or placeholder. Configurable size. |
-| `FileUpload` | `file-upload.tsx` | File upload widget that POSTs to `/api/upload` and returns the storage path. |
 | `AudioPlayer` | `audio-player.tsx` | HTML5 audio player. Shows "no audio" placeholder when path is null. |
+| `AudioUpload` | `audio-upload.tsx` | Audio upload with drag-drop, player with replace button when audio exists. |
 | `MediaEmbeds` | `media-embeds.tsx` | Spotify/Apple Music/YouTube iframe embeds. With `onSave`, shows editable platform ID placeholders. Supports `type` prop (track/album). |
 | `PlatformLinks` | `platform-links.tsx` | Spotify/Apple Music/YouTube icon buttons that open external URLs. Used in table Actions columns. |
 | `AssignModal` | `assign-modal.tsx` | Modal with searchable dropdown for assigning M:N relationships. |
@@ -357,7 +356,6 @@ Located in `components/shared/`:
 | `SortableHeader` | `sortable-header.tsx` | Clickable table header cell with sort direction arrow. |
 | `ArchiveButton` | `archive-toggle.tsx` | Red "Archive" / green "Restore" button with confirmation modal. |
 | `ArchiveBadge` | `archive-toggle.tsx` | Green "Active" / red "Archived" badge. |
-| `ShowPageHeader` | `show-page.tsx` | **Deprecated** -- use `EntityPage` instead. |
 
 ## Component Patterns
 

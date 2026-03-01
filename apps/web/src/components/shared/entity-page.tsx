@@ -3,16 +3,52 @@ import {
   Group,
   Stack,
   Button,
+  Card,
   Center,
   Loader,
   Text,
+  Title,
   Divider,
 } from "@mantine/core";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { IconArrowLeft, IconPlus } from "@tabler/icons-react";
 import { ArchiveBadge, ArchiveButton } from "./archive-toggle.js";
 
-// Re-export SectionCard for convenience
-export { SectionCard } from "./show-page.js";
+// ---------------------------------------------------------------------------
+// SectionCard
+// ---------------------------------------------------------------------------
+
+interface SectionCardProps {
+  title: string;
+  /** Single action button with "+" icon (backward-compatible) */
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  /** Custom actions node — when provided, renders instead of `action` */
+  actions?: ReactNode;
+  children: ReactNode;
+}
+
+export const SectionCard = ({ title, action, actions, children }: SectionCardProps) => (
+  <Card withBorder>
+    <Group justify="space-between" mb="md">
+      <Title order={4}>{title}</Title>
+      {actions
+        ? actions
+        : action && (
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={<IconPlus size={14} />}
+              onClick={action.onClick}
+            >
+              {action.label}
+            </Button>
+          )}
+    </Group>
+    {children}
+  </Card>
+);
 
 interface EntityPageProps {
   /** Page title (entity name) */
@@ -118,7 +154,7 @@ export const EntityPage = ({
 // ---------------------------------------------------------------------------
 
 import { useState, useRef, useEffect } from "react";
-import { Title, TextInput, ActionIcon } from "@mantine/core";
+import { TextInput, ActionIcon } from "@mantine/core";
 import { IconCheck, IconX, IconEdit } from "@tabler/icons-react";
 
 const HeaderSection = ({

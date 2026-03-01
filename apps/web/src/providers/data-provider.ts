@@ -1,6 +1,5 @@
 import type { DataProvider } from "@refinedev/core";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { API_URL } from "../config/constants.js";
 const BASE = `${API_URL}/api`;
 
 async function request(url: string, options?: RequestInit) {

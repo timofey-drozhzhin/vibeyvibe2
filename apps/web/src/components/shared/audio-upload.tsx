@@ -2,8 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { Box, Text, Loader, Group, ActionIcon, Tooltip } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconMusic, IconUpload, IconReplace } from "@tabler/icons-react";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { API_URL } from "../../config/constants.js";
 
 interface AudioUploadProps {
   /** Current storage path */

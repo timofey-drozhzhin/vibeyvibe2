@@ -10,7 +10,9 @@ import {
   artistSongs,
   albumSongs,
 } from "../../db/schema/index.js";
-import { importUrlSchema } from "../../validators/lab.js";
+const importUrlSchema = z.object({
+  url: z.string().url("Must be a valid URL"),
+});
 import {
   fetchSpotifyData,
   detectSpotifyType,

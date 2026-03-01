@@ -21,7 +21,6 @@ import {
   IconMessageChatbot,
   IconFolder,
   IconSparkles,
-  IconPlus,
 } from "@tabler/icons-react";
 
 interface DashboardStats {
@@ -84,18 +83,18 @@ export const DashboardPage = () => {
               <Button
                 size="xs"
                 variant="light"
-                leftSection={<IconPlus size={14} />}
-                onClick={() => navigate("/my-music/artists/create")}
+
+                onClick={() => navigate("/my-music/artists")}
               >
-                New Artist
+                Artists
               </Button>
               <Button
                 size="xs"
                 variant="light"
-                leftSection={<IconPlus size={14} />}
-                onClick={() => navigate("/my-music/songs/create")}
+
+                onClick={() => navigate("/my-music/songs")}
               >
-                New Song
+                Songs
               </Button>
             </Group>
           </Stack>
@@ -137,10 +136,10 @@ export const DashboardPage = () => {
                 size="xs"
                 variant="light"
                 color="teal"
-                leftSection={<IconPlus size={14} />}
-                onClick={() => navigate("/lab/songs/create")}
+
+                onClick={() => navigate("/lab/songs")}
               >
-                Add Song
+                Songs
               </Button>
             </Group>
           </Stack>
@@ -174,10 +173,10 @@ export const DashboardPage = () => {
                 size="xs"
                 variant="light"
                 color="orange"
-                leftSection={<IconPlus size={14} />}
-                onClick={() => navigate("/bin/songs/create")}
+
+                onClick={() => navigate("/bin/songs")}
               >
-                Upload Song
+                Songs
               </Button>
             </Group>
           </Stack>
@@ -225,10 +224,10 @@ export const DashboardPage = () => {
                 size="xs"
                 variant="light"
                 color="pink"
-                leftSection={<IconPlus size={14} />}
-                onClick={() => navigate("/suno/prompts/create")}
+
+                onClick={() => navigate("/suno/prompts")}
               >
-                New Prompt
+                Prompts
               </Button>
             </Group>
           </Stack>
