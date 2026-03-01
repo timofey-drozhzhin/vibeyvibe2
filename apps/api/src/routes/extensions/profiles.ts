@@ -8,7 +8,8 @@ import { profiles } from "../../db/schema/index.js";
 const profileRoutes = new Hono();
 
 const updateSchema = z.object({
-  archived: z.boolean(),
+  archived: z.boolean().optional(),
+  value: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -37,12 +38,16 @@ profileRoutes.put(
       return c.json({ error: "Profile not found" }, 404);
     }
 
+    const updates: Record<string, any> = { updated_at: new Date().toISOString() };
+    if (body.archived !== undefined) updates.archived = body.archived;
+    if (body.value !== undefined) updates.value = body.value;
+
     await db
       .update(profiles)
-      .set({ archived: body.archived })
+      .set(updates)
       .where(eq(profiles.id, id));
 
-    return c.json({ data: { id, archived: body.archived } });
+    return c.json({ data: { id, ...updates } });
   },
 );
 

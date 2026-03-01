@@ -166,9 +166,10 @@ export const profiles = sqliteTable(
       .notNull()
       .references(() => songs.id, { onDelete: "cascade" }),
     value: text("value").notNull(),
-    method: text("method").notNull(),
+    model: text("model").notNull(),
     archived: integer("archived", { mode: "boolean" as const }).default(false),
     created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+    updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [index("profiles_song_id_idx").on(table.song_id)]
 );

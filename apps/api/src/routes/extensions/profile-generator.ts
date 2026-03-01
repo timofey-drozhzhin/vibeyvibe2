@@ -205,7 +205,7 @@ profileGenerator.post(
       .values({
         song_id: songId,
         value: JSON.stringify(profileEntries),
-        method: "vibes",
+        model,
       })
       .returning();
 
@@ -213,7 +213,6 @@ profileGenerator.post(
       data: {
         id: created.id,
         songId,
-        method: "vibes",
         totalVibes: profileEntries.length,
       },
     });

@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollArea,
   Stack,
+  Textarea,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useNavigation, useCustomMutation } from "@refinedev/core";
@@ -23,6 +24,7 @@ import {
   IconTrash,
   IconEye,
   IconArchive,
+  IconPencil,
 } from "@tabler/icons-react";
 import { SectionCard } from "../shared/entity-page.js";
 import { AssignModal } from "../shared/assign-modal.js";
@@ -60,6 +62,8 @@ export const RelationshipSection = ({
   const [rowGeneratingId, setRowGeneratingId] = useState<string | number | null>(null);
   const [archivingId, setArchivingId] = useState<string | number | null>(null);
   const [viewModalData, setViewModalData] = useState<any[] | null>(null);
+  const [editModalData, setEditModalData] = useState<{ entries: any[]; itemId: string | number; endpoint: string } | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const { mutateAsync } = useCustomMutation();
 
@@ -134,12 +138,17 @@ export const RelationshipSection = ({
         errorNotification: false,
       });
       if (action.successNavigate && result?.data?.data?.id) {
+        const targetPath = `/${action.successNavigate}/show/${result.data.data.id}`;
         notifications.show({
           title: "Generated",
-          message: `${action.label} created successfully. Navigating...`,
+          message: (
+            <Anchor size="sm" href={targetPath} onClick={(e: React.MouseEvent) => { e.preventDefault(); show(action.successNavigate!, result.data.data.id); }}>
+              {action.label} created — view it here
+            </Anchor>
+          ),
           color: "green",
+          autoClose: 8000,
         });
-        show(action.successNavigate, result.data.data.id);
       } else {
         notifications.show({
           title: "Generated",
@@ -172,9 +181,49 @@ export const RelationshipSection = ({
     }
   };
 
+  const handleEditJson = (action: RowActionDef, item: any) => {
+    if (!action.viewField || !action.editEndpoint) return;
+    try {
+      const parsed = typeof item[action.viewField] === "string"
+        ? JSON.parse(item[action.viewField])
+        : item[action.viewField];
+      const entries = Array.isArray(parsed) ? parsed : [parsed];
+      setEditModalData({ entries: entries.map((e: any) => ({ ...e })), itemId: item.id, endpoint: action.editEndpoint! });
+    } catch {
+      notifications.show({ title: "Error", message: "Could not parse data for editing.", color: "red" });
+    }
+  };
+
+  const handleEditSave = async () => {
+    if (!editModalData) return;
+    setEditSaving(true);
+    try {
+      await mutateAsync({
+        url: `${editModalData.endpoint}/${editModalData.itemId}`,
+        method: "put",
+        values: { value: JSON.stringify(editModalData.entries) },
+        successNotification: false,
+        errorNotification: false,
+      });
+      notifications.show({ title: "Updated", message: "Profile updated successfully.", color: "green" });
+      setEditModalData(null);
+      onRefresh();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to save.";
+      notifications.show({ title: "Error", message, color: "red" });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const handleRowAction = async (action: RowActionDef, item: any) => {
     if (action.type === "view-json" && action.viewField) {
       handleViewJson(item, action.viewField);
+      return;
+    }
+
+    if (action.type === "edit-json") {
+      handleEditJson(action, item);
       return;
     }
 
@@ -189,12 +238,17 @@ export const RelationshipSection = ({
           errorNotification: false,
         });
         if (action.successNavigate && result?.data?.data?.id) {
+          const targetPath = `/${action.successNavigate}/show/${result.data.data.id}`;
           notifications.show({
             title: "Generated",
-            message: `${action.label} created successfully. Navigating...`,
+            message: (
+              <Anchor size="sm" href={targetPath} onClick={(e: React.MouseEvent) => { e.preventDefault(); show(action.successNavigate!, result.data.data.id); }}>
+                {action.label} created — view it here
+              </Anchor>
+            ),
             color: "green",
+            autoClose: 8000,
           });
-          show(action.successNavigate, result.data.data.id);
         } else {
           notifications.show({
             title: "Generated",
@@ -271,6 +325,7 @@ export const RelationshipSection = ({
       case "eye": return <IconEye size={16} />;
       case "music": return <IconMusic size={16} />;
       case "sparkles": return <IconSparkles size={16} />;
+      case "pencil": return <IconPencil size={16} />;
       default: return <IconEye size={16} />;
     }
   };
@@ -487,6 +542,50 @@ export const RelationshipSection = ({
               ))}
             </Stack>
           </ScrollArea>
+        )}
+      </Modal>
+
+      {/* Edit JSON Modal */}
+      <Modal
+        opened={editModalData !== null}
+        onClose={() => setEditModalData(null)}
+        title="Edit Profile"
+        size="lg"
+      >
+        {editModalData && (
+          <>
+            <ScrollArea h={400}>
+              <Stack gap="sm">
+                {editModalData.entries.map((entry: any, idx: number) => (
+                  <div key={idx} style={{ borderBottom: idx < editModalData.entries.length - 1 ? '1px solid var(--mantine-color-dark-4)' : undefined, paddingBottom: 8 }}>
+                    <Group gap="xs" mb={4}>
+                      <Text size="sm" fw={600}>{entry.name || `Entry ${idx + 1}`}</Text>
+                      {entry.category && <Badge size="xs">{entry.category}</Badge>}
+                    </Group>
+                    <Textarea
+                      size="sm"
+                      autosize
+                      minRows={1}
+                      maxRows={6}
+                      value={entry.value ?? ""}
+                      onChange={(e) => {
+                        setEditModalData((prev) => {
+                          if (!prev) return prev;
+                          const updated = [...prev.entries];
+                          updated[idx] = { ...updated[idx], value: e.currentTarget.value };
+                          return { ...prev, entries: updated };
+                        });
+                      }}
+                    />
+                  </div>
+                ))}
+              </Stack>
+            </ScrollArea>
+            <Group justify="flex-end" mt="md">
+              <Button variant="default" onClick={() => setEditModalData(null)}>Cancel</Button>
+              <Button loading={editSaving} onClick={handleEditSave}>Save</Button>
+            </Group>
+          </>
         )}
       </Modal>
     </>

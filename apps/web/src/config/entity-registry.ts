@@ -55,12 +55,14 @@ export interface GenerateActionDef {
 
 export interface RowActionDef {
   label: string;
-  icon: "eye" | "music" | "sparkles";
-  type: "view-json" | "generate";
-  /** For view-json: which field contains the JSON to display */
+  icon: "eye" | "music" | "sparkles" | "pencil";
+  type: "view-json" | "generate" | "edit-json";
+  /** For view-json / edit-json: which field contains the JSON to display/edit */
   viewField?: string;
   /** For generate: API endpoint to POST to */
   endpoint?: string;
+  /** For edit-json: API endpoint to PUT updated JSON to (PUT {editEndpoint}/{id}) */
+  editEndpoint?: string;
   /** For generate: field name for row ID in request body */
   bodyField?: string;
   /** For generate: navigate to this resource on success */
@@ -239,19 +241,27 @@ const songRelationships: RelationshipDef[] = [
     hideAssign: true,
     columns: [
       { key: "created_at", label: "Date", type: "date", action: { type: "view-json", viewField: "value" } },
-      { key: "method", label: "Method", type: "badge" },
+      { key: "model", label: "Model", type: "text" },
     ],
     maxItems: 10,
     archivable: true,
     archiveEndpoint: "/api/profiles",
     generateAction: {
-      label: "Generate from Vibes",
+      label: "Generate",
       endpoint: "/api/profile-generator/generate",
       bodyField: "songId",
       color: "violet",
       icon: "sparkles",
     },
     rowActions: [
+      {
+        label: "Edit Profile",
+        icon: "pencil",
+        type: "edit-json",
+        viewField: "value",
+        editEndpoint: "/api/profiles",
+        color: "blue",
+      },
       {
         label: "Suno Prompt",
         icon: "music",
