@@ -186,7 +186,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
       {/* Table */}
       <div style={{ position: "relative", minHeight: 200 }}>
         <LoadingOverlay visible={listResult.query.isPending} />
-        <Table striped highlightOnHover>
+        <Table striped>
           <Table.Thead>
             <Table.Tr>
               {entity.listColumns.map((col) => {
