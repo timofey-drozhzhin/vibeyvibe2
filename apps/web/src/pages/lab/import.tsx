@@ -457,7 +457,7 @@ export const LabImport = () => {
               </Group>
             </Group>
 
-            <Table striped highlightOnHover>
+            <Table highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th w={40}>

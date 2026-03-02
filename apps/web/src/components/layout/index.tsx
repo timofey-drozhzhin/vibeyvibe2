@@ -6,7 +6,14 @@ export const Layout = ({ children }: PropsWithChildren) => {
   return (
     <Box style={{ display: "flex", minHeight: "100vh" }}>
       <Sider />
-      <Box flex={1} p="md">
+      <Box
+        flex={1}
+        p="lg"
+        style={{
+          backgroundColor: "var(--mantine-color-dark-7)",
+          overflowY: "auto",
+        }}
+      >
         {children}
       </Box>
     </Box>

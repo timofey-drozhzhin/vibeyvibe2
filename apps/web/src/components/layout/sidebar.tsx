@@ -160,9 +160,10 @@ export const Sider = () => {
       style={{
         position: "sticky",
         top: 0,
-        borderRight: "1px solid var(--mantine-color-default-border)",
+        borderRight: "1px solid var(--mantine-color-dark-4)",
         display: "flex",
         flexDirection: "column",
+        backgroundColor: "var(--mantine-color-dark-8)",
       }}
     >
       <Box px="md" py="lg">

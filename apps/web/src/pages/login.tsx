@@ -29,7 +29,7 @@ export const LoginPage = () => {
 
   return (
     <Center mih="100vh">
-      <Card shadow="lg" padding="xl" radius="md" w={400} withBorder>
+      <Card padding="xl" w={400} withBorder>
         <Stack gap="lg">
           <Box ta="center">
             <Title

@@ -49,7 +49,7 @@ export const DashboardPage = () => {
 
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
         {/* My Music */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
+        <Card padding="lg" withBorder>
           <Stack gap="sm">
             <Group>
               <IconMusic
@@ -101,7 +101,7 @@ export const DashboardPage = () => {
         </Card>
 
         {/* Lab */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
+        <Card padding="lg" withBorder>
           <Stack gap="sm">
             <Group>
               <IconDna
@@ -146,7 +146,7 @@ export const DashboardPage = () => {
         </Card>
 
         {/* Bin */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
+        <Card padding="lg" withBorder>
           <Stack gap="sm">
             <Group>
               <IconTrash
@@ -183,7 +183,7 @@ export const DashboardPage = () => {
         </Card>
 
         {/* Suno Studio */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
+        <Card padding="lg" withBorder>
           <Stack gap="sm">
             <Group>
               <IconBrain

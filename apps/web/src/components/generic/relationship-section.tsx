@@ -438,7 +438,7 @@ export const RelationshipSection = ({
                 },
               })}
       >
-        <Table striped>
+        <Table highlightOnHover>
           <Table.Thead>
             <Table.Tr>
               {relationship.columns.map((col) => (
