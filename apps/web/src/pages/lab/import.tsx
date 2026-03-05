@@ -548,6 +548,7 @@ export const LabImport = () => {
                         aria-label="Select all"
                       />
                     </Table.Th>
+                    <Table.Th w={40}>#</Table.Th>
                     <Table.Th w={50}></Table.Th>
                     <Table.Th>Name</Table.Th>
                     <Table.Th>Artists</Table.Th>
@@ -556,7 +557,7 @@ export const LabImport = () => {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {previewTracks.map((track) => (
+                  {previewTracks.map((track, index) => (
                     <Table.Tr key={track.spotifyId}>
                       <Table.Td>
                         <Checkbox
@@ -564,6 +565,9 @@ export const LabImport = () => {
                           onChange={() => toggleTrack(track.spotifyId)}
                           aria-label={`Select ${track.name}`}
                         />
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="dimmed">{index + 1}</Text>
                       </Table.Td>
                       <Table.Td>
                         <Avatar
@@ -659,12 +663,13 @@ export const LabImport = () => {
                             aria-label="Select all artists"
                           />
                         </Table.Th>
+                        <Table.Th w={40}>#</Table.Th>
                         <Table.Th w={50}></Table.Th>
                         <Table.Th>Name</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
-                      {uniqueArtists.map((artist) => {
+                      {uniqueArtists.map((artist, index) => {
                         const key = getArtistKey(artist);
                         return (
                           <Table.Tr key={key}>
@@ -674,6 +679,9 @@ export const LabImport = () => {
                                 onChange={() => toggleArtist(key)}
                                 aria-label={`Select ${artist.name}`}
                               />
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="sm" c="dimmed">{index + 1}</Text>
                             </Table.Td>
                             <Table.Td>
                               <Avatar
@@ -735,6 +743,7 @@ export const LabImport = () => {
                             aria-label="Select all albums"
                           />
                         </Table.Th>
+                        <Table.Th w={40}>#</Table.Th>
                         <Table.Th w={50}></Table.Th>
                         <Table.Th>Name</Table.Th>
                         <Table.Th>Artists</Table.Th>
@@ -742,7 +751,7 @@ export const LabImport = () => {
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
-                      {uniqueAlbums.map((album) => {
+                      {uniqueAlbums.map((album, index) => {
                         const key = getAlbumKey(album);
                         return (
                           <Table.Tr key={key}>
@@ -752,6 +761,9 @@ export const LabImport = () => {
                                 onChange={() => toggleAlbum(key)}
                                 aria-label={`Select ${album.name}`}
                               />
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="sm" c="dimmed">{index + 1}</Text>
                             </Table.Td>
                             <Table.Td>
                               <Avatar

@@ -126,6 +126,12 @@ export interface ShowActionDef {
   conditionValues?: string[];
 }
 
+export interface SortPresetDef {
+  label: string;
+  field: string;
+  order: "asc" | "desc";
+}
+
 export interface EntityDef {
   slug: string;
   tableName: string;
@@ -144,6 +150,8 @@ export interface EntityDef {
   showActions?: ShowActionDef[];
   /** Allow admin users to permanently delete records */
   allowDelete?: boolean;
+  /** Predefined sort options shown in a dropdown on the list page */
+  sortPresets?: SortPresetDef[];
 }
 
 export interface ExtensionDef {
@@ -417,6 +425,35 @@ const albumFields = (storageDir: string): FieldDef[] => [
 ];
 
 // ---------------------------------------------------------------------------
+// Reusable Sort Presets
+// ---------------------------------------------------------------------------
+
+const songSortPresets: SortPresetDef[] = [
+  { label: "Added: Newest", field: "created_at", order: "desc" },
+  { label: "Added: Oldest", field: "created_at", order: "asc" },
+  { label: "Released: Newest", field: "release_date", order: "desc" },
+  { label: "Released: Oldest", field: "release_date", order: "asc" },
+  { label: "Most Liked", field: "rating", order: "desc" },
+  { label: "Least Liked", field: "rating", order: "asc" },
+];
+
+const albumSortPresets: SortPresetDef[] = [
+  { label: "Added: Newest", field: "created_at", order: "desc" },
+  { label: "Added: Oldest", field: "created_at", order: "asc" },
+  { label: "Released: Newest", field: "release_date", order: "desc" },
+  { label: "Released: Oldest", field: "release_date", order: "asc" },
+  { label: "Most Liked", field: "rating", order: "desc" },
+  { label: "Least Liked", field: "rating", order: "asc" },
+];
+
+const artistSortPresets: SortPresetDef[] = [
+  { label: "Added: Newest", field: "created_at", order: "desc" },
+  { label: "Added: Oldest", field: "created_at", order: "asc" },
+  { label: "Most Liked", field: "rating", order: "desc" },
+  { label: "Least Liked", field: "rating", order: "asc" },
+];
+
+// ---------------------------------------------------------------------------
 // Entity Registry (13 entities)
 // ---------------------------------------------------------------------------
 
@@ -449,6 +486,7 @@ export const entityRegistry: EntityDef[] = [
       "youtube_uid",
     ],
     allowDelete: true,
+    sortPresets: songSortPresets,
   },
 
   // =========================================================================
@@ -476,6 +514,7 @@ export const entityRegistry: EntityDef[] = [
       "youtube_uid",
     ],
     allowDelete: true,
+    sortPresets: artistSortPresets,
   },
 
   // =========================================================================
@@ -505,6 +544,7 @@ export const entityRegistry: EntityDef[] = [
       "youtube_uid",
     ],
     allowDelete: true,
+    sortPresets: albumSortPresets,
   },
 
   // =========================================================================
@@ -535,6 +575,7 @@ export const entityRegistry: EntityDef[] = [
       "youtube_uid",
     ],
     allowDelete: true,
+    sortPresets: songSortPresets,
   },
 
   // =========================================================================
@@ -562,6 +603,7 @@ export const entityRegistry: EntityDef[] = [
       "youtube_uid",
     ],
     allowDelete: true,
+    sortPresets: artistSortPresets,
   },
 
   // =========================================================================
@@ -591,6 +633,7 @@ export const entityRegistry: EntityDef[] = [
       "youtube_uid",
     ],
     allowDelete: true,
+    sortPresets: albumSortPresets,
   },
 
   // =========================================================================

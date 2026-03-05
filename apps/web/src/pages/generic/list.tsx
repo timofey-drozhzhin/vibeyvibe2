@@ -1,16 +1,17 @@
-import { useState } from "react";
-import { useList, useNavigation, useCreate } from "@refinedev/core";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useInfiniteList, useNavigation, useCreate } from "@refinedev/core";
 import {
   Table,
   Group,
   Button,
   Title,
   Stack,
-  Pagination,
   Text,
   LoadingOverlay,
   Modal,
   TextInput,
+  Loader,
+  Center,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus } from "@tabler/icons-react";
@@ -21,7 +22,7 @@ import { ListCell } from "../../components/generic/list-cell.js";
 import type { EntityDef, FieldDef } from "../../config/entity-registry.js";
 import { getResourceName } from "../../config/entity-registry.js";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 100;
 
 /** Map of field keys to human-readable header labels. */
 const defaultLabels: Record<string, string> = {
@@ -88,12 +89,24 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
   const platformType = getPlatformType(entity);
   const createExtraFields = getCreateExtraFields(entity);
 
+  // Derive sort preset options from entity config
+  const sortPresetOptions = entity.sortPresets?.map((p) => ({
+    label: p.label,
+    value: `${p.field}:${p.order}`,
+  })) ?? [];
+
   // -- State --
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [archiveFilter, setArchiveFilter] = useState("active");
   const [sortField, setSortField] = useState("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [activeSortPreset, setActiveSortPreset] = useState<string | null>(() => {
+    if (!entity.sortPresets) return null;
+    const defaultComposite = "created_at:desc";
+    return sortPresetOptions.find((p) => p.value === defaultComposite)
+      ? defaultComposite
+      : null;
+  });
 
   // -- Create modal state --
   const [createOpened, { open: openCreate, close: closeCreate }] =
@@ -109,12 +122,27 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
 
   // -- Sorting --
   const handleSort = (field: string) => {
+    let newOrder: "asc" | "desc";
     if (sortField === field) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+      newOrder = sortOrder === "asc" ? "desc" : "asc";
     } else {
-      setSortField(field);
-      setSortOrder("asc");
+      newOrder = "asc";
     }
+    setSortField(field);
+    setSortOrder(newOrder);
+
+    // Sync preset selection if the new sort matches a preset
+    const composite = `${field}:${newOrder}`;
+    const match = sortPresetOptions.find((p) => p.value === composite);
+    setActiveSortPreset(match ? match.value : null);
+  };
+
+  const handleSortPresetChange = (value: string | null) => {
+    if (!value) return;
+    setActiveSortPreset(value);
+    const [field, order] = value.split(":");
+    setSortField(field);
+    setSortOrder(order as "asc" | "desc");
   };
 
   // -- Create --
@@ -139,15 +167,14 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
   };
 
   // -- Archive filter --
-  const archiveFilters =
-    archiveFilter === "all"
-      ? []
-      : [{ field: "archived" as const, operator: "eq" as const, value: archiveFilter === "archived" }];
+  const archiveFilters = [
+    { field: "archived" as const, operator: "eq" as const, value: archiveFilter === "archived" },
+  ];
 
-  // -- Data fetching --
-  const listResult = useList({
+  // -- Data fetching (infinite scroll) --
+  const { query, result } = useInfiniteList({
     resource,
-    pagination: { currentPage: page, pageSize: PAGE_SIZE },
+    pagination: { pageSize: PAGE_SIZE },
     filters: [
       { field: "search", operator: "contains", value: search },
       ...archiveFilters,
@@ -155,9 +182,34 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
     sorters: [{ field: sortField, order: sortOrder }],
   });
 
-  const records = listResult.result.data ?? [];
-  const total = listResult.result.total ?? 0;
-  const pageCount = Math.ceil(total / PAGE_SIZE);
+  // Flatten all pages into a single array
+  const records = result.data?.pages.flatMap((p) => p.data) ?? [];
+  const total = result.data?.pages[0]?.total ?? 0;
+  const isInitialLoading = query.isLoading;
+
+  // -- Infinite scroll sentinel --
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const handleIntersect = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && result.hasNextPage && !query.isFetchingNextPage) {
+        query.fetchNextPage();
+      }
+    },
+    [result.hasNextPage, query.isFetchingNextPage, query.fetchNextPage],
+  );
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(handleIntersect, {
+      rootMargin: "200px",
+    });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [handleIntersect]);
 
   // -- Column count for empty state --
   const colCount =
@@ -167,7 +219,12 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
     <Stack>
       {/* Header */}
       <Group justify="space-between">
-        <Title order={3}>{entity.pluralName}</Title>
+        <Group gap="sm" align="baseline">
+          <Title order={3}>{entity.pluralName}</Title>
+          {!isInitialLoading && total > 0 && (
+            <Text size="sm" c="dimmed">{total}</Text>
+          )}
+        </Group>
         <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
           New
         </Button>
@@ -176,20 +233,17 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
       {/* Toolbar */}
       <ListToolbar
         search={search}
-        onSearchChange={(value) => {
-          setSearch(value);
-          setPage(1);
-        }}
+        onSearchChange={setSearch}
         archiveFilter={archiveFilter}
-        onArchiveFilterChange={(value) => {
-          setArchiveFilter(value);
-          setPage(1);
-        }}
+        onArchiveFilterChange={setArchiveFilter}
+        sortPresets={sortPresetOptions.length > 0 ? sortPresetOptions : undefined}
+        activeSortPreset={activeSortPreset}
+        onSortPresetChange={handleSortPresetChange}
       />
 
       {/* Table */}
       <div style={{ position: "relative", minHeight: 200 }}>
-        <LoadingOverlay visible={listResult.query.isPending} />
+        <LoadingOverlay visible={isInitialLoading} />
         <Table>
           <Table.Thead>
             <Table.Tr>
@@ -223,7 +277,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {records.length === 0 && !listResult.query.isPending && (
+            {records.length === 0 && !isInitialLoading && (
               <Table.Tr>
                 <Table.Td colSpan={colCount}>
                   <Text c="dimmed" ta="center" py="md">
@@ -260,11 +314,12 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
         </Table>
       </div>
 
-      {/* Pagination */}
-      {pageCount > 1 && (
-        <Group justify="center" mt="md">
-          <Pagination value={page} onChange={setPage} total={pageCount} />
-        </Group>
+      {/* Infinite scroll sentinel */}
+      <div ref={sentinelRef} />
+      {query.isFetchingNextPage && (
+        <Center py="md">
+          <Loader size="sm" />
+        </Center>
       )}
 
       {/* Create Modal */}
