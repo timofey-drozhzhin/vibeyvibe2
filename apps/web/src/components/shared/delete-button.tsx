@@ -12,13 +12,13 @@ export const DeleteButton = ({ onDelete }: DeleteButtonProps) => {
   return (
     <>
       <Button color="red" variant="filled" onClick={() => setOpened(true)}>
-        Delete
+        Permanently Delete
       </Button>
 
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}
-        title="Delete Record"
+        title="Permanently Delete Record"
         centered
       >
         <Text size="sm" mb="lg">
@@ -36,7 +36,7 @@ export const DeleteButton = ({ onDelete }: DeleteButtonProps) => {
               setOpened(false);
             }}
           >
-            Delete
+            Permanently Delete
           </Button>
         </Group>
       </Modal>

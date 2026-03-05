@@ -275,6 +275,7 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
 
       const existing = await db.select().from(config.table).where(and(...conditions)).get();
       if (!existing) return c.json({ error: `${config.entityName} not found` }, 404);
+      if (!existing.archived) return c.json({ error: "Record must be archived before it can be deleted" }, 400);
 
       await db.transaction(async (tx) => {
         // Clean up pivot tables from relationships config

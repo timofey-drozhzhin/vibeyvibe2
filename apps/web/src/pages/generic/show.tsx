@@ -132,7 +132,7 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
         showQuery.refetch();
       }}
       onDelete={
-        entity.allowDelete && identity?.role === "admin"
+        entity.allowDelete && identity?.role === "admin" && record.archived
           ? async () => {
               await deleteRecord({
                 resource,

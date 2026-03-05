@@ -86,11 +86,9 @@ const dataProvider: DataProvider = {
   },
 
   deleteOne: async ({ resource, id }) => {
-    // No delete - archive instead
     const url = `${BASE}/${resource}/${id}`;
     const data = await request(url, {
-      method: "PUT",
-      body: JSON.stringify({ archived: true }),
+      method: "DELETE",
     });
     return { data };
   },
