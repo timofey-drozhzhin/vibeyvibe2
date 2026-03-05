@@ -29,7 +29,7 @@ app.use(
       return allowed.has(origin) ? origin : "";
     },
     allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["GET", "POST", "PUT", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     maxAge: 600,
   })

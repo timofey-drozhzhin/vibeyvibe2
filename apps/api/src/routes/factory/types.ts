@@ -56,4 +56,7 @@ export interface EntityRouteConfig {
 
   relationships?: RelationshipRouteConfig[];
   extensions?: (router: Hono) => void;   // Custom routes added before CRUD
+
+  allowDelete?: boolean;  // Enable DELETE /:id route (admin-only)
+  cascadeDeletes?: Array<{ table: any; fk: any }>;  // 1:N tables to cascade on delete
 }

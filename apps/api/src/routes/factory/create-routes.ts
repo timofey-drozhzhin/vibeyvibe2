@@ -256,6 +256,47 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
     return c.json(updated);
   });
 
+  // ---- DELETE /:id (admin-only) ----
+  if (config.allowDelete) {
+    router.delete("/:id", async (c) => {
+      const user = (c as any).get("user");
+      if (!user || user.role !== "admin") {
+        return c.json({ error: "Forbidden" }, 403);
+      }
+
+      const id = Number(c.req.param("id"));
+      if (isNaN(id)) return c.json({ error: "Invalid ID" }, 400);
+      const db = getDb();
+
+      const conditions = [eq(config.table.id, id)];
+      if (config.contextColumnValue && config.table.context) {
+        conditions.push(eq(config.table.context, config.contextColumnValue));
+      }
+
+      const existing = await db.select().from(config.table).where(and(...conditions)).get();
+      if (!existing) return c.json({ error: `${config.entityName} not found` }, 404);
+
+      await db.transaction(async (tx) => {
+        // Clean up pivot tables from relationships config
+        if (config.relationships) {
+          for (const rel of config.relationships) {
+            await tx.delete(rel.pivotTable).where(eq(rel.parentFk, id));
+          }
+        }
+        // Clean up 1:N cascade tables
+        if (config.cascadeDeletes) {
+          for (const cascade of config.cascadeDeletes) {
+            await tx.delete(cascade.table).where(eq(cascade.fk, id));
+          }
+        }
+        // Delete the record
+        await tx.delete(config.table).where(eq(config.table.id, id));
+      });
+
+      return c.json({ message: "Deleted" });
+    });
+  }
+
   // ---- Relationship Routes ----
   if (config.relationships) {
     for (const rel of config.relationships) {

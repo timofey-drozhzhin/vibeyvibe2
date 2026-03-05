@@ -406,6 +406,8 @@ export const registry: EntityRouteConfig[] = [
     listEnricher: songListEnricher,
     detailEnricher: songDetailEnricher,
     relationships: songRelationships,
+    allowDelete: true,
+    cascadeDeletes: [{ table: profiles, fk: profiles.song_id }],
   },
 
   // =========================================================================
@@ -428,6 +430,7 @@ export const registry: EntityRouteConfig[] = [
     contextColumnValue: "my_music",
     detailEnricher: artistDetailEnricher,
     relationships: artistRelationships,
+    allowDelete: true,
   },
 
   // =========================================================================
@@ -452,6 +455,7 @@ export const registry: EntityRouteConfig[] = [
     listEnricher: albumListEnricher,
     detailEnricher: albumDetailEnricher,
     relationships: albumRelationships,
+    allowDelete: true,
   },
 
   // =========================================================================
@@ -476,6 +480,8 @@ export const registry: EntityRouteConfig[] = [
     listEnricher: songListEnricher,
     detailEnricher: songDetailEnricher,
     relationships: songRelationships,
+    allowDelete: true,
+    cascadeDeletes: [{ table: profiles, fk: profiles.song_id }],
   },
 
   // =========================================================================
@@ -498,6 +504,7 @@ export const registry: EntityRouteConfig[] = [
     contextColumnValue: "lab",
     detailEnricher: artistDetailEnricher,
     relationships: artistRelationships,
+    allowDelete: true,
   },
 
   // =========================================================================
@@ -522,6 +529,7 @@ export const registry: EntityRouteConfig[] = [
     listEnricher: albumListEnricher,
     detailEnricher: albumDetailEnricher,
     relationships: albumRelationships,
+    allowDelete: true,
   },
 
   // =========================================================================

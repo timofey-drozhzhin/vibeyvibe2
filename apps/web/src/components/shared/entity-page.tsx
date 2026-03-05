@@ -12,6 +12,7 @@ import {
 } from "@mantine/core";
 import { IconArrowLeft, IconPlus } from "@tabler/icons-react";
 import { ArchiveBadge, ArchiveButton } from "./archive-toggle.js";
+import { DeleteButton } from "./delete-button.js";
 
 // ---------------------------------------------------------------------------
 // SectionCard
@@ -61,6 +62,8 @@ interface EntityPageProps {
   archived?: boolean;
   /** If provided, shows Archive/Restore button in footer */
   onArchiveToggle?: (val: boolean) => Promise<void>;
+  /** If provided, shows Delete button in footer (admin-only) */
+  onDelete?: () => void;
   /** Loading state */
   isLoading?: boolean;
   /** Record not found (show message) */
@@ -83,6 +86,7 @@ export const EntityPage = ({
   onTitleSave,
   archived,
   onArchiveToggle,
+  onDelete,
   isLoading,
   notFound,
   notFoundMessage = "Record not found.",
@@ -133,12 +137,15 @@ export const EntityPage = ({
         <Stack gap="md">{children}</Stack>
       )}
 
-      {/* Footer - Archive button */}
-      {onArchiveToggle && archived !== undefined && (
+      {/* Footer - Archive & Delete buttons */}
+      {(onArchiveToggle && archived !== undefined || onDelete) && (
         <>
           <Divider />
           <Group justify="flex-end">
-            <ArchiveButton archived={archived} onToggle={onArchiveToggle} />
+            {onArchiveToggle && archived !== undefined && (
+              <ArchiveButton archived={archived} onToggle={onArchiveToggle} />
+            )}
+            {onDelete && <DeleteButton onDelete={onDelete} />}
           </Group>
         </>
       )}

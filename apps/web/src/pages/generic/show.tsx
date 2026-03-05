@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useShow, useUpdate, useNavigation, useCustomMutation } from "@refinedev/core";
+import { useShow, useUpdate, useDelete, useNavigation, useCustomMutation, useGetIdentity } from "@refinedev/core";
 import { Table, Button, Group } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconPlayerPlay, IconSparkles, IconRefresh } from "@tabler/icons-react";
@@ -19,7 +19,9 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
   const { query: showQuery } = useShow({ resource });
   const { list } = useNavigation();
   const { mutateAsync: updateRecord } = useUpdate();
+  const { mutateAsync: deleteRecord } = useDelete();
   const { mutateAsync: customMutate } = useCustomMutation();
+  const { data: identity } = useGetIdentity<{ role?: string }>();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const record = showQuery?.data?.data;
@@ -129,6 +131,18 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
         });
         showQuery.refetch();
       }}
+      onDelete={
+        entity.allowDelete && identity?.role === "admin"
+          ? async () => {
+              await deleteRecord({
+                resource,
+                id: record.id as number,
+                successNotification: false,
+              });
+              list(resource);
+            }
+          : undefined
+      }
       rightPanel={
         asideFields.length > 0 ? (
           <AsidePanel

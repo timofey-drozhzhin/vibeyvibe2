@@ -142,6 +142,8 @@ export interface EntityDef {
   createExtraFields?: string[];
   /** Action buttons shown on the show page */
   showActions?: ShowActionDef[];
+  /** Allow admin users to permanently delete records */
+  allowDelete?: boolean;
 }
 
 export interface ExtensionDef {
@@ -426,6 +428,7 @@ export const entityRegistry: EntityDef[] = [
       "apple_music_uid",
       "youtube_uid",
     ],
+    allowDelete: true,
   },
 
   // =========================================================================
@@ -448,6 +451,7 @@ export const entityRegistry: EntityDef[] = [
       "created_at",
     ],
     asideFields: ["image_path"],
+    allowDelete: true,
   },
 
   // =========================================================================
@@ -477,6 +481,7 @@ export const entityRegistry: EntityDef[] = [
       "apple_music_uid",
       "youtube_uid",
     ],
+    allowDelete: true,
   },
 
   // =========================================================================
@@ -507,6 +512,7 @@ export const entityRegistry: EntityDef[] = [
       "apple_music_uid",
       "youtube_uid",
     ],
+    allowDelete: true,
   },
 
   // =========================================================================
@@ -529,6 +535,7 @@ export const entityRegistry: EntityDef[] = [
       "created_at",
     ],
     asideFields: ["image_path"],
+    allowDelete: true,
   },
 
   // =========================================================================
@@ -558,6 +565,7 @@ export const entityRegistry: EntityDef[] = [
       "apple_music_uid",
       "youtube_uid",
     ],
+    allowDelete: true,
   },
 
   // =========================================================================

@@ -45,7 +45,7 @@ export const ArchiveButton = ({ archived, onToggle }: ArchiveButtonProps) => {
   const [opened, setOpened] = useState(false);
 
   const action = archived ? "Restore" : "Archive";
-  const color = archived ? "green" : "red";
+  const color = archived ? "blue" : "yellow";
 
   return (
     <>
