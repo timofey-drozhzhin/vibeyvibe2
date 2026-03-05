@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useNavigation, useApiUrl } from "@refinedev/core";
 import {
   Alert,
+  Anchor,
   Avatar,
   Badge,
   Button,
@@ -493,19 +494,46 @@ export const LabImport = () => {
                       />
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm" fw={500}>
+                      <Anchor
+                        size="sm"
+                        fw={500}
+                        href={`https://open.spotify.com/track/${track.spotifyId}`}
+                        target="_blank"
+                        underline="hover"
+                      >
                         {track.name}
-                      </Text>
+                      </Anchor>
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm">
-                        {track.artists.map((a) => a.name).join(", ")}
+                        {track.artists.map((a, i) => (
+                          <span key={i}>
+                            {i > 0 && ", "}
+                            <Anchor
+                              size="sm"
+                              href={`https://open.spotify.com/search/${encodeURIComponent(a.name)}`}
+                              target="_blank"
+                              underline="hover"
+                            >
+                              {a.name}
+                            </Anchor>
+                          </span>
+                        ))}
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {track.album?.name ?? "-"}
-                      </Text>
+                      {track.album?.name ? (
+                        <Anchor
+                          size="sm"
+                          href={`https://open.spotify.com/search/${encodeURIComponent(track.album.name)}`}
+                          target="_blank"
+                          underline="hover"
+                        >
+                          {track.album.name}
+                        </Anchor>
+                      ) : (
+                        <Text size="sm">-</Text>
+                      )}
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm">{track.releaseDate ?? "-"}</Text>
