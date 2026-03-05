@@ -96,8 +96,8 @@ Never set default/fallback values for environment variables in code. All env val
 ### No Faking Features
 If a feature cannot be properly implemented, do not fake it with placeholder logic or mock behavior. Either implement it correctly or tell me that you are unable to create it.
 
-### No Deletes -- Archive Only
-There are NO delete operations anywhere in the system. Every record that needs to be "removed" is archived by setting `archived = true` via a PUT request. No DELETE HTTP methods exist. No delete buttons exist in the UI.
+### Archive First, Delete Second
+The default "remove" operation is archiving: set `archived = true` via a PUT request. Permanent deletion is only available for entities that opt in via `allowDelete: true` in their registry config, and only for records that are already archived. Admin role is required. The "Permanently Delete" button only appears on show pages for archived records when the user is admin.
 
 ### Single User System
 This is a personal tool. There is no registration flow after initial setup. Only one user account exists. Auth exists to protect the deployment, not to manage multiple users.
@@ -130,6 +130,9 @@ All API endpoints must validate input with Zod using `@hono/zod-validator`. Ever
 
 ### Everything is Generic -- No Entity-Specific Code
 Every component, route, URL path, and function must operate at the global entity level. Never write code that targets a specific entity type or context. No entity-specific components, no entity-specific route handlers, no `if (entity === 'x')` branches. All behavior differences between entities come from their registry configuration, never from code. If one entity needs something, build it as a generic capability that all entities can use.
+
+### API-First Enforcement
+All access control, validation, business rules, and data integrity constraints MUST be implemented and enforced on the API server first. The API is the only trusted authority. The frontend may duplicate checks to improve UX (hiding buttons, disabling actions), but that is purely cosmetic -- the server must independently enforce every rule as if the frontend does not exist. Any API endpoint can be called directly by anyone who bypasses the frontend. Always implement the server-side enforcement first, then add the corresponding frontend behavior.
 
 ### Production Safety
 Never run `drizzle-kit push` against production. Production database changes go through the migration workflow: edit schema, push locally, generate migration, commit, then run `db:migrate` in production.
@@ -381,7 +384,8 @@ Located in `apps/web/src/components/shared/`:
 | `SortableHeader` | `sortable-header.tsx` | Clickable table header cell with sort direction arrow indicator. |
 | `ListToolbar` | `list-toolbar.tsx` | Shared toolbar with search input and archive status segmented control (Active/All/Archived). |
 | `RatingField` | `rating-field.tsx` | Interactive star rating (0-1 real scale, 0=unrated). Click same star to reset. Also exports `RatingDisplay`. |
-| `ArchiveButton` | `archive-toggle.tsx` | Red "Archive" / green "Restore" button with confirmation Modal. Also exports `ArchiveBadge` (green "Active" / red "Archived" badge). |
+| `ArchiveButton` | `archive-toggle.tsx` | Yellow "Archive" / blue "Restore" button with confirmation Modal. Also exports `ArchiveBadge` (green "Active" / red "Archived" badge). |
+| `DeleteButton` | `delete-button.tsx` | Red "Permanently Delete" button with confirmation Modal. Only shown to admins on archived records. |
 | `PlatformLinks` | `platform-links.tsx` | Spotify/Apple Music/YouTube icon buttons that open external URLs. Used in table Actions columns. |
 | `MediaEmbeds` | `media-embeds.tsx` | Spotify, Apple Music, YouTube iframe embeds. Supports `type` prop ('track'\|'album') for correct embed URLs. With `onSave` prop, shows editable platform ID placeholders and edit links. |
 | `EditableField` | `editable-field.tsx` | Click-to-edit inline field with hover edit icon. Supports custom renderDisplay, validation, and async save. Supports `type='date'` for calendar date picker via @mantine/dates. |
