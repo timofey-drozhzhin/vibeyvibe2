@@ -12,17 +12,36 @@ import {
   TextInput,
   Loader,
   Center,
+  ActionIcon,
+  Tooltip,
+  Select,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconPlus } from "@tabler/icons-react";
+import { IconPlus, IconHeart, IconHeartFilled, IconCalendar } from "@tabler/icons-react";
 import { ListToolbar } from "../../components/shared/list-toolbar.js";
 import { SortableHeader } from "../../components/shared/sortable-header.js";
 import { PlatformLinks } from "../../components/shared/platform-links.js";
 import { ListCell } from "../../components/generic/list-cell.js";
+import { useLikeToggle } from "../../hooks/use-like-toggle.js";
 import type { EntityDef, FieldDef } from "../../config/entity-registry.js";
 import { getResourceName } from "../../config/entity-registry.js";
 
 const PAGE_SIZE = 100;
+
+/** Check if an entity has a release_date field. */
+function hasReleaseDate(entity: EntityDef): boolean {
+  return entity.fields.some((f) => f.key === "release_date");
+}
+
+/** Generate year options from current year down to 1950. */
+function getYearOptions(): { label: string; value: string }[] {
+  const currentYear = new Date().getFullYear();
+  const years: { label: string; value: string }[] = [];
+  for (let y = currentYear; y >= 1950; y--) {
+    years.push({ label: String(y), value: String(y) });
+  }
+  return years;
+}
 
 /** Map of field keys to human-readable header labels. */
 const defaultLabels: Record<string, string> = {
@@ -37,15 +56,11 @@ const defaultLabels: Record<string, string> = {
   url: "URL",
 };
 
-/** Fields that support server-side sorting. */
-const sortableFields = new Set([
-  "name",
-  "rating",
-  "release_date",
-  "created_at",
-  "updated_at",
-  "vibe_category",
-]);
+/** Derive sortable fields from the entity's sort presets. */
+function getSortableFields(entity: EntityDef): Set<string> {
+  if (!entity.sortPresets?.length) return new Set();
+  return new Set(entity.sortPresets.map((p) => p.field));
+}
 
 
 function getFieldLabel(fieldKey: string, entity: EntityDef): string {
@@ -88,6 +103,8 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
   const showPlatformLinks = hasPlatformLinks(entity);
   const platformType = getPlatformType(entity);
   const createExtraFields = getCreateExtraFields(entity);
+  const sortableFields = getSortableFields(entity);
+  const showYearFilter = hasReleaseDate(entity);
 
   // Derive sort preset options from entity config
   const sortPresetOptions = entity.sortPresets?.map((p) => ({
@@ -98,6 +115,8 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
   // -- State --
   const [search, setSearch] = useState("");
   const [archiveFilter, setArchiveFilter] = useState("active");
+  const [likedFilter, setLikedFilter] = useState(false);
+  const [releaseYear, setReleaseYear] = useState<string | null>(null);
   const [sortField, setSortField] = useState("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [activeSortPreset, setActiveSortPreset] = useState<string | null>(() => {
@@ -119,6 +138,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
   // -- Hooks --
   const { show } = useNavigation();
   const { mutate: createRecord, mutation: createMutation } = useCreate();
+  const { toggle: toggleLike } = useLikeToggle(() => query.refetch());
 
   // -- Sorting --
   const handleSort = (field: string) => {
@@ -178,6 +198,8 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
     filters: [
       { field: "search", operator: "contains", value: search },
       ...archiveFilters,
+      ...(likedFilter ? [{ field: "liked" as const, operator: "eq" as const, value: "true" }] : []),
+      ...(releaseYear ? [{ field: "release_year" as const, operator: "eq" as const, value: releaseYear }] : []),
     ],
     sorters: [{ field: sortField, order: sortOrder }],
   });
@@ -211,9 +233,9 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
     return () => observer.disconnect();
   }, [handleIntersect]);
 
-  // -- Column count for empty state --
+  // -- Column count for empty state (+ 1 for like column) --
   const colCount =
-    entity.listColumns.length + (showPlatformLinks ? 1 : 0);
+    entity.listColumns.length + 1 + (showPlatformLinks ? 1 : 0);
 
   return (
     <Stack>
@@ -239,7 +261,31 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
         sortPresets={sortPresetOptions.length > 0 ? sortPresetOptions : undefined}
         activeSortPreset={activeSortPreset}
         onSortPresetChange={handleSortPresetChange}
-      />
+      >
+        {showYearFilter && (
+          <Select
+            placeholder="Release Year"
+            leftSection={<IconCalendar size={16} />}
+            data={getYearOptions()}
+            value={releaseYear}
+            onChange={setReleaseYear}
+            clearable
+            searchable
+            size="sm"
+            w={120}
+          />
+        )}
+        <Tooltip label={likedFilter ? "Show all" : "Show liked only"}>
+          <ActionIcon
+            variant={likedFilter ? "filled" : "subtle"}
+            color="red"
+            onClick={() => setLikedFilter((v) => !v)}
+            size="lg"
+          >
+            {likedFilter ? <IconHeartFilled size={18} /> : <IconHeart size={18} />}
+          </ActionIcon>
+        </Tooltip>
+      </ListToolbar>
 
       {/* Table */}
       <div style={{ position: "relative", minHeight: 200 }}>
@@ -247,6 +293,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
         <Table>
           <Table.Thead>
             <Table.Tr>
+              <Table.Th w={40} />
               {entity.listColumns.map((col) => {
                 const label = getFieldLabel(col, entity);
 
@@ -288,6 +335,19 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
             )}
             {records.map((record: any) => (
               <Table.Tr key={record.id}>
+                <Table.Td>
+                  <ActionIcon
+                    variant="subtle"
+                    color={record.liked ? "red" : "gray"}
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleLike(resource, record.id);
+                    }}
+                  >
+                    {record.liked ? <IconHeartFilled size={16} /> : <IconHeart size={16} />}
+                  </ActionIcon>
+                </Table.Td>
                 {entity.listColumns.map((col) => (
                     <Table.Td key={col}>
                       <ListCell

@@ -10,7 +10,7 @@ import {
   Title,
   Divider,
 } from "@mantine/core";
-import { IconArrowLeft, IconPlus } from "@tabler/icons-react";
+import { IconArrowLeft, IconPlus, IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import { ArchiveBadge, ArchiveButton } from "./archive-toggle.js";
 import { DeleteButton } from "./delete-button.js";
 
@@ -64,6 +64,10 @@ interface EntityPageProps {
   onArchiveToggle?: (val: boolean) => Promise<void>;
   /** If provided, shows Delete button in footer (admin-only) */
   onDelete?: () => void;
+  /** Whether the current user has liked this entity */
+  liked?: boolean;
+  /** Callback to toggle the like state */
+  onLikeToggle?: () => void;
   /** Loading state */
   isLoading?: boolean;
   /** Record not found (show message) */
@@ -87,6 +91,8 @@ export const EntityPage = ({
   archived,
   onArchiveToggle,
   onDelete,
+  liked,
+  onLikeToggle,
   isLoading,
   notFound,
   notFoundMessage = "Record not found.",
@@ -121,6 +127,8 @@ export const EntityPage = ({
         onBack={onBack}
         onTitleSave={onTitleSave}
         archived={archived}
+        liked={liked}
+        onLikeToggle={onLikeToggle}
       />
 
       {/* Body */}
@@ -171,11 +179,15 @@ const HeaderSection = ({
   onBack,
   onTitleSave,
   archived,
+  liked,
+  onLikeToggle,
 }: {
   title: string;
   onBack: () => void;
   onTitleSave?: (newTitle: string) => Promise<void>;
   archived?: boolean;
+  liked?: boolean;
+  onLikeToggle?: () => void;
 }) => (
   <Group justify="space-between">
     <Group>
@@ -186,6 +198,16 @@ const HeaderSection = ({
       >
         Back
       </Button>
+      {onLikeToggle && (
+        <ActionIcon
+          variant="subtle"
+          color={liked ? "red" : "gray"}
+          onClick={onLikeToggle}
+          size="lg"
+        >
+          {liked ? <IconHeartFilled size={22} /> : <IconHeart size={22} />}
+        </ActionIcon>
+      )}
       {onTitleSave ? (
         <EditableTitle value={title} onSave={onTitleSave} />
       ) : (

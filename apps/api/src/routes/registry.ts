@@ -410,6 +410,9 @@ export const registry: EntityRouteConfig[] = [
     relationships: songRelationships,
     allowDelete: true,
     cascadeDeletes: [{ table: profiles, fk: profiles.song_id }],
+    extraFilters: [
+      { param: "release_year", column: songs.release_date, schema: z.string().optional(), mode: "starts_with" },
+    ],
   },
 
   // =========================================================================
@@ -456,6 +459,9 @@ export const registry: EntityRouteConfig[] = [
     detailEnricher: albumDetailEnricher,
     relationships: albumRelationships,
     allowDelete: true,
+    extraFilters: [
+      { param: "release_year", column: albums.release_date, schema: z.string().optional(), mode: "starts_with" },
+    ],
   },
 
   // =========================================================================
@@ -481,6 +487,9 @@ export const registry: EntityRouteConfig[] = [
     relationships: songRelationships,
     allowDelete: true,
     cascadeDeletes: [{ table: profiles, fk: profiles.song_id }],
+    extraFilters: [
+      { param: "release_year", column: songs.release_date, schema: z.string().optional(), mode: "starts_with" },
+    ],
   },
 
   // =========================================================================
@@ -527,6 +536,9 @@ export const registry: EntityRouteConfig[] = [
     detailEnricher: albumDetailEnricher,
     relationships: albumRelationships,
     allowDelete: true,
+    extraFilters: [
+      { param: "release_year", column: albums.release_date, schema: z.string().optional(), mode: "starts_with" },
+    ],
   },
 
   // =========================================================================

@@ -77,12 +77,13 @@ function pickLargestImage(images?: any[]): string | undefined {
  */
 function normalizeOfficialTrack(
   track: any,
-  fallbackImage?: string
+  fallbackImage?: string,
+  albumEan?: string
 ): SpotifyTrack {
   return {
     name: track.name,
     artists: (track.artists || []).map((a: any) => ({ name: a.name, spotifyId: a.id || undefined })),
-    album: track.album?.name ? { name: track.album.name, spotifyId: track.album.id || undefined } : undefined,
+    album: track.album?.name ? { name: track.album.name, spotifyId: track.album.id || undefined, ean: albumEan } : undefined,
     releaseDate: track.album?.release_date?.slice(0, 10) ?? undefined,
     isrc: track.external_ids?.isrc ?? undefined,
     imageUrl: pickLargestImage(track.album?.images) ?? fallbackImage,
@@ -156,6 +157,7 @@ async function fetchAlbum(
   const albumImage = pickLargestImage(albumData.images);
   const albumName = albumData.name;
   const albumReleaseDate = albumData.release_date?.slice(0, 10);
+  const albumEan = albumData.external_ids?.ean ?? albumData.external_ids?.upc ?? undefined;
 
   // Album track items are "simplified" — they lack external_ids (ISRC) and
   // album info. Batch-fetch full track objects to get ISRCs.
@@ -179,13 +181,13 @@ async function fetchAlbum(
   const tracks: SpotifyTrack[] = trackItems.map((item: any) => {
     const full = fullTracks.get(item.id);
     if (full) {
-      return normalizeOfficialTrack(full, albumImage);
+      return normalizeOfficialTrack(full, albumImage, albumEan);
     }
     // Fallback if batch fetch missed this track
     return {
       name: item.name,
       artists: (item.artists || []).map((a: any) => ({ name: a.name, spotifyId: a.id || undefined })),
-      album: albumName ? { name: albumName, spotifyId: id } : undefined,
+      album: albumName ? { name: albumName, spotifyId: id, ean: albumEan } : undefined,
       releaseDate: albumReleaseDate,
       isrc: undefined,
       imageUrl: albumImage,

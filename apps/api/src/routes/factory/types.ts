@@ -5,7 +5,7 @@ export interface ExtraFilter {
   param: string;
   column: any; // Drizzle column reference
   schema: z.ZodTypeAny;
-  mode: "eq" | "like";
+  mode: "eq" | "like" | "starts_with";
 }
 
 export interface PayloadColumnDef {

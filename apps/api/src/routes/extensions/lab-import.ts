@@ -262,6 +262,7 @@ const confirmTrackSchema = z.object({
   album: z.object({
     name: z.string(),
     spotifyId: z.string().optional(),
+    ean: z.string().nullable().optional(),
   }).nullable().optional(),
   releaseDate: z.string().nullable().optional(),
   isrc: z.string().nullable().optional(),
@@ -431,6 +432,7 @@ labImport.post(
             name: albumName,
             release_date: track.releaseDate || null,
             spotify_uid: track.album.spotifyId || existingAlbumRecord.spotify_uid,
+            ean: track.album.ean || existingAlbumRecord.ean || null,
             updated_at: new Date().toISOString(),
           };
 
@@ -458,6 +460,7 @@ labImport.post(
             context: "lab",
             release_date: track.releaseDate || null,
             spotify_uid: track.album.spotifyId || null,
+            ean: track.album.ean || null,
             created_at: albumNow,
             updated_at: albumNow,
           }).returning();

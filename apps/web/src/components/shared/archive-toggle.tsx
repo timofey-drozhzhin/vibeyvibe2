@@ -1,17 +1,13 @@
 import { Badge, Button } from "@mantine/core";
 import { ConfirmationModal, useConfirmation } from "./confirmation-modal.js";
 
-/** Read-only badge showing archive status. Green "Active" or red "Archived". */
+/** Read-only badge showing archive status. Only renders for archived records. */
 export const ArchiveBadge = ({ archived }: { archived: boolean }) =>
   archived ? (
-    <Badge color="red" variant="light">
+    <Badge color="yellow" variant="light">
       Archived
     </Badge>
-  ) : (
-    <Badge color="green" variant="light">
-      Active
-    </Badge>
-  );
+  ) : null;
 
 interface ArchiveButtonProps {
   archived: boolean;

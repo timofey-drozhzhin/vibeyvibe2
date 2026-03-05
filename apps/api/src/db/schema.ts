@@ -338,3 +338,20 @@ export const sunoSongsRelations = relations(sunoSongs, ({ one }) => ({
     references: [sunoSongPlaylists.id],
   }),
 }));
+
+// ===========================================================================
+// 15. Likes (per-user, polymorphic)
+// ===========================================================================
+export const likes = sqliteTable(
+  "likes",
+  {
+    user_id: text("user_id").notNull(),
+    entity: text("entity").notNull(),
+    entity_id: integer("entity_id").notNull(),
+    created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    primaryKey({ columns: [table.user_id, table.entity, table.entity_id] }),
+    index("likes_user_entity_idx").on(table.user_id, table.entity),
+  ]
+);

@@ -8,6 +8,7 @@ import profileRoutes from "./extensions/profiles.js";
 import uploadRoutes from "./extensions/upload.js";
 import storageRoutes from "./extensions/storage.js";
 import aiQueueRoutes from "./extensions/ai-queue.js";
+import likeRoutes from "./extensions/likes.js";
 
 const routes = new Hono();
 
@@ -25,6 +26,7 @@ routes.route("/profiles", profileRoutes);
 routes.route("/upload", uploadRoutes);
 routes.route("/storage", storageRoutes);
 routes.route("/admin/ai-queue", aiQueueRoutes);
+routes.route("/likes", likeRoutes);
 
 // Dashboard stats
 routes.get("/dashboard/stats", async (c) => {

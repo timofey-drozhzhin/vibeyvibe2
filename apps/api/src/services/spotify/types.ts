@@ -15,7 +15,7 @@ export interface SpotifyArtist {
 export interface SpotifyTrack {
   name: string;
   artists: SpotifyArtist[];
-  album?: { name: string; spotifyId?: string };
+  album?: { name: string; spotifyId?: string; ean?: string };
   releaseDate?: string;
   isrc?: string;
   imageUrl?: string;

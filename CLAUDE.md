@@ -115,6 +115,7 @@ Tables are now unified. Shared entity tables (`songs`, `artists`, `albums`) use 
 - Lab-specific: `vibes`
 - Bin: `bin_sources`, `bin_songs`
 - Suno: `suno_prompts`, `suno_song_playlists`, `suno_songs`
+- User state: `likes` (polymorphic per-user likes, composite PK: `user_id` + `entity` + `entity_id`)
 - Auth tables (user, session, account, verification) are managed by Better Auth and have no prefix.
 
 ### Temporary Files
@@ -363,6 +364,26 @@ Songs can be assigned to artists and albums through shared pivot tables (`artist
 ### Suno Studio
 - `POST /api/suno/prompt-collections/:id/prompts` -- Assign prompt (`{ promptId }`)
 - `PUT /api/suno/prompt-collections/:id/prompts/:relatedId` -- Remove prompt assignment
+
+## Likes
+
+Per-user likes stored in a polymorphic `likes` table (`user_id`, `entity`, `entity_id`). The `entity` column stores the route identifier (e.g., `"my-music/songs"`) matching the API route and Refine resource name. `entity_id` is the record's integer PK. Composite primary key on all three columns.
+
+### API
+
+- `POST /api/likes/toggle` -- Toggle a like. Body: `{ entity: string, entityId: number }`. Returns `{ data: { liked: boolean } }`.
+- `GET /api/likes?entity=my-music/songs` -- Get liked entity IDs for the current user. Returns `{ data: number[] }`.
+
+### Route Factory Integration
+
+All factory-generated list and detail endpoints automatically enrich responses with a `liked: boolean` field for the current user. List endpoints also accept a `liked` query parameter (`"true"` or `"false"`) to filter by liked status.
+
+### Frontend
+
+- **Show pages**: Heart icon in the header (between Back button and title). Filled red when liked, outline gray when not.
+- **List pages**: Heart icon as the first column in every row. Clickable to toggle.
+- **List toolbar**: Heart toggle button to filter the list to liked-only items.
+- **Hook**: `useLikeToggle` (`hooks/use-like-toggle.ts`) handles the toggle mutation.
 
 ## Show Page Standards
 

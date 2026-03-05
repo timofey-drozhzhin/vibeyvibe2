@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useShow, useUpdate, useDelete, useNavigation, useCustomMutation, useGetIdentity } from "@refinedev/core";
+import { useLikeToggle } from "../../hooks/use-like-toggle.js";
 import { Table, Button, Group } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconPlayerPlay, IconSparkles, IconRefresh } from "@tabler/icons-react";
@@ -24,6 +25,7 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
   const { mutateAsync: customMutate } = useCustomMutation();
   const { data: identity } = useGetIdentity<{ role?: string }>();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const { toggle: toggleLike } = useLikeToggle(() => showQuery.refetch());
 
   const record = showQuery?.data?.data;
   const isLoading = showQuery?.isPending;
@@ -124,6 +126,8 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
         showQuery.refetch();
       }}
       archived={record.archived}
+      liked={record.liked}
+      onLikeToggle={() => toggleLike(resource, record.id as number)}
       onArchiveToggle={async (val) => {
         await updateRecord({
           resource,

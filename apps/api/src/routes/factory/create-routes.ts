@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, like, and, or, desc as descFn, asc as ascFn, sql, getTableColumns } from "drizzle-orm";
+import { eq, like, and, or, desc as descFn, asc as ascFn, sql, getTableColumns, inArray } from "drizzle-orm";
 import { getDb } from "../../db/index.js";
+import { likes } from "../../db/schema/index.js";
 import type { EntityRouteConfig, RelationshipRouteConfig, FkEnrichment } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -80,6 +81,7 @@ function buildListQuerySchema(config: EntityRouteConfig) {
     order: z.enum(["asc", "desc"]).default(config.defaultOrder ?? "desc"),
     search: z.string().optional(),
     archived: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
+    liked: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   };
   if (config.extraFilters) {
     for (const f of config.extraFilters) {
@@ -106,8 +108,10 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
   // ---- GET / (List) ----
   router.get("/", zValidator("query", listSchema), async (c) => {
     const query = c.req.valid("query") as any;
-    const { page, pageSize, sort, order, archived, search } = query;
+    const { page, pageSize, sort, order, archived, search, liked: likedFilter } = query;
     const db = getDb();
+    const user = c.get("user" as never) as { id: string } | null;
+    const entityKey = `${config.context}/${config.slug}`;
     const offset = (page - 1) * pageSize;
     const conditions: any[] = [];
 
@@ -138,9 +142,23 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
       for (const f of config.extraFilters) {
         const val = query[f.param];
         if (val !== undefined && val !== null && val !== "") {
-          conditions.push(f.mode === "eq" ? eq(f.column, val) : like(f.column, `%${val}%`));
+          if (f.mode === "eq") {
+            conditions.push(eq(f.column, val));
+          } else if (f.mode === "starts_with") {
+            conditions.push(like(f.column, `${val}%`));
+          } else {
+            conditions.push(like(f.column, `%${val}%`));
+          }
         }
       }
+    }
+
+    // Liked filter
+    if (likedFilter !== undefined && user) {
+      const likedSubquery = likedFilter
+        ? sql`${config.table.id} IN (SELECT ${likes.entity_id} FROM ${likes} WHERE ${likes.user_id} = ${user.id} AND ${likes.entity} = ${entityKey})`
+        : sql`${config.table.id} NOT IN (SELECT ${likes.entity_id} FROM ${likes} WHERE ${likes.user_id} = ${user.id} AND ${likes.entity} = ${entityKey})`;
+      conditions.push(likedSubquery);
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -158,6 +176,26 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
     if (config.listEnricher) {
       enriched = await config.listEnricher(db, enriched);
     }
+
+    // Enrich with liked status
+    if (user && enriched.length > 0) {
+      const ids = enriched.map((r: any) => r.id);
+      const likedRows = await db
+        .select({ entity_id: likes.entity_id })
+        .from(likes)
+        .where(
+          and(
+            eq(likes.user_id, user.id),
+            eq(likes.entity, entityKey),
+            inArray(likes.entity_id, ids),
+          ),
+        );
+      const likedSet = new Set(likedRows.map((r) => r.entity_id));
+      enriched = enriched.map((r: any) => ({ ...r, liked: likedSet.has(r.id) }));
+    } else {
+      enriched = enriched.map((r: any) => ({ ...r, liked: false }));
+    }
+
     return c.json({ data: enriched, total: countResult[0].count, page, pageSize });
   });
 
@@ -229,7 +267,26 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
       }
     }
 
-    return c.json({ ...entity, ...enrichments });
+    // Enrich with liked status
+    const user = c.get("user" as never) as { id: string } | null;
+    const entityKey = `${config.context}/${config.slug}`;
+    let liked = false;
+    if (user) {
+      const likeRow = await db
+        .select()
+        .from(likes)
+        .where(
+          and(
+            eq(likes.user_id, user.id),
+            eq(likes.entity, entityKey),
+            eq(likes.entity_id, id),
+          ),
+        )
+        .get();
+      liked = !!likeRow;
+    }
+
+    return c.json({ ...entity, ...enrichments, liked });
   });
 
   // ---- PUT /:id ----

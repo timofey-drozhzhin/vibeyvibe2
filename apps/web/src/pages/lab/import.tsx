@@ -39,7 +39,7 @@ interface SpotifyArtist {
 interface SpotifyTrack {
   name: string;
   artists: SpotifyArtist[];
-  album?: { name: string; spotifyId?: string } | null;
+  album?: { name: string; spotifyId?: string; ean?: string | null } | null;
   releaseDate?: string | null;
   isrc?: string | null;
   imageUrl?: string | null;
@@ -371,7 +371,7 @@ export const LabImport = () => {
   })();
 
   const uniqueAlbums = (() => {
-    const map = new Map<string, { name: string; spotifyId?: string; imageUrl?: string | null; releaseDate?: string | null; artists: SpotifyArtist[] }>();
+    const map = new Map<string, { name: string; spotifyId?: string; ean?: string | null; imageUrl?: string | null; releaseDate?: string | null; artists: SpotifyArtist[] }>();
     for (const track of selectedTracks) {
       if (track.album?.name) {
         const key = track.album.spotifyId || track.album.name.toLowerCase();
@@ -380,6 +380,7 @@ export const LabImport = () => {
           map.set(key, {
             name: track.album.name,
             spotifyId: track.album.spotifyId,
+            ean: track.album.ean,
             imageUrl: track.imageUrl,
             releaseDate: track.releaseDate,
             artists: [...track.artists],
@@ -554,6 +555,7 @@ export const LabImport = () => {
                     <Table.Th>Artists</Table.Th>
                     <Table.Th>Album</Table.Th>
                     <Table.Th>Release Date</Table.Th>
+                    <Table.Th>ISRC</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -632,6 +634,9 @@ export const LabImport = () => {
                       <Table.Td>
                         <Text size="sm">{track.releaseDate ? formatDate(track.releaseDate) : "-"}</Text>
                       </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="dimmed">{track.isrc || "-"}</Text>
+                      </Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Tbody>
@@ -666,6 +671,7 @@ export const LabImport = () => {
                         <Table.Th w={40}>#</Table.Th>
                         <Table.Th w={50}></Table.Th>
                         <Table.Th>Name</Table.Th>
+                        <Table.Th>ISNI</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
@@ -709,6 +715,9 @@ export const LabImport = () => {
                                 )}
                               </Group>
                             </Table.Td>
+                            <Table.Td>
+                              <Text size="sm" c="dimmed">-</Text>
+                            </Table.Td>
                           </Table.Tr>
                         );
                       })}
@@ -748,6 +757,7 @@ export const LabImport = () => {
                         <Table.Th>Name</Table.Th>
                         <Table.Th>Artists</Table.Th>
                         <Table.Th>Release Date</Table.Th>
+                        <Table.Th>EAN</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
@@ -813,6 +823,9 @@ export const LabImport = () => {
                             </Table.Td>
                             <Table.Td>
                               <Text size="sm">{album.releaseDate ? formatDate(album.releaseDate) : "-"}</Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="sm" c="dimmed">{album.ean || "-"}</Text>
                             </Table.Td>
                           </Table.Tr>
                         );
