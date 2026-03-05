@@ -22,6 +22,7 @@ import { AudioUpload } from "../shared/audio-upload.js";
 import type { FieldDef, EntityDef } from "../../config/entity-registry.js";
 import { resolveRelationshipTarget, getResourceName } from "../../config/entity-registry.js";
 import { formatDate } from "../../utils/format-date.js";
+import { resolveFkDisplayName } from "../../utils/resolve-fk-display.js";
 
 interface FieldRowProps {
   field: FieldDef;
@@ -312,7 +313,7 @@ const ForeignKeyField = ({ field, value, onSave, entity, record }: ForeignKeyFie
   })) ?? [];
 
   // Try to resolve display name from record enrichment
-  const displayName = resolveDisplayName(field, value, record);
+  const displayName = resolveFkDisplayName(field.key, value, record);
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -379,34 +380,3 @@ const ForeignKeyField = ({ field, value, onSave, entity, record }: ForeignKeyFie
   );
 };
 
-/**
- * Try to resolve a display name for an FK value.
- * The API enricher may have added related objects to the record
- * (e.g., record.source for bin_source_id, record.songName for song_id).
- */
-function resolveDisplayName(field: FieldDef, value: any, record: any): string | null {
-  if (value == null) return null;
-
-  // Check for common enrichment patterns
-  // e.g., "bin_source_id" might have "source" object with "name"
-  const baseKey = field.key.replace(/_id$/, "");
-  if (record[baseKey] && typeof record[baseKey] === "object" && record[baseKey].name) {
-    return record[baseKey].name;
-  }
-
-  // Check for "songName" style enrichment (e.g., song_id -> songName)
-  const parts = baseKey.split("_");
-  const camelName = parts.map((p, i) => i === 0 ? p : p.charAt(0).toUpperCase() + p.slice(1)).join("");
-  const nameKey = `${camelName}Name`;
-  if (record[nameKey]) {
-    return record[nameKey];
-  }
-
-  // Check snake_case variant
-  const snakeNameKey = `${baseKey}_name`;
-  if (record[snakeNameKey]) {
-    return record[snakeNameKey];
-  }
-
-  return `#${value}`;
-}

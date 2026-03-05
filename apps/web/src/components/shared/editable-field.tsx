@@ -1,14 +1,15 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import {
   Group,
   Text,
   TextInput,
   ActionIcon,
-  Loader,
   Box,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
-import { IconCheck, IconX, IconEdit } from "@tabler/icons-react";
+import { IconEdit } from "@tabler/icons-react";
+import { useInlineEdit } from "../../hooks/use-inline-edit.js";
+import { SaveCancelActions } from "./save-cancel-actions.js";
 
 interface EditableFieldProps {
   value: string | null | undefined;
@@ -33,10 +34,19 @@ export const EditableField = ({
   type = "text",
   editOnIconOnly = false,
 }: EditableFieldProps) => {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value ?? "");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    editing,
+    editValue,
+    setEditValue,
+    saving,
+    error,
+    setError,
+    startEdit,
+    cancel,
+    save,
+    handleKeyDown,
+  } = useInlineEdit(value, { onSave, validate });
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,48 +55,6 @@ export const EditableField = ({
       inputRef.current.select();
     }
   }, [editing, type]);
-
-  const handleStartEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditValue(value ?? "");
-    setError(null);
-    setEditing(true);
-  };
-
-  const handleCancel = () => {
-    setEditing(false);
-    setEditValue(value ?? "");
-    setError(null);
-  };
-
-  const handleSave = async () => {
-    const saveValue = editValue;
-    if (validate) {
-      const err = validate(saveValue);
-      if (err) {
-        setError(err);
-        return;
-      }
-    }
-    setSaving(true);
-    try {
-      await onSave(saveValue);
-      setEditing(false);
-      setError(null);
-    } catch {
-      setError("Failed to save");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSave();
-    } else if (e.key === "Escape") {
-      handleCancel();
-    }
-  };
 
   if (editing) {
     return (
@@ -123,18 +91,7 @@ export const EditableField = ({
             disabled={saving}
           />
         )}
-        {saving ? (
-          <Loader size={16} />
-        ) : (
-          <Group gap={4} wrap="nowrap">
-            <ActionIcon size="xs" variant="subtle" color="green" onClick={handleSave}>
-              <IconCheck size={14} />
-            </ActionIcon>
-            <ActionIcon size="xs" variant="subtle" color="gray" onClick={handleCancel}>
-              <IconX size={14} />
-            </ActionIcon>
-          </Group>
-        )}
+        <SaveCancelActions saving={saving} onSave={save} onCancel={cancel} />
       </Group>
     );
   }
@@ -143,19 +100,19 @@ export const EditableField = ({
   const hasValue = displayValue.length > 0;
 
   return (
-    <Box className="editable-field" onClick={editOnIconOnly ? undefined : handleStartEdit}>
+    <Box className="editable-field" onClick={editOnIconOnly ? undefined : startEdit}>
       <Group gap="xs" wrap="nowrap" align="center">
         {hasValue ? (
           renderDisplay ? renderDisplay(displayValue) : <Text size="sm">{displayValue}</Text>
         ) : (
-          <Text size="sm" c="dimmed" fs="italic" onClick={editOnIconOnly ? handleStartEdit : undefined} style={editOnIconOnly ? { cursor: "pointer" } : undefined}>{emptyText}</Text>
+          <Text size="sm" c="dimmed" fs="italic" onClick={editOnIconOnly ? startEdit : undefined} style={editOnIconOnly ? { cursor: "pointer" } : undefined}>{emptyText}</Text>
         )}
         <ActionIcon
           className="edit-icon"
           size="xs"
           variant="subtle"
           color="gray"
-          onClick={handleStartEdit}
+          onClick={startEdit}
         >
           <IconEdit size={14} />
         </ActionIcon>

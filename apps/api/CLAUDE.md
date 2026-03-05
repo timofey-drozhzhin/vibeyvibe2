@@ -26,6 +26,7 @@ src/
 │       └── auth.ts       # Better Auth tables: user, session, account, verification
 ├── middleware/
 │   ├── auth.ts           # Auth middleware: session validation, dev bypass, route skipping for /api/auth/*
+│   ├── dev-user.ts       # Shared dev bypass constants (DEV_USER, DEV_SESSION, isDevBypass)
 │   ├── error.ts          # Global error handler: HTTPException mapping, 500 fallback
 │   └── rate-limit.ts     # In-memory rate limiter (per IP, configurable window and max requests)
 ├── routes/
@@ -138,7 +139,7 @@ Entity tables use `.references(() => parentTable.id)` for referential integrity.
 
 ### Indexes
 
-Context columns are indexed on shared tables (`songs_context_idx`, `artists_context_idx`, `albums_context_idx`). Foreign key columns on entity tables have indexes (e.g., `bin_songs_bin_source_id_idx`). The `songs` table also indexes `isrc` and `spotify_uid` for duplicate detection during import.
+Context columns are indexed on shared tables (`songs_context_idx`, `artists_context_idx`, `albums_context_idx`, `vibes_context_idx`). Foreign key columns on entity tables have indexes (e.g., `bin_songs_bin_source_id_idx`). The `songs` table also indexes `isrc` and `spotify_uid` for duplicate detection during import.
 
 ### Drizzle Relations
 
@@ -212,8 +213,8 @@ interface RelationshipRouteConfig {
 ```
 
 Relationship routes generate:
-- `POST /:id/{slug}` -- Assign (validates parent exists, related exists, no duplicate; body: `{ [bodyField]: number }`)
-- `PUT /:id/{slug}/:relatedId` -- Remove assignment (deletes pivot row)
+- `POST /:id/{slug}` -- Assign (validates parent exists, related exists in same context, not archived, no duplicate; body: `{ [bodyField]: number }`)
+- `PUT /:id/{slug}/:relatedId` -- Update payload or remove assignment (deletes pivot row)
 
 ## Registry
 
@@ -308,15 +309,14 @@ All routes are mounted under `/api`. Route structure follows the pattern:
 | POST | `/api/{context}/{slug}/:id/{relSlug}` | Assign relationship |
 | PUT | `/api/{context}/{slug}/:id/{relSlug}/:relatedId` | Remove relationship |
 
-### No DELETE Endpoints
+### DELETE Endpoints
 
-There are no DELETE endpoints. To "delete" a record, send a PUT request with `{ archived: true }`. This is enforced project-wide. The one exception is relationship removal (PUT on pivot routes), which physically deletes pivot rows.
+Permanent deletion is available for entities that opt in via `allowDelete: true` in their registry config. Only records that are already archived can be deleted, and admin role is required. The route factory generates `DELETE /:id` endpoints for these entities. Relationship removal uses `PUT /:id/{slug}/:relatedId` (deletes pivot rows).
 
 ### CORS
 
-Only GET, POST, PUT, and OPTIONS methods are allowed:
 ```typescript
-allowMethods: ["GET", "POST", "PUT", "OPTIONS"]
+allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 ```
 
 ### Special Routes
@@ -380,7 +380,7 @@ This pattern is used in the factory's auto-generated `listQuerySchema`.
 
 ### Rating Scale
 
-All rating fields in Zod schemas use `z.number().min(0).max(5).nullable().optional()`. The database stores ratings as `real` columns (0-1 scale). Applies to songs, artists, albums, and bin songs.
+All rating fields use `real("rating")` with a **0-1 real scale** (0 = unrated, values between 0 and 1 represent the rating). Zod schemas in the registry use a shared `ratingField` constant: `z.number().min(0).max(1).nullable().optional()`. Applies to songs, artists, albums, and bin songs.
 
 ## Authentication
 
@@ -421,6 +421,8 @@ For local development, authentication can be bypassed entirely. This requires a 
 - `NODE_ENV` must NOT be `"production"`
 
 Both conditions must be true. If either is false, real authentication is required. The bypass injects a synthetic "Dev User" with ID `dev-user-1`. In bypass mode, `GET /api/auth/get-session` returns a fake session directly from `app.ts` without invoking Better Auth.
+
+The dev user constants (`DEV_USER`, `DEV_SESSION`) and the `isDevBypass()` helper are centralized in `middleware/dev-user.ts` to avoid divergence between `app.ts` (fake session endpoint) and `middleware/auth.ts` (auth bypass).
 
 ## Storage
 

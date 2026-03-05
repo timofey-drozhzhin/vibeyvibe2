@@ -439,7 +439,7 @@ export const RelationshipSection = ({
                 },
               })}
       >
-        <Table highlightOnHover>
+        <Table>
           <Table.Thead>
             <Table.Tr>
               {relationship.columns.map((col) => (
@@ -585,7 +585,7 @@ export const RelationshipSection = ({
       <Modal
         opened={viewModalData !== null}
         onClose={() => setViewModalData(null)}
-        title="Profile Details"
+        title={`${relationship.label} Details`}
         size="lg"
       >
         {viewModalData && (
@@ -611,7 +611,7 @@ export const RelationshipSection = ({
       <Modal
         opened={editModalData !== null}
         onClose={() => setEditModalData(null)}
-        title="Edit Profile"
+        title={`Edit ${relationship.label}`}
         size="lg"
       >
         {editModalData && (

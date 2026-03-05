@@ -1,5 +1,6 @@
 import { createMiddleware } from "hono/factory";
 import { getAuth } from "../auth/index.js";
+import { DEV_USER, DEV_SESSION, isDevBypass } from "./dev-user.js";
 
 type AuthVariables = {
   user: {
@@ -33,24 +34,14 @@ export const authMiddleware = createMiddleware<{
   }
 
   // DEV ONLY: Bypass auth for local development (double guard)
-  if (
-    process.env.DEV_AUTH_BYPASS === "true" &&
-    process.env.NODE_ENV !== "production"
-  ) {
+  if (isDevBypass()) {
     c.set("user", {
-      id: "dev-user-1",
-      name: "Dev User",
-      email: "dev@localhost",
-      emailVerified: true,
-      image: null,
-      role: "admin",
+      ...DEV_USER,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
     c.set("session", {
-      id: "dev-session-1",
-      token: "dev-token",
-      userId: "dev-user-1",
+      ...DEV_SESSION,
       expiresAt: new Date(Date.now() + 86400000),
       ipAddress: "127.0.0.1",
       userAgent: "dev",

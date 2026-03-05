@@ -21,13 +21,16 @@ import type { EntityRouteConfig } from "./factory/types.js";
 // Shared Zod Schemas
 // ---------------------------------------------------------------------------
 
+// Shared field schemas
+const ratingField = z.number().min(0).max(1).nullable().optional();
+
 // Songs (shared across my_music and lab contexts)
 const createSongSchema = z.object({
   name: z.string().min(1).max(200),
   isrc: z.string().nullable().optional(),
   image_path: z.string().nullable().optional(),
   release_date: z.string().nullable().optional(),
-  rating: z.number().min(0).max(5).nullable().optional(),
+  rating: ratingField,
   spotify_uid: z.string().nullable().optional(),
   apple_music_uid: z.string().nullable().optional(),
   youtube_uid: z.string().nullable().optional(),
@@ -42,7 +45,7 @@ const createArtistSchema = z.object({
   name: z.string().min(1).max(200),
   isni: z.string().nullable().optional(),
   image_path: z.string().nullable().optional(),
-  rating: z.number().min(0).max(5).nullable().optional(),
+  rating: ratingField,
   spotify_uid: z.string().nullable().optional(),
   apple_music_uid: z.string().nullable().optional(),
   youtube_uid: z.string().nullable().optional(),
@@ -58,7 +61,7 @@ const createAlbumSchema = z.object({
   ean: z.string().nullable().optional(),
   image_path: z.string().nullable().optional(),
   release_date: z.string().nullable().optional(),
-  rating: z.number().min(0).max(5).nullable().optional(),
+  rating: ratingField,
   spotify_uid: z.string().nullable().optional(),
   apple_music_uid: z.string().nullable().optional(),
   youtube_uid: z.string().nullable().optional(),
@@ -97,7 +100,7 @@ const createBinSongSchema = z.object({
   asset_path: z.string().nullable().optional(),
   lyrics: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
-  rating: z.number().min(0).max(5).nullable().optional(),
+  rating: ratingField,
   bin_source_id: z.number().int().positive().nullable().optional(),
 });
 

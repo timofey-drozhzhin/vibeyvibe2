@@ -160,9 +160,11 @@ export const EntityPage = ({
 // Header Section (internal)
 // ---------------------------------------------------------------------------
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { TextInput, ActionIcon } from "@mantine/core";
-import { IconCheck, IconX, IconEdit } from "@tabler/icons-react";
+import { IconEdit } from "@tabler/icons-react";
+import { useInlineEdit } from "../../hooks/use-inline-edit.js";
+import { SaveCancelActions } from "./save-cancel-actions.js";
 
 const HeaderSection = ({
   title,
@@ -201,9 +203,22 @@ const EditableTitle = ({
   value: string;
   onSave: (v: string) => Promise<void>;
 }) => {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value);
-  const [saving, setSaving] = useState(false);
+  const {
+    editing,
+    editValue,
+    setEditValue,
+    saving,
+    startEdit,
+    cancel,
+    save,
+    handleKeyDown,
+  } = useInlineEdit(value, {
+    onSave: async (v) => {
+      if (!v.trim()) return;
+      await onSave(v.trim());
+    },
+  });
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -212,34 +227,6 @@ const EditableTitle = ({
       inputRef.current.select();
     }
   }, [editing]);
-
-  const handleStartEdit = () => {
-    setEditValue(value);
-    setEditing(true);
-  };
-
-  const handleCancel = () => {
-    setEditing(false);
-    setEditValue(value);
-  };
-
-  const handleSave = async () => {
-    if (!editValue.trim()) return;
-    setSaving(true);
-    try {
-      await onSave(editValue.trim());
-      setEditing(false);
-    } catch {
-      // keep editing on error
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSave();
-    else if (e.key === "Escape") handleCancel();
-  };
 
   if (editing) {
     return (
@@ -253,18 +240,7 @@ const EditableTitle = ({
           size="md"
           styles={{ input: { fontWeight: 700, fontSize: "var(--mantine-h2-font-size)" } }}
         />
-        {saving ? (
-          <Loader size={20} />
-        ) : (
-          <Group gap={4} wrap="nowrap">
-            <ActionIcon variant="subtle" color="green" onClick={handleSave}>
-              <IconCheck size={18} />
-            </ActionIcon>
-            <ActionIcon variant="subtle" color="gray" onClick={handleCancel}>
-              <IconX size={18} />
-            </ActionIcon>
-          </Group>
-        )}
+        <SaveCancelActions saving={saving} onSave={save} onCancel={cancel} size="sm" iconSize={18} loaderSize={20} />
       </Group>
     );
   }
@@ -275,7 +251,7 @@ const EditableTitle = ({
       wrap="nowrap"
       align="center"
       className="editable-field"
-      onClick={handleStartEdit}
+      onClick={startEdit}
       style={{ cursor: "pointer" }}
     >
       <Title order={2}>{value}</Title>
@@ -284,7 +260,7 @@ const EditableTitle = ({
         size="sm"
         variant="subtle"
         color="gray"
-        onClick={handleStartEdit}
+        onClick={startEdit}
       >
         <IconEdit size={16} />
       </ActionIcon>

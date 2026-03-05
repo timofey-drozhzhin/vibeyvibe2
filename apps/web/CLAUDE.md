@@ -30,6 +30,8 @@ src/
 │   │   ├── aside-panel.tsx         # Right panel (image upload + media embeds)
 │   │   ├── relationship-section.tsx # M:N relationship table + assign modal
 │   │   └── list-cell.tsx           # Field type renderer for list table cells
+├── hooks/
+│   └── use-inline-edit.ts  # Shared inline edit state management hook
 ├── pages/
 │   ├── login.tsx         # Login page: email/password form + optional Google OAuth
 │   ├── dashboard.tsx     # Dashboard page: section overview cards
@@ -38,7 +40,9 @@ src/
 │   │   └── show.tsx      # GenericEntityDetail -- handles ALL entity detail pages
 │   └── lab/
 │       └── import.tsx    # Spotify import (standalone page, not registry-driven)
-└── utils/                # Utility functions and helpers
+└── utils/
+    ├── format-date.ts    # Date formatting utility
+    └── resolve-fk-display.ts # FK display name resolution utility
 ```
 
 There are NO per-entity page directories. The old `pages/my-music/songs/`, `pages/lab/artists/`, etc. directories are all gone. Everything is driven by the entity registry and the two generic page components.
@@ -354,8 +358,25 @@ Located in `components/shared/`:
 | `AssignModal` | `assign-modal.tsx` | Modal with searchable dropdown for assigning M:N relationships. |
 | `ListToolbar` | `list-toolbar.tsx` | Toolbar with search input and archive status segmented control (Active/All/Archived). |
 | `SortableHeader` | `sortable-header.tsx` | Clickable table header cell with sort direction arrow. |
-| `ArchiveButton` | `archive-toggle.tsx` | Red "Archive" / green "Restore" button with confirmation modal. |
+| `ArchiveButton` | `archive-toggle.tsx` | Yellow "Archive" / blue "Restore" button with confirmation modal. Uses `ConfirmationModal`. |
 | `ArchiveBadge` | `archive-toggle.tsx` | Green "Active" / red "Archived" badge. |
+| `DeleteButton` | `delete-button.tsx` | Red "Permanently Delete" button with confirmation modal. Admin-only, archived records only. Uses `ConfirmationModal`. |
+| `SaveCancelActions` | `save-cancel-actions.tsx` | Reusable Save (green check) / Cancel (gray X) action icon pair with loading state. Used by inline edit components. |
+| `ConfirmationModal` | `confirmation-modal.tsx` | Shared confirmation modal with configurable title, message, confirm label/color. Also exports `useConfirmation` hook. |
+
+## Custom Hooks
+
+| Hook | File | Description |
+|------|------|-------------|
+| `useInlineEdit` | `hooks/use-inline-edit.ts` | Shared edit state management for inline editing (editing, editValue, saving, error). Returns `startEdit`, `cancel`, `save`, `handleKeyDown`. Used by `EditableField`, `EntityPage` title, `MediaEmbeds`. |
+| `useConfirmation` | `components/shared/confirmation-modal.tsx` | Simple `[opened, open, close]` tuple for confirmation modal state. |
+
+## Utilities
+
+| Utility | File | Description |
+|---------|------|-------------|
+| `resolveFkDisplayName` | `utils/resolve-fk-display.ts` | Resolves FK display names from API-enriched record data. Checks enriched objects, camelCase, and snake_case name keys. Used by `FieldRow` and `ListCell`. |
+| `formatDate` | `utils/format-date.ts` | Formats ISO date strings for display. |
 
 ## Component Patterns
 
@@ -408,9 +429,9 @@ export const theme = createTheme({
 - Validation functions are defined per-field in the entity registry via `FieldDef.validate`.
 - Required fields in create modals are marked with `createRequired: true`.
 
-## No Delete Buttons
+## Archive First, Delete Second
 
-There are no delete buttons, delete actions, or delete confirmation dialogs anywhere in the UI. To archive a record, use the `ArchiveButton` in the footer of the show page's `EntityPage` component (sets `archived = true` via PUT). List pages can filter by archive status to show/hide archived records.
+The primary "remove" action is archiving via the `ArchiveButton` in the show page footer (sets `archived = true` via PUT). Permanent deletion is available only for entities with `allowDelete: true` in their API registry config, and only for records that are already archived. The `DeleteButton` component appears on show pages for archived records when the user has admin role. List pages filter by archive status (Active/All/Archived) to show/hide archived records.
 
 ## Icons
 

@@ -76,8 +76,8 @@ async function executeJob(job: typeof aiQueue.$inferSelect): Promise<void> {
         completed_at: new Date().toISOString(),
       })
       .where(eq(aiQueue.id, job.id));
-  } catch (err: any) {
-    const errorMessage = err?.message ?? "Unknown error";
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
     console.error(`[ai-queue] Job ${job.id} (${job.type}) failed:`, errorMessage);
 
     await db

@@ -55,8 +55,9 @@ async function downloadAndStoreImage(
 
     cache.set(cacheKey, storagePath);
     return storagePath;
-  } catch {
+  } catch (err: unknown) {
     // Image download/upload failure must not block song creation
+    console.warn(`[lab-import] Image download failed for ${imageUrl}:`, err instanceof Error ? err.message : err);
     return null;
   }
 }
@@ -235,10 +236,10 @@ labImport.post(
           },
         },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       return c.json(
         {
-          error: err?.message ?? "Failed to fetch data from Spotify.",
+          error: err instanceof Error ? err.message : "Failed to fetch data from Spotify.",
         },
         422
       );

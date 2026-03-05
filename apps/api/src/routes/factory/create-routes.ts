@@ -260,7 +260,7 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
   // ---- DELETE /:id (admin-only) ----
   if (config.allowDelete) {
     router.delete("/:id", async (c) => {
-      const user = (c as any).get("user");
+      const user = c.get("user" as never) as { role: string } | null;
       if (!user || user.role !== "admin") {
         return c.json({ error: "Forbidden" }, 403);
       }
@@ -332,9 +332,16 @@ function registerRelationshipRoutes(router: Hono, config: EntityRouteConfig, rel
     const parent = await db.select().from(config.table).where(and(...parentConditions)).get();
     if (!parent) return c.json({ error: `${config.entityName} not found` }, 404);
 
-    // Verify related
-    const related = await db.select().from(rel.relatedTable).where(eq(rel.relatedTable.id, relatedId)).get();
+    // Verify related (with context check if parent has context filtering)
+    const relatedConditions: any[] = [eq(rel.relatedTable.id, relatedId)];
+    if (config.contextColumnValue && rel.relatedTable.context) {
+      relatedConditions.push(eq(rel.relatedTable.context, config.contextColumnValue));
+    }
+    const related = await db.select().from(rel.relatedTable).where(and(...relatedConditions)).get();
     if (!related) return c.json({ error: "Related entity not found" }, 404);
+
+    // Prevent linking to archived entities
+    if (related.archived) return c.json({ error: "Cannot link to archived entity" }, 400);
 
     // Check duplicate
     const existing = await db.select().from(rel.pivotTable)

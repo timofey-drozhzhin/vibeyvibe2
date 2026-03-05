@@ -215,8 +215,8 @@ sunoPromptGenerator.post(
         [{ role: "user", content: prompt }],
         { model },
       );
-    } catch (err: any) {
-      const message = err?.message ?? "AI generation failed";
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "AI generation failed";
       if (message.includes("not configured")) {
         return c.json(
           { error: "AI generation is not configured. Set OPENROUTER_API_KEY." },
@@ -237,8 +237,9 @@ sunoPromptGenerator.post(
       }
       parsed = JSON.parse(cleaned);
     } catch {
+      console.error("[suno-prompt-generator] Failed to parse AI response:", rawResponse);
       return c.json(
-        { error: "Failed to parse AI response as JSON", rawResponse },
+        { error: "Failed to parse AI response as JSON" },
         422,
       );
     }

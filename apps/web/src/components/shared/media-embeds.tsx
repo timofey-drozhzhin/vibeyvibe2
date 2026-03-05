@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Stack,
   Box,
@@ -6,7 +5,6 @@ import {
   Group,
   TextInput,
   ActionIcon,
-  Loader,
 } from "@mantine/core";
 import {
   IconBrandSpotify,
@@ -14,9 +12,9 @@ import {
   IconBrandYoutube,
   IconPlus,
   IconEdit,
-  IconCheck,
-  IconX,
 } from "@tabler/icons-react";
+import { useInlineEdit } from "../../hooks/use-inline-edit.js";
+import { SaveCancelActions } from "./save-cancel-actions.js";
 
 interface MediaEmbedsProps {
   spotifyId?: string | null;
@@ -157,32 +155,20 @@ const PlatformEmbed = ({
   onSave,
   renderEmbed,
 }: PlatformEmbedProps) => {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(id ?? "");
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!onSave) return;
-    setSaving(true);
-    try {
-      await onSave(field, editValue);
-      setEditing(false);
-    } catch {
-      // keep editing
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setEditing(false);
-    setEditValue(id ?? "");
-  };
-
-  const startEdit = () => {
-    setEditValue(id ?? "");
-    setEditing(true);
-  };
+  const {
+    editing,
+    editValue,
+    setEditValue,
+    saving,
+    startEdit,
+    cancel,
+    save,
+    handleKeyDown,
+  } = useInlineEdit(id, {
+    onSave: async (value) => {
+      if (onSave) await onSave(field, value);
+    },
+  });
 
   // Editing mode
   if (editing) {
@@ -200,24 +186,10 @@ const PlatformEmbed = ({
             placeholder={placeholder}
             style={{ flex: 1 }}
             disabled={saving}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSave();
-              if (e.key === "Escape") handleCancel();
-            }}
+            onKeyDown={handleKeyDown}
             autoFocus
           />
-          {saving ? (
-            <Loader size={16} />
-          ) : (
-            <Group gap={4} wrap="nowrap">
-              <ActionIcon size="xs" variant="subtle" color="green" onClick={handleSave}>
-                <IconCheck size={14} />
-              </ActionIcon>
-              <ActionIcon size="xs" variant="subtle" color="gray" onClick={handleCancel}>
-                <IconX size={14} />
-              </ActionIcon>
-            </Group>
-          )}
+          <SaveCancelActions saving={saving} onSave={save} onCancel={cancel} />
         </Group>
       </Box>
     );

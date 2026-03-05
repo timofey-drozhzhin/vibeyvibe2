@@ -9,6 +9,7 @@ import {
 } from "../../config/entity-registry.js";
 import { API_URL } from "../../config/constants.js";
 import { formatDate } from "../../utils/format-date.js";
+import { resolveFkDisplayName } from "../../utils/resolve-fk-display.js";
 
 interface ListCellProps {
   fieldKey: string;
@@ -60,9 +61,7 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
         return <Text size="sm">{formatDate(value)}</Text>;
 
       case "fk": {
-        const baseKey = fieldKey.replace(/_id$/, "");
-        const displayName =
-          record[baseKey]?.name ?? record[`${baseKey}Name`] ?? null;
+        const displayName = resolveFkDisplayName(fieldKey, value, record);
 
         if (displayName && fieldDef.target) {
           const targetEntity = resolveRelationshipTarget(entity, fieldDef.target);

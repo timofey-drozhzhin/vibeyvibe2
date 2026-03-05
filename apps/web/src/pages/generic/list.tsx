@@ -28,7 +28,7 @@ const defaultLabels: Record<string, string> = {
   name: "Name",
   image_path: "",
   rating: "Rating",
-  created_at: "Added",
+  created_at: "Created",
   updated_at: "Updated",
   release_date: "Release Date",
   vibe_category: "Category",
@@ -138,8 +138,11 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
     );
   };
 
-  // -- Archive filter value --
-  const archivedValue = archiveFilter === "archived";
+  // -- Archive filter --
+  const archiveFilters =
+    archiveFilter === "all"
+      ? []
+      : [{ field: "archived" as const, operator: "eq" as const, value: archiveFilter === "archived" }];
 
   // -- Data fetching --
   const listResult = useList({
@@ -147,7 +150,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
     pagination: { currentPage: page, pageSize: PAGE_SIZE },
     filters: [
       { field: "search", operator: "contains", value: search },
-      { field: "archived", operator: "eq", value: archivedValue },
+      ...archiveFilters,
     ],
     sorters: [{ field: sortField, order: sortOrder }],
   });
@@ -187,7 +190,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
       {/* Table */}
       <div style={{ position: "relative", minHeight: 200 }}>
         <LoadingOverlay visible={listResult.query.isPending} />
-        <Table highlightOnHover>
+        <Table>
           <Table.Thead>
             <Table.Tr>
               {entity.listColumns.map((col) => {

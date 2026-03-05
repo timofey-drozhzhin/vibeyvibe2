@@ -537,7 +537,7 @@ export const LabImport = () => {
                 <Title order={4}>Songs</Title>
                 <Badge variant="light" size="sm">{selectedTracks.length}</Badge>
               </Group>
-              <Table highlightOnHover>
+              <Table>
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th w={40}>
@@ -648,7 +648,7 @@ export const LabImport = () => {
                     <Title order={4}>Artists</Title>
                     <Badge variant="light" size="sm">{selectedCount}</Badge>
                   </Group>
-                  <Table highlightOnHover>
+                  <Table>
                     <Table.Thead>
                       <Table.Tr>
                         <Table.Th w={40}>
@@ -724,7 +724,7 @@ export const LabImport = () => {
                     <Title order={4}>Albums</Title>
                     <Badge variant="light" size="sm">{selectedCount}</Badge>
                   </Group>
-                  <Table highlightOnHover>
+                  <Table>
                     <Table.Thead>
                       <Table.Tr>
                         <Table.Th w={40}>

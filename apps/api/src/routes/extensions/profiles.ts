@@ -9,7 +9,9 @@ const profileRoutes = new Hono();
 
 const updateSchema = z.object({
   archived: z.boolean().optional(),
-  value: z.string().optional(),
+  value: z.string().refine((v) => {
+    try { JSON.parse(v); return true; } catch { return false; }
+  }, { message: "Value must be valid JSON" }).optional(),
 });
 
 // ---------------------------------------------------------------------------

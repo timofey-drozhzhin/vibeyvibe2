@@ -153,13 +153,17 @@ export const albumSongsRelations = relations(albumSongs, ({ one }) => ({
 // ===========================================================================
 // 6. Vibes
 // ===========================================================================
-export const vibes = sqliteTable("vibes", {
-  ...baseEntityColumns,
-  vibe_category: text("vibe_category").notNull(),
-  description: text("description"),
-  instructions: text("instructions"),
-  examples: text("examples"),
-});
+export const vibes = sqliteTable(
+  "vibes",
+  {
+    ...baseEntityColumns,
+    vibe_category: text("vibe_category").notNull(),
+    description: text("description"),
+    instructions: text("instructions"),
+    examples: text("examples"),
+  },
+  (table) => [index("vibes_context_idx").on(table.context)]
+);
 
 // ===========================================================================
 // 7a. AI Queue (generic background AI processing)

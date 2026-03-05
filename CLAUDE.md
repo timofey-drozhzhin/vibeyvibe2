@@ -136,6 +136,9 @@ All API endpoints must validate input with Zod using `@hono/zod-validator`. Ever
 ### Everything is Generic -- No Entity-Specific Code
 Every component, route, URL path, and function must operate at the global entity level. Never write code that targets a specific entity type or context. No entity-specific components, no entity-specific route handlers, no `if (entity === 'x')` branches. All behavior differences between entities come from their registry configuration, never from code. If one entity needs something, build it as a generic capability that all entities can use.
 
+### Code Review
+When a code review is requested (e.g., "review my code", "audit the codebase", "check for issues"), use the `/review-code` skill. It launches parallel agents covering security, architecture, duplication, consistency, UX/UI unification, and performance. The skill is defined in `.claude/skills/review-code/SKILL.md`.
+
 ### API-First Enforcement
 All access control, validation, business rules, and data integrity constraints MUST be implemented and enforced on the API server first. The API is the only trusted authority. The frontend may duplicate checks to improve UX (hiding buttons, disabling actions), but that is purely cosmetic -- the server must independently enforce every rule as if the frontend does not exist. Any API endpoint can be called directly by anyone who bypasses the frontend. Always implement the server-side enforcement first, then add the corresponding frontend behavior.
 
@@ -389,8 +392,10 @@ Located in `apps/web/src/components/shared/`:
 | `SortableHeader` | `sortable-header.tsx` | Clickable table header cell with sort direction arrow indicator. |
 | `ListToolbar` | `list-toolbar.tsx` | Shared toolbar with search input and archive status segmented control (Active/All/Archived). |
 | `RatingField` | `rating-field.tsx` | Interactive star rating (0-1 real scale, 0=unrated). Click same star to reset. Also exports `RatingDisplay`. |
-| `ArchiveButton` | `archive-toggle.tsx` | Yellow "Archive" / blue "Restore" button with confirmation Modal. Also exports `ArchiveBadge` (green "Active" / red "Archived" badge). |
-| `DeleteButton` | `delete-button.tsx` | Red "Permanently Delete" button with confirmation Modal. Only shown to admins on archived records. |
+| `ArchiveButton` | `archive-toggle.tsx` | Yellow "Archive" / blue "Restore" button with confirmation modal. Also exports `ArchiveBadge`. |
+| `DeleteButton` | `delete-button.tsx` | Red "Permanently Delete" button with confirmation modal. Only shown to admins on archived records. |
+| `SaveCancelActions` | `save-cancel-actions.tsx` | Reusable Save/Cancel action icon pair with loading state. Used by inline edit components. |
+| `ConfirmationModal` | `confirmation-modal.tsx` | Shared confirmation modal with configurable title, message, and confirm button. Also exports `useConfirmation` hook. |
 | `PlatformLinks` | `platform-links.tsx` | Spotify/Apple Music/YouTube icon buttons that open external URLs. Used in table Actions columns. |
 | `MediaEmbeds` | `media-embeds.tsx` | Spotify, Apple Music, YouTube iframe embeds. Supports `type` prop ('track'\|'album') for correct embed URLs. With `onSave` prop, shows editable platform ID placeholders and edit links. |
 | `EditableField` | `editable-field.tsx` | Click-to-edit inline field with hover edit icon. Supports custom renderDisplay, validation, and async save. Supports `type='date'` for calendar date picker via @mantine/dates. |

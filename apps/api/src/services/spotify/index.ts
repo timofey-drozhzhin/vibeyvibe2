@@ -82,9 +82,9 @@ export async function fetchSpotifyData(
         credentials.clientId,
         credentials.clientSecret
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn(
-        `[spotify] Web API failed, falling back to scraper: ${err?.message}`
+        `[spotify] Web API failed, falling back to scraper: ${err instanceof Error ? err.message : err}`
       );
     }
   }
@@ -93,9 +93,9 @@ export async function fetchSpotifyData(
   if (!result) {
     try {
       result = await fetchViaScraper(url);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const message =
-        err?.message ?? "Unknown error while fetching Spotify data.";
+        err instanceof Error ? err.message : "Unknown error while fetching Spotify data.";
       throw new Error(`Spotify fetch failed: ${message}`);
     }
   }
