@@ -58,8 +58,14 @@ export const artists = sqliteTable(
     isni: text("isni"),
     image_path: text("image_path"),
     rating: real("rating"),
+    spotify_uid: text("spotify_uid"),
+    apple_music_uid: text("apple_music_uid"),
+    youtube_uid: text("youtube_uid"),
   },
-  (table) => [index("artists_context_idx").on(table.context)]
+  (table) => [
+    index("artists_context_idx").on(table.context),
+    index("artists_spotify_uid_idx").on(table.spotify_uid),
+  ]
 );
 
 export const artistsRelations = relations(artists, ({ many }) => ({

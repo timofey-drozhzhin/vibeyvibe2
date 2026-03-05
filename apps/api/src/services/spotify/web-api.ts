@@ -81,8 +81,8 @@ function normalizeOfficialTrack(
 ): SpotifyTrack {
   return {
     name: track.name,
-    artists: (track.artists || []).map((a: any) => ({ name: a.name })),
-    album: track.album?.name ? { name: track.album.name } : undefined,
+    artists: (track.artists || []).map((a: any) => ({ name: a.name, spotifyId: a.id || undefined })),
+    album: track.album?.name ? { name: track.album.name, spotifyId: track.album.id || undefined } : undefined,
     releaseDate: track.album?.release_date?.slice(0, 10) ?? undefined,
     isrc: track.external_ids?.isrc ?? undefined,
     imageUrl: pickLargestImage(track.album?.images) ?? fallbackImage,
@@ -184,8 +184,8 @@ async function fetchAlbum(
     // Fallback if batch fetch missed this track
     return {
       name: item.name,
-      artists: (item.artists || []).map((a: any) => ({ name: a.name })),
-      album: albumName ? { name: albumName } : undefined,
+      artists: (item.artists || []).map((a: any) => ({ name: a.name, spotifyId: a.id || undefined })),
+      album: albumName ? { name: albumName, spotifyId: id } : undefined,
       releaseDate: albumReleaseDate,
       isrc: undefined,
       imageUrl: albumImage,

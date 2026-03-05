@@ -24,6 +24,7 @@ import {
   IconDownload,
   IconCheck,
 } from "@tabler/icons-react";
+import { formatDate } from "../../utils/format-date.js";
 
 // ---------------------------------------------------------------------------
 // Types matching the API response
@@ -31,12 +32,13 @@ import {
 
 interface SpotifyArtist {
   name: string;
+  spotifyId?: string;
 }
 
 interface SpotifyTrack {
   name: string;
   artists: SpotifyArtist[];
-  album?: { name: string } | null;
+  album?: { name: string; spotifyId?: string } | null;
   releaseDate?: string | null;
   isrc?: string | null;
   imageUrl?: string | null;
@@ -512,7 +514,10 @@ export const LabImport = () => {
                             variant="light"
                             size="sm"
                             component="a"
-                            href={`https://open.spotify.com/search/${encodeURIComponent(a.name)}`}
+                            href={a.spotifyId
+                              ? `https://open.spotify.com/artist/${a.spotifyId}`
+                              : `https://open.spotify.com/search/${encodeURIComponent(a.name)}`
+                            }
                             target="_blank"
                             style={{ cursor: "pointer" }}
                           >
@@ -525,7 +530,10 @@ export const LabImport = () => {
                       {track.album?.name ? (
                         <Anchor
                           size="sm"
-                          href={`https://open.spotify.com/search/${encodeURIComponent(track.album.name)}`}
+                          href={track.album.spotifyId
+                            ? `https://open.spotify.com/album/${track.album.spotifyId}`
+                            : `https://open.spotify.com/search/${encodeURIComponent(track.album.name)}`
+                          }
                           target="_blank"
                           underline="hover"
                         >
@@ -536,7 +544,7 @@ export const LabImport = () => {
                       )}
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm">{track.releaseDate ?? "-"}</Text>
+                      <Text size="sm">{track.releaseDate ? formatDate(track.releaseDate) : "-"}</Text>
                     </Table.Td>
                   </Table.Tr>
                 ))}

@@ -9,6 +9,7 @@ import { AsidePanel } from "../../components/generic/aside-panel.js";
 import { RelationshipSection } from "../../components/generic/relationship-section.js";
 import type { EntityDef, ShowActionDef } from "../../config/entity-registry.js";
 import { getResourceName } from "../../config/entity-registry.js";
+import { formatDate } from "../../utils/format-date.js";
 
 interface GenericEntityDetailProps {
   entity: EntityDef;
@@ -199,11 +200,11 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
               ))}
               <Table.Tr>
                 <Table.Td fw={600} w={180}>Created</Table.Td>
-                <Table.Td>{record.created_at || "--"}</Table.Td>
+                <Table.Td>{formatDate(record.created_at) || "--"}</Table.Td>
               </Table.Tr>
               <Table.Tr>
                 <Table.Td fw={600}>Updated</Table.Td>
-                <Table.Td>{record.updated_at || "--"}</Table.Td>
+                <Table.Td>{formatDate(record.updated_at) || "--"}</Table.Td>
               </Table.Tr>
             </Table.Tbody>
           </Table>

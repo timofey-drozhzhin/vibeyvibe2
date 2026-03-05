@@ -8,12 +8,13 @@
 
 export interface SpotifyArtist {
   name: string;
+  spotifyId?: string;
 }
 
 export interface SpotifyTrack {
   name: string;
   artists: SpotifyArtist[];
-  album?: { name: string };
+  album?: { name: string; spotifyId?: string };
   releaseDate?: string;
   isrc?: string;
   imageUrl?: string;

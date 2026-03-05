@@ -26,7 +26,7 @@ export interface FieldDef {
   platform?: "spotify" | "apple_music" | "youtube" | "suno";
   target?: string;
   targetLabelField?: string;
-  embedType?: "track" | "album";
+  embedType?: "track" | "album" | "artist";
   placeholder?: string;
   validate?: (value: string) => string | null;
   createField?: boolean;
@@ -349,6 +349,27 @@ const artistFields = (storageDir: string): FieldDef[] => [
     type: "image",
     directory: storageDir,
   },
+  {
+    key: "spotify_uid",
+    label: "Spotify",
+    type: "uid",
+    platform: "spotify",
+    embedType: "artist",
+  },
+  {
+    key: "apple_music_uid",
+    label: "Apple Music",
+    type: "uid",
+    platform: "apple_music",
+    embedType: "artist",
+  },
+  {
+    key: "youtube_uid",
+    label: "YouTube",
+    type: "uid",
+    platform: "youtube",
+    embedType: "artist",
+  },
 ];
 
 const albumFields = (storageDir: string): FieldDef[] => [
@@ -419,7 +440,6 @@ export const entityRegistry: EntityDef[] = [
       "release_date",
       "rating",
 
-      "archived",
       "created_at",
     ],
     asideFields: [
@@ -447,10 +467,14 @@ export const entityRegistry: EntityDef[] = [
       "image_path",
       "name",
       "rating",
-      "archived",
       "created_at",
     ],
-    asideFields: ["image_path"],
+    asideFields: [
+      "image_path",
+      "spotify_uid",
+      "apple_music_uid",
+      "youtube_uid",
+    ],
     allowDelete: true,
   },
 
@@ -472,7 +496,6 @@ export const entityRegistry: EntityDef[] = [
       "artists",
       "release_date",
       "rating",
-      "archived",
       "created_at",
     ],
     asideFields: [
@@ -503,7 +526,6 @@ export const entityRegistry: EntityDef[] = [
       "release_date",
       "rating",
 
-      "archived",
       "created_at",
     ],
     asideFields: [
@@ -531,10 +553,14 @@ export const entityRegistry: EntityDef[] = [
       "image_path",
       "name",
       "rating",
-      "archived",
       "created_at",
     ],
-    asideFields: ["image_path"],
+    asideFields: [
+      "image_path",
+      "spotify_uid",
+      "apple_music_uid",
+      "youtube_uid",
+    ],
     allowDelete: true,
   },
 
@@ -556,7 +582,6 @@ export const entityRegistry: EntityDef[] = [
       "artists",
       "release_date",
       "rating",
-      "archived",
       "created_at",
     ],
     asideFields: [
@@ -601,7 +626,7 @@ export const entityRegistry: EntityDef[] = [
       },
     ],
     relationships: [],
-    listColumns: ["name", "vibe_category", "archived", "created_at"],
+    listColumns: ["name", "vibe_category", "created_at"],
     asideFields: [],
   },
 
@@ -706,7 +731,7 @@ export const entityRegistry: EntityDef[] = [
       },
     ],
     relationships: [],
-    listColumns: ["name", "asset_path", "rating", "archived", "created_at"],
+    listColumns: ["name", "asset_path", "rating", "created_at"],
     asideFields: [],
   },
 
@@ -730,7 +755,7 @@ export const entityRegistry: EntityDef[] = [
       },
     ],
     relationships: [],
-    listColumns: ["name", "url", "archived", "created_at"],
+    listColumns: ["name", "url", "created_at"],
     asideFields: [],
   },
 
@@ -775,7 +800,6 @@ export const entityRegistry: EntityDef[] = [
       "image_path",
       "name",
       "suno_prompt_id",
-      "archived",
       "created_at",
     ],
     asideFields: ["image_path", "suno_uid"],
@@ -814,7 +838,7 @@ export const entityRegistry: EntityDef[] = [
       },
     ],
     relationships: [],
-    listColumns: ["name", "archived", "created_at"],
+    listColumns: ["name", "created_at"],
     asideFields: [],
   },
 ];

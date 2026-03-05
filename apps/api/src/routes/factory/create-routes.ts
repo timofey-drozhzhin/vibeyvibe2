@@ -165,7 +165,8 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
   router.post("/", zValidator("json", config.createSchema), async (c) => {
     const body = c.req.valid("json") as any;
     const db = getDb();
-    const values: any = { ...body };
+    const now = new Date().toISOString();
+    const values: any = { ...body, created_at: now, updated_at: now };
     if (config.contextColumnValue) {
       values.context = config.contextColumnValue;
     }

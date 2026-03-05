@@ -1,7 +1,6 @@
 import { Anchor, Badge, Text, Avatar, Group } from "@mantine/core";
 import { useNavigation } from "@refinedev/core";
 import { RatingDisplay } from "../shared/rating-field.js";
-import { ArchiveBadge } from "../shared/archive-toggle.js";
 import type { EntityDef } from "../../config/entity-registry.js";
 import {
   resolveRelationshipTarget,
@@ -9,21 +8,13 @@ import {
   findEntity,
 } from "../../config/entity-registry.js";
 import { API_URL } from "../../config/constants.js";
+import { formatDate } from "../../utils/format-date.js";
 
 interface ListCellProps {
   fieldKey: string;
   value: any;
   entity: EntityDef;
   record: any;
-}
-
-function formatDate(value: any): string {
-  if (!value) return "";
-  try {
-    return new Date(value).toLocaleDateString();
-  } catch {
-    return String(value);
-  }
 }
 
 export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => {
@@ -65,6 +56,9 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
           </Anchor>
         );
 
+      case "date":
+        return <Text size="sm">{formatDate(value)}</Text>;
+
       case "fk": {
         const baseKey = fieldKey.replace(/_id$/, "");
         const displayName =
@@ -98,11 +92,6 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
   }
 
   // --- Built-in columns (not in field registry) ---
-
-  // Archived -> badge
-  if (fieldKey === "archived") {
-    return <ArchiveBadge archived={!!value} />;
-  }
 
   // Timestamp columns -> formatted date
   if (fieldKey === "created_at" || fieldKey === "updated_at") {

@@ -28,7 +28,6 @@ const defaultLabels: Record<string, string> = {
   name: "Name",
   image_path: "",
   rating: "Rating",
-  archived: "Status",
   created_at: "Added",
   updated_at: "Updated",
   release_date: "Release Date",
@@ -68,6 +67,12 @@ function hasPlatformLinks(entity: EntityDef): boolean {
   );
 }
 
+/** Determine the platform link type from entity UID fields. */
+function getPlatformType(entity: EntityDef): "track" | "album" | "artist" {
+  const uidField = entity.fields.find((f) => f.type === "uid" && f.embedType);
+  return (uidField?.embedType as "track" | "album" | "artist") ?? "track";
+}
+
 /** Get the create fields from the entity definition (fields with createField: true). */
 function getCreateExtraFields(entity: EntityDef): FieldDef[] {
   return entity.fields.filter((f) => f.createField);
@@ -80,6 +85,7 @@ interface GenericEntityListProps {
 export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
   const resource = getResourceName(entity);
   const showPlatformLinks = hasPlatformLinks(entity);
+  const platformType = getPlatformType(entity);
   const createExtraFields = getCreateExtraFields(entity);
 
   // -- State --
@@ -133,12 +139,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
   };
 
   // -- Archive filter value --
-  const archivedValue =
-    archiveFilter === "archived"
-      ? true
-      : archiveFilter === "active"
-        ? false
-        : undefined;
+  const archivedValue = archiveFilter === "archived";
 
   // -- Data fetching --
   const listResult = useList({
@@ -246,6 +247,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
                       spotifyId={record.spotify_uid}
                       appleMusicId={record.apple_music_uid}
                       youtubeId={record.youtube_uid}
+                      type={platformType}
                     />
                   </Table.Td>
                 )}

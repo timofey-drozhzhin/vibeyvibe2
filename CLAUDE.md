@@ -90,6 +90,11 @@ If a feature would require structural changes (new abstractions, schema overhaul
 ### Revert Failed Fixes
 If a fix did not resolve the issue, revert it before trying the next approach. Do not leave dead code behind.
 
+### Full-Sweep Changes and Shared Utilities
+When adding, removing, or changing any feature or behavior, you MUST search the entire codebase for every occurrence -- including standalone pages (like the import page), extension routes, seed scripts, and any other non-generic code. Do not assume the generic components are the only consumers. After making changes, verify nothing was missed by grepping for the old pattern.
+
+Additionally, before implementing any rendering or formatting logic inline, check if a shared utility or component already exists for that purpose (e.g., `formatDate` in `utils/format-date.ts`). If one exists, use it. If one doesn't exist but the same logic appears in multiple places, create a shared utility and replace all inline instances. The goal is zero duplication -- every piece of display logic should flow through a single shared implementation so that a change in one place updates the entire app.
+
 ### No Default Environment Values
 Never set default/fallback values for environment variables in code. All env values must be explicitly set in `.env`. If a required env variable is missing, return an appropriate error (e.g., 503) rather than falling back to a default. This prevents unexpected behavior from implicit configuration.
 

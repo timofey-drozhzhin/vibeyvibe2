@@ -28,6 +28,7 @@ import {
   IconPencil,
 } from "@tabler/icons-react";
 import { SectionCard } from "../shared/entity-page.js";
+import { formatDate } from "../../utils/format-date.js";
 import { AssignModal } from "../shared/assign-modal.js";
 import { RatingDisplay } from "../shared/rating-field.js";
 import { EditableField } from "../shared/editable-field.js";
@@ -685,7 +686,7 @@ function renderColumnValue(
       }
       return value ? <Badge size="sm">{String(value)}</Badge> : null;
     case "date":
-      return <Text size="sm">{value || ""}</Text>;
+      return <Text size="sm">{formatDate(value)}</Text>;
     case "text":
     default:
       return <Text size="sm" fw={col.key === "name" ? 500 : undefined}>{value != null ? String(value) : ""}</Text>;

@@ -4,6 +4,14 @@
  * Scrapes public Spotify embed pages to extract track metadata without
  * requiring Spotify API credentials. Used as a fallback when the official
  * Web API is not configured or fails.
+ *
+ * Architecture:
+ * - `fetchSingleTrack(spotifyId)` is the core unit: scrapes embed data +
+ *   parses the main track page HTML for album/artist IDs.
+ * - For track URLs: calls fetchSingleTrack once.
+ * - For album/playlist URLs: extracts track IDs from the container, then
+ *   calls fetchSingleTrack for each. Per-track data is always the source
+ *   of truth over container-level metadata.
  */
 
 import spotifyUrlInfo from "spotify-url-info";
@@ -17,43 +25,6 @@ import type { SpotifyTrack, SpotifyImportResult } from "./types.js";
 const { getData, getDetails } = spotifyUrlInfo(fetch);
 
 /**
- * Fetch the album name for a track from the main Spotify page's OG metadata.
- *
- * The spotify-url-info library scrapes embed pages which do not include album
- * info. The main page's og:description follows the pattern:
- *   "Artist · Album · Song · Year"
- * so the album name is the second segment.
- */
-async function fetchAlbumFromOgTags(
-  spotifyId: string
-): Promise<string | undefined> {
-  try {
-    const res = await fetch(`https://open.spotify.com/track/${spotifyId}`, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-      redirect: "follow",
-    });
-    if (!res.ok) return undefined;
-
-    const html = await res.text();
-    // Match: <meta property="og:description" content="...">
-    const match = html.match(
-      /<meta\s+property="og:description"\s+content="([^"]+)"/
-    );
-    if (!match) return undefined;
-
-    // Format: "Artist · Album · Song · Year"
-    const parts = match[1].split(" · ");
-    if (parts.length >= 3) {
-      // Second segment is the album name
-      return parts[1].trim() || undefined;
-    }
-    return undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/**
  * Extract the Spotify ID from a Spotify URI string.
  * URIs look like `spotify:track:6rqhFgbbKwnb9MLmUQDhG6`
  */
@@ -64,25 +35,84 @@ function spotifyIdFromUri(uri?: string): string {
 }
 
 /**
- * Build a normalised SpotifyTrack from the raw data returned by
- * spotify-url-info's `getData` (for a single track) or from an individual
- * track entry inside an album / playlist.
+ * Fetch metadata from the main Spotify track page HTML.
+ *
+ * Extracts album name (from og:description), album Spotify ID and artist
+ * Spotify IDs (from link patterns in the page). The spotify-url-info
+ * library scrapes embed pages which lack this structured data.
  */
-function normalizeTrack(raw: any, fallback?: { imageUrl?: string; album?: string; releaseDate?: string }): SpotifyTrack {
-  // Artists can appear in several shapes depending on what spotify-url-info
-  // returns.  Handle the most common ones.
-  let artists: { name: string }[] = [];
+async function fetchTrackPageMetadata(
+  spotifyId: string
+): Promise<{
+  albumName?: string;
+  albumSpotifyId?: string;
+  artistIds?: string[];
+}> {
+  try {
+    const res = await fetch(`https://open.spotify.com/track/${spotifyId}`, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      redirect: "follow",
+    });
+    if (!res.ok) return {};
 
-  if (Array.isArray(raw.artists)) {
-    artists = raw.artists.map((a: any) =>
-      typeof a === "string" ? { name: a } : { name: a.name ?? String(a) }
+    const html = await res.text();
+
+    // Extract album name from og:description
+    // Format: "Artist · Album · Song · Year"
+    let albumName: string | undefined;
+    const ogMatch = html.match(
+      /<meta\s+property="og:description"\s+content="([^"]+)"/
     );
+    if (ogMatch) {
+      const parts = ogMatch[1].split(" · ");
+      if (parts.length >= 3) {
+        albumName = parts[1].trim() || undefined;
+      }
+    }
+
+    // Extract album Spotify ID from album links in HTML
+    let albumSpotifyId: string | undefined;
+    const albumMatch = html.match(/\/album\/([a-zA-Z0-9]{22})/);
+    if (albumMatch) {
+      albumSpotifyId = albumMatch[1];
+    }
+
+    // Extract unique artist Spotify IDs from artist links in HTML
+    const artistIdSet = new Set<string>();
+    const artistLinkRegex = /\/artist\/([a-zA-Z0-9]{22})/g;
+    let artistMatch;
+    while ((artistMatch = artistLinkRegex.exec(html)) !== null) {
+      artistIdSet.add(artistMatch[1]);
+    }
+
+    return {
+      albumName,
+      albumSpotifyId,
+      artistIds: artistIdSet.size > 0 ? Array.from(artistIdSet) : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Normalize raw embed data from spotify-url-info into a SpotifyTrack.
+ */
+function normalizeEmbedData(raw: any): SpotifyTrack {
+  // Artists
+  let artists: { name: string; spotifyId?: string }[] = [];
+  if (Array.isArray(raw.artists)) {
+    artists = raw.artists.map((a: any) => {
+      if (typeof a === "string") return { name: a };
+      const id = a.uri ? spotifyIdFromUri(a.uri) : a.id;
+      return { name: a.name ?? String(a), spotifyId: id || undefined };
+    });
   } else if (typeof raw.artist === "string" && raw.artist) {
     artists = [{ name: raw.artist.trim() }];
   }
 
-  // Extract image URL from various possible locations in the raw data.
-  let imageUrl = fallback?.imageUrl;
+  // Image URL
+  let imageUrl: string | undefined;
   if (raw.coverArt?.sources?.length) {
     imageUrl = raw.coverArt.sources.reduce((a: any, b: any) =>
       (a.width ?? 0) > (b.width ?? 0) ? a : b
@@ -92,8 +122,6 @@ function normalizeTrack(raw: any, fallback?: { imageUrl?: string; album?: string
       (a.width ?? 0) > (b.width ?? 0) ? a : b
     ).url;
   } else if (raw.visualIdentity?.image?.length) {
-    // Modern Spotify embeds store images under visualIdentity.image
-    // with maxWidth/maxHeight instead of width/height
     imageUrl = raw.visualIdentity.image.reduce((a: any, b: any) =>
       (a.maxWidth ?? 0) > (b.maxWidth ?? 0) ? a : b
     ).url;
@@ -104,27 +132,71 @@ function normalizeTrack(raw: any, fallback?: { imageUrl?: string; album?: string
     raw.releaseDate?.isoString ??
     raw.release_date ??
     raw.date ??
-    fallback?.releaseDate ??
     undefined;
 
-  // Album name — only present on individual track getData responses.
-  // Spotify embed pages may use `albumOfTrack` or `album` depending on version.
+  // Album name
   const albumName =
     raw.albumOfTrack?.name ??
     raw.album?.name ??
     (typeof raw.album === "string" ? raw.album : undefined) ??
-    fallback?.album ??
+    undefined;
+
+  // Album Spotify ID from URI
+  const albumSpotifyId =
+    spotifyIdFromUri(raw.albumOfTrack?.uri) ||
+    (typeof raw.album === "object" ? spotifyIdFromUri(raw.album?.uri) : undefined) ||
     undefined;
 
   return {
     name: raw.name ?? raw.title ?? "Unknown",
     artists,
-    album: albumName ? { name: albumName } : undefined,
-    releaseDate: releaseDate ? releaseDate.slice(0, 10) : undefined, // YYYY-MM-DD
+    album: albumName ? { name: albumName, spotifyId: albumSpotifyId || undefined } : undefined,
+    releaseDate: releaseDate ? releaseDate.slice(0, 10) : undefined,
     isrc: raw.external_ids?.isrc ?? raw.isrc ?? undefined,
     imageUrl,
     spotifyId: spotifyIdFromUri(raw.uri) || raw.id || "",
   };
+}
+
+// ---------------------------------------------------------------------------
+// Core: fetch a single track (embed data + page metadata)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch full metadata for a single track by its Spotify ID.
+ *
+ * 1. Scrapes the embed page via spotify-url-info for structured data
+ *    (name, artists, ISRC, images, release date).
+ * 2. Fetches the main track page HTML for album/artist Spotify IDs.
+ */
+async function fetchSingleTrack(spotifyId: string): Promise<SpotifyTrack> {
+  const embedUrl = `https://open.spotify.com/track/${spotifyId}`;
+  const data = await getData(embedUrl);
+  const track = normalizeEmbedData(data);
+
+  // Ensure the spotifyId is set (embed data may not have URI)
+  if (!track.spotifyId) track.spotifyId = spotifyId;
+
+  // Fetch album/artist IDs from the main track page
+  const metadata = await fetchTrackPageMetadata(spotifyId);
+
+  // Apply album info
+  if (!track.album && metadata.albumName) {
+    track.album = { name: metadata.albumName, spotifyId: metadata.albumSpotifyId };
+  } else if (track.album && !track.album.spotifyId && metadata.albumSpotifyId) {
+    track.album.spotifyId = metadata.albumSpotifyId;
+  }
+
+  // Apply artist Spotify IDs
+  if (metadata.artistIds && metadata.artistIds.length > 0) {
+    for (let i = 0; i < track.artists.length && i < metadata.artistIds.length; i++) {
+      if (!track.artists[i].spotifyId) {
+        track.artists[i].spotifyId = metadata.artistIds[i];
+      }
+    }
+  }
+
+  return track;
 }
 
 // ---------------------------------------------------------------------------
@@ -134,8 +206,9 @@ function normalizeTrack(raw: any, fallback?: { imageUrl?: string; album?: string
 /**
  * Fetch metadata for a Spotify URL using the scraping library.
  *
- * Returns an array of normalised tracks extracted from the URL.
- * For a single track URL the array will contain one entry.
+ * - Track URL: fetches the single track.
+ * - Album/playlist URL: extracts track IDs from the container, then fetches
+ *   each track individually. Per-track data takes priority over container data.
  */
 export async function fetchViaScraper(
   url: string
@@ -149,90 +222,43 @@ export async function fetchViaScraper(
   }
 
   if (type === "track") {
-    // For a single track we use getData which returns the richest response.
-    const data = await getData(url);
-    const track = normalizeTrack(data);
+    // Extract track ID from URL
+    const idMatch = new URL(url).pathname.match(/\/track\/([a-zA-Z0-9]+)/);
+    if (!idMatch) throw new Error("Could not extract track ID from URL");
 
-    // The embed page doesn't include album info, so fetch it from the
-    // main Spotify page's OG tags when missing.
-    if (!track.album && track.spotifyId) {
-      const albumName = await fetchAlbumFromOgTags(track.spotifyId);
-      if (albumName) {
-        track.album = { name: albumName };
-      }
-    }
-
+    const track = await fetchSingleTrack(idMatch[1]);
     return { type, tracks: [track] };
   }
 
-  // For albums and playlists, getDetails gives us both the preview
-  // (which has the album / playlist image) and the track list.
+  // For albums and playlists: get the track list, then fetch each track
   const details = await getDetails(url);
-  const containerImage = details.preview?.image;
-  const containerDate = details.preview?.date
-    ? details.preview.date.slice(0, 10)
-    : undefined;
-  const containerTitle = details.preview?.title;
 
-  // First pass: normalize tracks from the container response
-  const initialTracks: SpotifyTrack[] = (details.tracks ?? []).map(
-    (t: any) =>
-      normalizeTrack(t, {
-        imageUrl: containerImage,
-        album: type === "album" ? containerTitle : undefined,
-        releaseDate: containerDate,
-      })
-  );
+  // Extract track Spotify IDs from the container response
+  const trackIds: string[] = [];
+  for (const t of details.tracks ?? []) {
+    const id = spotifyIdFromUri(t.uri);
+    if (id) trackIds.push(id);
+  }
 
-  // Second pass: enrich tracks that are missing ISRC, album, or
-  // release date by fetching individual track data via getData.
-  // Process in batches of 5 to avoid overwhelming the endpoint.
-  const enriched: SpotifyTrack[] = [];
+  if (trackIds.length === 0) {
+    throw new Error("No tracks found at this URL.");
+  }
+
+  // Fetch each track through the shared pipeline, in batches of 5
+  const tracks: SpotifyTrack[] = [];
   const BATCH_SIZE = 5;
 
-  for (let i = 0; i < initialTracks.length; i += BATCH_SIZE) {
-    const batch = initialTracks.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < trackIds.length; i += BATCH_SIZE) {
+    const batch = trackIds.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
-      batch.map(async (track) => {
-        const needsEnrichment =
-          !track.isrc || !track.album || !track.releaseDate;
-        if (!needsEnrichment || !track.spotifyId) return track;
-
-        try {
-          const trackUrl = `https://open.spotify.com/track/${track.spotifyId}`;
-          const richData = await getData(trackUrl);
-          const rich = normalizeTrack(richData, {
-            imageUrl: track.imageUrl,
-          });
-
-          // The embed page doesn't include album info, so fetch from OG tags
-          let album = rich.album || track.album;
-          if (!album && track.spotifyId) {
-            const albumName = await fetchAlbumFromOgTags(track.spotifyId);
-            if (albumName) album = { name: albumName };
-          }
-
-          // Merge: prefer rich data, fall back to initial
-          return {
-            ...track,
-            isrc: rich.isrc || track.isrc,
-            album,
-            releaseDate: rich.releaseDate || track.releaseDate,
-            imageUrl: rich.imageUrl || track.imageUrl,
-          };
-        } catch {
-          // If individual fetch fails, keep what we have
-          return track;
-        }
-      })
+      batch.map((id) => fetchSingleTrack(id))
     );
-
     for (const r of results) {
-      enriched.push(
-        r.status === "fulfilled" ? r.value : batch[enriched.length % batch.length]
-      );
+      if (r.status === "fulfilled") {
+        tracks.push(r.value);
+      }
     }
   }
 
-  return { type, tracks: enriched };
+  return { type, tracks };
 }

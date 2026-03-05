@@ -183,6 +183,7 @@ profileGenerator.post(
     const prompt = buildPrompt(song, artistNames, activeVibes);
 
     // 6. Create queue job
+    const now = new Date().toISOString();
     const [queueItem] = await db
       .insert(aiQueue)
       .values({
@@ -191,6 +192,8 @@ profileGenerator.post(
         status: "pending",
         model,
         prompt,
+        created_at: now,
+        updated_at: now,
       })
       .returning();
 
@@ -202,6 +205,8 @@ profileGenerator.post(
         value: null,
         model,
         ai_queue_id: queueItem.id,
+        created_at: now,
+        updated_at: now,
       })
       .returning();
 

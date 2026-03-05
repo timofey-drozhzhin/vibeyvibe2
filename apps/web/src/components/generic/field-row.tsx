@@ -21,6 +21,7 @@ import { ImageUpload } from "../shared/image-upload.js";
 import { AudioUpload } from "../shared/audio-upload.js";
 import type { FieldDef, EntityDef } from "../../config/entity-registry.js";
 import { resolveRelationshipTarget, getResourceName } from "../../config/entity-registry.js";
+import { formatDate } from "../../utils/format-date.js";
 
 interface FieldRowProps {
   field: FieldDef;
@@ -81,6 +82,7 @@ function renderFieldContent(
           onSave={(v) => onSave(v)}
           placeholder={field.placeholder || "Select date"}
           type="date"
+          renderDisplay={(v) => <Text size="sm">{formatDate(v)}</Text>}
         />
       );
 

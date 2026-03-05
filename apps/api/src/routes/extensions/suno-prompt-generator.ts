@@ -245,6 +245,7 @@ sunoPromptGenerator.post(
 
     // 8. Create a suno_prompts record linked to the song
     const promptName = `${song.name} - Suno Prompt`;
+    const now = new Date().toISOString();
     const [created] = await db
       .insert(sunoPrompts)
       .values({
@@ -253,6 +254,8 @@ sunoPromptGenerator.post(
         lyrics: parsed.lyrics?.trim() || null,
         prompt: parsed.style?.trim() || null,
         song_id: profile.song_id,
+        created_at: now,
+        updated_at: now,
       })
       .returning();
 

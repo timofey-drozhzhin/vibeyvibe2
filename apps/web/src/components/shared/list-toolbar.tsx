@@ -34,7 +34,6 @@ export const ListToolbar = ({
       onChange={onArchiveFilterChange}
       data={[
         { label: "Active", value: "active" },
-        { label: "All", value: "all" },
         { label: "Archived", value: "archived" },
       ]}
       size="xs"

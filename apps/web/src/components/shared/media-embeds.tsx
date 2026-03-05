@@ -24,8 +24,8 @@ interface MediaEmbedsProps {
   youtubeId?: string | null;
   /** If provided, platform IDs become editable */
   onSave?: (field: string, value: string) => Promise<void>;
-  /** Entity type — determines embed URLs (track vs album). Default "track". */
-  type?: "track" | "album";
+  /** Entity type — determines embed URLs (track vs album vs artist). Default "track". */
+  type?: "track" | "album" | "artist";
 }
 
 export const MediaEmbeds = ({
@@ -35,8 +35,8 @@ export const MediaEmbeds = ({
   onSave,
   type = "track",
 }: MediaEmbedsProps) => {
-  const spotifyPath = type === "album" ? "album" : "track";
-  const appleMusicPath = type === "album" ? "album" : "song";
+  const spotifyPath = type; // "track", "album", or "artist" — Spotify embed supports all three
+  const appleMusicPath = type === "album" ? "album" : type === "artist" ? "artist" : "song";
 
   return (
     <Stack gap="md" w={300}>
@@ -86,23 +86,46 @@ export const MediaEmbeds = ({
         id={youtubeId}
         platform="youtube"
         field="youtubeId"
-        label="YouTube"
+        label={type === "artist" ? "YouTube Channel" : "YouTube"}
         icon={<IconBrandYoutube size={20} />}
         color="#FF0000"
-        placeholder="YouTube video ID"
+        placeholder={type === "artist" ? "YouTube channel ID" : "YouTube video ID"}
         onSave={onSave}
-        renderEmbed={(id) => (
-          <iframe
-            src={`https://www.youtube.com/embed/${id}`}
-            width={300}
-            height={169}
-            frameBorder={0}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
-            allowFullScreen
-            loading="lazy"
-            style={{ borderRadius: 12, border: 0 }}
-          />
-        )}
+        renderEmbed={(id) =>
+          type === "artist" ? (
+            <Box
+              component="a"
+              href={`https://www.youtube.com/channel/${id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "block",
+                borderRadius: 12,
+                border: "1px solid var(--mantine-color-dark-4)",
+                backgroundColor: "var(--mantine-color-dark-6)",
+                padding: "12px 16px",
+                textDecoration: "none",
+                cursor: "pointer",
+              }}
+            >
+              <Group gap="xs" justify="center">
+                <IconBrandYoutube size={20} color="#FF0000" />
+                <Text size="sm" c="dimmed">Open YouTube Channel</Text>
+              </Group>
+            </Box>
+          ) : (
+            <iframe
+              src={`https://www.youtube.com/embed/${id}`}
+              width={300}
+              height={169}
+              frameBorder={0}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+              allowFullScreen
+              loading="lazy"
+              style={{ borderRadius: 12, border: 0 }}
+            />
+          )
+        }
       />
     </Stack>
   );

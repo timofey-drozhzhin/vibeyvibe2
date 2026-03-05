@@ -6,9 +6,24 @@ interface PlatformLinksProps {
   appleMusicId?: string | null;
   youtubeId?: string | null;
   size?: number;
+  type?: "track" | "album" | "artist";
 }
 
-export const PlatformLinks = ({ spotifyId, appleMusicId, youtubeId, size = 16 }: PlatformLinksProps) => {
+function buildSpotifyUrl(id: string, type: string): string {
+  return `https://open.spotify.com/${type}/${id}`;
+}
+
+function buildAppleMusicUrl(id: string, type: string): string {
+  const path = type === "track" ? "song" : type;
+  return `https://music.apple.com/us/${path}/${id}`;
+}
+
+function buildYoutubeUrl(id: string, type: string): string {
+  if (type === "artist") return `https://www.youtube.com/channel/${id}`;
+  return `https://www.youtube.com/watch?v=${id}`;
+}
+
+export const PlatformLinks = ({ spotifyId, appleMusicId, youtubeId, size = 16, type = "track" }: PlatformLinksProps) => {
   const hasAny = spotifyId || appleMusicId || youtubeId;
   if (!hasAny) return null;
 
@@ -17,7 +32,7 @@ export const PlatformLinks = ({ spotifyId, appleMusicId, youtubeId, size = 16 }:
       {spotifyId && (
         <Tooltip label="Open on Spotify">
           <ActionIcon variant="subtle" color="green" size="sm"
-            onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`https://open.spotify.com/track/${spotifyId}`, '_blank'); }}>
+            onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(buildSpotifyUrl(spotifyId, type), '_blank'); }}>
             <IconBrandSpotify size={size} />
           </ActionIcon>
         </Tooltip>
@@ -25,7 +40,7 @@ export const PlatformLinks = ({ spotifyId, appleMusicId, youtubeId, size = 16 }:
       {appleMusicId && (
         <Tooltip label="Open on Apple Music">
           <ActionIcon variant="subtle" color="gray" size="sm"
-            onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`https://music.apple.com/us/song/${appleMusicId}`, '_blank'); }}>
+            onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(buildAppleMusicUrl(appleMusicId, type), '_blank'); }}>
             <IconBrandApple size={size} />
           </ActionIcon>
         </Tooltip>
@@ -33,7 +48,7 @@ export const PlatformLinks = ({ spotifyId, appleMusicId, youtubeId, size = 16 }:
       {youtubeId && (
         <Tooltip label="Open on YouTube">
           <ActionIcon variant="subtle" color="red" size="sm"
-            onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`https://www.youtube.com/watch?v=${youtubeId}`, '_blank'); }}>
+            onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(buildYoutubeUrl(youtubeId, type), '_blank'); }}>
             <IconBrandYoutube size={size} />
           </ActionIcon>
         </Tooltip>

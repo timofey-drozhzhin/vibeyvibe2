@@ -125,8 +125,14 @@ labImport.post(
 
 const confirmTrackSchema = z.object({
   name: z.string().min(1),
-  artists: z.array(z.object({ name: z.string().min(1) })).min(1),
-  album: z.object({ name: z.string() }).nullable().optional(),
+  artists: z.array(z.object({
+    name: z.string().min(1),
+    spotifyId: z.string().optional(),
+  })).min(1),
+  album: z.object({
+    name: z.string(),
+    spotifyId: z.string().optional(),
+  }).nullable().optional(),
   releaseDate: z.string().nullable().optional(),
   isrc: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
@@ -186,6 +192,7 @@ labImport.post(
       }
 
       // Create the song record
+      const now = new Date().toISOString();
       const [song] = await db
         .insert(songs)
         .values({
@@ -195,6 +202,8 @@ labImport.post(
           release_date: track.releaseDate || null,
           spotify_uid: track.spotifyId || null,
           image_path: null,
+          created_at: now,
+          updated_at: now,
         })
         .returning();
 
@@ -216,24 +225,50 @@ labImport.post(
 
       // Resolve or create artists and link them
       for (const artistData of track.artists) {
-        // Look for an existing artist by name (case-insensitive) in lab context
-        const existingArtist = await db
-          .select()
-          .from(artists)
-          .where(
-            sql`LOWER(${artists.name}) = LOWER(${artistData.name}) AND ${artists.context} = 'lab'`
-          )
-          .limit(1);
+        let existingArtist: any[] = [];
+
+        // Try to find by Spotify UID first (more reliable than name matching)
+        if (artistData.spotifyId) {
+          existingArtist = await db
+            .select()
+            .from(artists)
+            .where(
+              sql`${artists.spotify_uid} = ${artistData.spotifyId} AND ${artists.context} = 'lab'`
+            )
+            .limit(1);
+        }
+
+        // Fallback: find by name (case-insensitive) in lab context
+        if (existingArtist.length === 0) {
+          existingArtist = await db
+            .select()
+            .from(artists)
+            .where(
+              sql`LOWER(${artists.name}) = LOWER(${artistData.name}) AND ${artists.context} = 'lab'`
+            )
+            .limit(1);
+        }
 
         let artistId: number;
 
         if (existingArtist.length > 0) {
           artistId = existingArtist[0].id;
+          // Backfill: if existing artist lacks spotify_uid and we have one, update it
+          if (!existingArtist[0].spotify_uid && artistData.spotifyId) {
+            await db
+              .update(artists)
+              .set({ spotify_uid: artistData.spotifyId })
+              .where(eq(artists.id, artistId));
+          }
         } else {
           // Create a new artist
+          const artistNow = new Date().toISOString();
           const [newArtist] = await db.insert(artists).values({
             name: artistData.name,
             context: "lab",
+            spotify_uid: artistData.spotifyId || null,
+            created_at: artistNow,
+            updated_at: artistNow,
           }).returning();
           artistId = newArtist.id;
         }
@@ -267,26 +302,51 @@ labImport.post(
       // Resolve or create album and link it
       if (track.album?.name) {
         const albumName = track.album.name;
+        let existingAlbum: any[] = [];
 
-        // Look for an existing album by name (case-insensitive) in lab context
-        const existingAlbum = await db
-          .select()
-          .from(albums)
-          .where(
-            sql`LOWER(${albums.name}) = LOWER(${albumName}) AND ${albums.context} = 'lab'`
-          )
-          .limit(1);
+        // Try to find by Spotify UID first
+        if (track.album.spotifyId) {
+          existingAlbum = await db
+            .select()
+            .from(albums)
+            .where(
+              sql`${albums.spotify_uid} = ${track.album.spotifyId} AND ${albums.context} = 'lab'`
+            )
+            .limit(1);
+        }
+
+        // Fallback: find by name (case-insensitive) in lab context
+        if (existingAlbum.length === 0) {
+          existingAlbum = await db
+            .select()
+            .from(albums)
+            .where(
+              sql`LOWER(${albums.name}) = LOWER(${albumName}) AND ${albums.context} = 'lab'`
+            )
+            .limit(1);
+        }
 
         let albumId: number;
 
         if (existingAlbum.length > 0) {
           albumId = existingAlbum[0].id;
+          // Backfill: if existing album lacks spotify_uid and we have one, update it
+          if (!existingAlbum[0].spotify_uid && track.album.spotifyId) {
+            await db
+              .update(albums)
+              .set({ spotify_uid: track.album.spotifyId })
+              .where(eq(albums.id, albumId));
+          }
         } else {
           // Create a new album
+          const albumNow = new Date().toISOString();
           const [newAlbum] = await db.insert(albums).values({
             name: albumName,
             context: "lab",
             release_date: track.releaseDate || null,
+            spotify_uid: track.album.spotifyId || null,
+            created_at: albumNow,
+            updated_at: albumNow,
           }).returning();
           albumId = newAlbum.id;
 

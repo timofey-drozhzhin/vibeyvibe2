@@ -43,6 +43,9 @@ const createArtistSchema = z.object({
   isni: z.string().nullable().optional(),
   image_path: z.string().nullable().optional(),
   rating: z.number().min(0).max(5).nullable().optional(),
+  spotify_uid: z.string().nullable().optional(),
+  apple_music_uid: z.string().nullable().optional(),
+  youtube_uid: z.string().nullable().optional(),
 });
 
 const updateArtistSchema = createArtistSchema.partial().extend({
