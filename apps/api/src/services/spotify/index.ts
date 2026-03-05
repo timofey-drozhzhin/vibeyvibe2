@@ -11,8 +11,8 @@
  */
 
 import { getEnv } from "../../env.js";
-import { fetchViaWebApi } from "./web-api.js";
-import { fetchViaScraper } from "./scraper.js";
+import { fetchViaWebApi, enrichArtistImages } from "./web-api.js";
+import { fetchViaScraper, enrichArtistImagesByScraping } from "./scraper.js";
 import { detectSpotifyType } from "./types.js";
 import type { SpotifyImportResult } from "./types.js";
 
@@ -71,11 +71,12 @@ export async function fetchSpotifyData(
   }
 
   const credentials = getSpotifyCredentials();
+  let result: SpotifyImportResult | null = null;
 
   // Strategy 1: Official Web API (when credentials are configured)
   if (credentials) {
     try {
-      return await fetchViaWebApi(
+      result = await fetchViaWebApi(
         url,
         type,
         credentials.clientId,
@@ -89,11 +90,26 @@ export async function fetchSpotifyData(
   }
 
   // Strategy 2: Scraper fallback
-  try {
-    return await fetchViaScraper(url);
-  } catch (err: any) {
-    const message =
-      err?.message ?? "Unknown error while fetching Spotify data.";
-    throw new Error(`Spotify fetch failed: ${message}`);
+  if (!result) {
+    try {
+      result = await fetchViaScraper(url);
+    } catch (err: any) {
+      const message =
+        err?.message ?? "Unknown error while fetching Spotify data.";
+      throw new Error(`Spotify fetch failed: ${message}`);
+    }
   }
+
+  // Enrich artists with individual images
+  if (credentials) {
+    result.tracks = await enrichArtistImages(
+      result.tracks,
+      credentials.clientId,
+      credentials.clientSecret
+    );
+  } else {
+    result.tracks = await enrichArtistImagesByScraping(result.tracks);
+  }
+
+  return result;
 }

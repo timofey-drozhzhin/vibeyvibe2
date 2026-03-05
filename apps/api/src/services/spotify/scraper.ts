@@ -96,6 +96,28 @@ async function fetchTrackPageMetadata(
 }
 
 /**
+ * Pick the largest image from spotify-url-info embed data.
+ */
+function pickLargestEmbedImage(raw: any): string | undefined {
+  if (raw.coverArt?.sources?.length) {
+    return raw.coverArt.sources.reduce((a: any, b: any) =>
+      (a.width ?? 0) > (b.width ?? 0) ? a : b
+    ).url;
+  }
+  if (raw.images?.length) {
+    return raw.images.reduce((a: any, b: any) =>
+      (a.width ?? 0) > (b.width ?? 0) ? a : b
+    ).url;
+  }
+  if (raw.visualIdentity?.image?.length) {
+    return raw.visualIdentity.image.reduce((a: any, b: any) =>
+      (a.maxWidth ?? 0) > (b.maxWidth ?? 0) ? a : b
+    ).url;
+  }
+  return undefined;
+}
+
+/**
  * Normalize raw embed data from spotify-url-info into a SpotifyTrack.
  */
 function normalizeEmbedData(raw: any): SpotifyTrack {
@@ -112,20 +134,7 @@ function normalizeEmbedData(raw: any): SpotifyTrack {
   }
 
   // Image URL
-  let imageUrl: string | undefined;
-  if (raw.coverArt?.sources?.length) {
-    imageUrl = raw.coverArt.sources.reduce((a: any, b: any) =>
-      (a.width ?? 0) > (b.width ?? 0) ? a : b
-    ).url;
-  } else if (raw.images?.length) {
-    imageUrl = raw.images.reduce((a: any, b: any) =>
-      (a.width ?? 0) > (b.width ?? 0) ? a : b
-    ).url;
-  } else if (raw.visualIdentity?.image?.length) {
-    imageUrl = raw.visualIdentity.image.reduce((a: any, b: any) =>
-      (a.maxWidth ?? 0) > (b.maxWidth ?? 0) ? a : b
-    ).url;
-  }
+  const imageUrl = pickLargestEmbedImage(raw);
 
   // Release date
   const releaseDate =
@@ -261,4 +270,46 @@ export async function fetchViaScraper(
   }
 
   return { type, tracks };
+}
+
+/**
+ * Enrich artist data with images by scraping artist embed pages.
+ * Works without Spotify API credentials.
+ */
+export async function enrichArtistImagesByScraping(
+  tracks: SpotifyTrack[]
+): Promise<SpotifyTrack[]> {
+  // Collect unique artist IDs
+  const artistIds = new Set<string>();
+  for (const t of tracks) {
+    for (const a of t.artists) {
+      if (a.spotifyId) artistIds.add(a.spotifyId);
+    }
+  }
+  if (artistIds.size === 0) return tracks;
+
+  // Fetch artist images in batches of 5
+  const artistImages = new Map<string, string>();
+  const ids = Array.from(artistIds);
+  const BATCH_SIZE = 5;
+
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const batch = ids.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async (id) => {
+        const data = await getData(`https://open.spotify.com/artist/${id}`);
+        const img = pickLargestEmbedImage(data);
+        if (img) artistImages.set(id, img);
+      })
+    );
+  }
+
+  // Apply images to track artist data
+  return tracks.map((t) => ({
+    ...t,
+    artists: t.artists.map((a) => ({
+      ...a,
+      imageUrl: a.spotifyId ? artistImages.get(a.spotifyId) : undefined,
+    })),
+  }));
 }

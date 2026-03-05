@@ -9,6 +9,7 @@
 export interface SpotifyArtist {
   name: string;
   spotifyId?: string;
+  imageUrl?: string;
 }
 
 export interface SpotifyTrack {

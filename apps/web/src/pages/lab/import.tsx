@@ -33,6 +33,7 @@ import { formatDate } from "../../utils/format-date.js";
 interface SpotifyArtist {
   name: string;
   spotifyId?: string;
+  imageUrl?: string | null;
 }
 
 interface SpotifyTrack {
@@ -45,20 +46,31 @@ interface SpotifyTrack {
   spotifyId: string;
 }
 
+interface ExistingEntries {
+  songs: string[];
+  artists: string[];
+  albums: string[];
+}
+
 interface ImportPreviewResponse {
   data: {
     type: string;
     url: string;
     tracks: SpotifyTrack[];
+    existing: ExistingEntries;
   };
 }
 
 interface ImportConfirmResponse {
   data: {
     created: any[];
-    skipped: { name: string; reason: string }[];
+    updated: any[];
     totalCreated: number;
-    totalSkipped: number;
+    totalUpdated: number;
+    artistsCreated: number;
+    artistsUpdated: number;
+    albumsCreated: number;
+    albumsUpdated: number;
   };
 }
 
@@ -79,9 +91,9 @@ export const LabImport = () => {
   const [previewTracks, setPreviewTracks] = useState<SpotifyTrack[]>([]);
   const [previewType, setPreviewType] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  // Options
-  const [generateProfiles, setGenerateProfiles] = useState(false);
+  const [excludedArtistKeys, setExcludedArtistKeys] = useState<Set<string>>(new Set());
+  const [excludedAlbumKeys, setExcludedAlbumKeys] = useState<Set<string>>(new Set());
+  const [existingEntries, setExistingEntries] = useState<ExistingEntries>({ songs: [], artists: [], albums: [] });
 
   // Confirm state
   const [isConfirming, setIsConfirming] = useState(false);
@@ -125,6 +137,9 @@ export const LabImport = () => {
     setPreviewTracks([]);
     setPreviewType(null);
     setSelectedIds(new Set());
+    setExcludedArtistKeys(new Set());
+    setExcludedAlbumKeys(new Set());
+    setExistingEntries({ songs: [], artists: [], albums: [] });
 
     try {
       const res = await fetch(`${apiUrl}/lab/import`, {
@@ -149,6 +164,7 @@ export const LabImport = () => {
 
       setPreviewTracks(tracks);
       setPreviewType(body.data?.type ?? null);
+      setExistingEntries(body.data?.existing ?? { songs: [], artists: [], albums: [] });
       // Select all by default
       setSelectedIds(new Set(tracks.map((t) => t.spotifyId)));
     } catch (err: any) {
@@ -164,6 +180,22 @@ export const LabImport = () => {
     const selected = previewTracks.filter((t) => selectedIds.has(t.spotifyId));
     if (selected.length === 0) return;
 
+    // Strip excluded artists/albums from each track
+    const tracksToSend = selected.map((t) => ({
+      ...t,
+      artists: t.artists.filter((a) => {
+        const key = a.spotifyId || a.name.toLowerCase();
+        return !excludedArtistKeys.has(key);
+      }),
+      album: t.album?.name
+        ? excludedAlbumKeys.has(t.album.spotifyId || t.album.name.toLowerCase())
+          ? null
+          : t.album
+        : t.album,
+    })).filter((t) => t.artists.length > 0); // songs need at least 1 artist
+
+    if (tracksToSend.length === 0) return;
+
     setIsConfirming(true);
 
     try {
@@ -171,7 +203,7 @@ export const LabImport = () => {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tracks: selected }),
+        body: JSON.stringify({ tracks: tracksToSend }),
       });
 
       const body = await res.json();
@@ -188,81 +220,18 @@ export const LabImport = () => {
       const result = body.data as ImportConfirmResponse["data"];
       setImportResult(result);
 
-      if (result.totalCreated > 0) {
+      {
+        const parts: string[] = [];
+        if (result.totalCreated > 0) parts.push(`${result.totalCreated} song(s) created`);
+        if (result.totalUpdated > 0) parts.push(`${result.totalUpdated} song(s) updated`);
+        if (result.artistsCreated > 0) parts.push(`${result.artistsCreated} artist(s) created`);
+        if (result.artistsUpdated > 0) parts.push(`${result.artistsUpdated} artist(s) updated`);
+        if (result.albumsCreated > 0) parts.push(`${result.albumsCreated} album(s) created`);
+        if (result.albumsUpdated > 0) parts.push(`${result.albumsUpdated} album(s) updated`);
         notifications.show({
           title: "Import successful",
-          message: `${result.totalCreated} song(s) imported.${
-            result.totalSkipped > 0
-              ? ` ${result.totalSkipped} skipped.`
-              : ""
-          }`,
+          message: parts.join(", ") + ".",
           color: "green",
-        });
-
-        // Trigger profile generation for each created song
-        if (generateProfiles && result.created.length > 0) {
-          for (const song of result.created) {
-            const notifId = `profile-gen-${song.id}`;
-            notifications.show({
-              id: notifId,
-              title: "Generating profile",
-              message: `"${song.name}" — generating...`,
-              color: "violet",
-              loading: true,
-              autoClose: false,
-              withCloseButton: false,
-            });
-
-            try {
-              const genRes = await fetch(`${apiUrl}/profile-generator/generate`, {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ songId: song.id }),
-              });
-              if (genRes.ok) {
-                notifications.update({
-                  id: notifId,
-                  title: "Profile generated",
-                  message: `"${song.name}" — done. View: /lab/songs/show/${song.id}`,
-                  color: "green",
-                  loading: false,
-                  autoClose: 8000,
-                  withCloseButton: true,
-                });
-              } else {
-                const errBody = await genRes.json().catch(() => ({}));
-                notifications.update({
-                  id: notifId,
-                  title: "Profile generation failed",
-                  message: `"${song.name}" — ${errBody?.error || `Error ${genRes.status}`}`,
-                  color: "red",
-                  loading: false,
-                  autoClose: false,
-                  withCloseButton: true,
-                });
-              }
-            } catch (err: any) {
-              notifications.update({
-                id: notifId,
-                title: "Profile generation failed",
-                message: `"${song.name}" — ${err?.message || "Network error"}`,
-                color: "red",
-                loading: false,
-                autoClose: false,
-                withCloseButton: true,
-              });
-            }
-          }
-        }
-      } else {
-        notifications.show({
-          title: "Nothing imported",
-          message:
-            result.totalSkipped > 0
-              ? `All ${result.totalSkipped} song(s) were skipped (duplicates).`
-              : "No songs were imported.",
-          color: "yellow",
         });
       }
     } catch (err: any) {
@@ -274,7 +243,7 @@ export const LabImport = () => {
     } finally {
       setIsConfirming(false);
     }
-  }, [previewTracks, selectedIds, apiUrl, generateProfiles]);
+  }, [previewTracks, selectedIds, excludedArtistKeys, excludedAlbumKeys, apiUrl]);
 
   // ---------- Selection helpers ----------
 
@@ -298,6 +267,70 @@ export const LabImport = () => {
     }
   };
 
+  // ---------- Artist/Album selection helpers ----------
+
+  const getArtistKey = (a: SpotifyArtist) => a.spotifyId || a.name.toLowerCase();
+
+  const toggleArtist = (key: string) => {
+    setExcludedArtistKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllArtists = (allKeys: string[]) => {
+    const allExcluded = allKeys.every((k) => excludedArtistKeys.has(k));
+    if (allExcluded) {
+      setExcludedArtistKeys((prev) => {
+        const next = new Set(prev);
+        for (const k of allKeys) next.delete(k);
+        return next;
+      });
+    } else {
+      setExcludedArtistKeys((prev) => {
+        const next = new Set(prev);
+        for (const k of allKeys) next.add(k);
+        return next;
+      });
+    }
+  };
+
+  const getAlbumKey = (a: { name: string; spotifyId?: string }) => a.spotifyId || a.name.toLowerCase();
+
+  const toggleAlbum = (key: string) => {
+    setExcludedAlbumKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllAlbums = (allKeys: string[]) => {
+    const allExcluded = allKeys.every((k) => excludedAlbumKeys.has(k));
+    if (allExcluded) {
+      setExcludedAlbumKeys((prev) => {
+        const next = new Set(prev);
+        for (const k of allKeys) next.delete(k);
+        return next;
+      });
+    } else {
+      setExcludedAlbumKeys((prev) => {
+        const next = new Set(prev);
+        for (const k of allKeys) next.add(k);
+        return next;
+      });
+    }
+  };
+
   // ---------- Paste from clipboard ----------
 
   const handlePaste = async () => {
@@ -317,6 +350,53 @@ export const LabImport = () => {
   const allSelected =
     previewTracks.length > 0 && selectedIds.size === previewTracks.length;
   const someSelected = selectedIds.size > 0 && !allSelected;
+
+  // Sets for quick "exists" lookup
+  const existingSongSet = new Set(existingEntries.songs);
+  const existingArtistSet = new Set(existingEntries.artists);
+  const existingAlbumSet = new Set(existingEntries.albums);
+
+  // Derive unique artists and albums from selected tracks
+  const selectedTracks = previewTracks.filter((t) => selectedIds.has(t.spotifyId));
+
+  const uniqueArtists = (() => {
+    const map = new Map<string, SpotifyArtist>();
+    for (const track of selectedTracks) {
+      for (const a of track.artists) {
+        const key = a.spotifyId || a.name.toLowerCase();
+        if (!map.has(key)) map.set(key, a);
+      }
+    }
+    return Array.from(map.values());
+  })();
+
+  const uniqueAlbums = (() => {
+    const map = new Map<string, { name: string; spotifyId?: string; imageUrl?: string | null; releaseDate?: string | null; artists: SpotifyArtist[] }>();
+    for (const track of selectedTracks) {
+      if (track.album?.name) {
+        const key = track.album.spotifyId || track.album.name.toLowerCase();
+        const existing = map.get(key);
+        if (!existing) {
+          map.set(key, {
+            name: track.album.name,
+            spotifyId: track.album.spotifyId,
+            imageUrl: track.imageUrl,
+            releaseDate: track.releaseDate,
+            artists: [...track.artists],
+          });
+        } else {
+          // Merge in any new artists from this track
+          for (const a of track.artists) {
+            const aKey = a.spotifyId || a.name.toLowerCase();
+            if (!existing.artists.some((ea) => (ea.spotifyId || ea.name.toLowerCase()) === aKey)) {
+              existing.artists.push(a);
+            }
+          }
+        }
+      }
+    }
+    return Array.from(map.values());
+  })();
 
   return (
     <Stack gap="md">
@@ -389,18 +469,15 @@ export const LabImport = () => {
         >
           <Stack gap={4}>
             <Text size="sm">
-              {importResult.totalCreated} song(s) created.
+              {[
+                importResult.totalCreated > 0 && `${importResult.totalCreated} song(s) created`,
+                importResult.totalUpdated > 0 && `${importResult.totalUpdated} song(s) updated`,
+                importResult.artistsCreated > 0 && `${importResult.artistsCreated} artist(s) created`,
+                importResult.artistsUpdated > 0 && `${importResult.artistsUpdated} artist(s) updated`,
+                importResult.albumsCreated > 0 && `${importResult.albumsCreated} album(s) created`,
+                importResult.albumsUpdated > 0 && `${importResult.albumsUpdated} album(s) updated`,
+              ].filter(Boolean).join(", ")}.
             </Text>
-            {importResult.totalSkipped > 0 && (
-              <Text size="sm">
-                {importResult.totalSkipped} song(s) skipped:
-              </Text>
-            )}
-            {importResult.skipped.map((s, i) => (
-              <Text key={i} size="xs" c="dimmed">
-                - {s.name}: {s.reason}
-              </Text>
-            ))}
             <Group mt="sm">
               <Button
                 size="xs"
@@ -417,6 +494,9 @@ export const LabImport = () => {
                   setPreviewTracks([]);
                   setPreviewType(null);
                   setSelectedIds(new Set());
+                  setExcludedArtistKeys(new Set());
+                  setExcludedAlbumKeys(new Set());
+                  setExistingEntries({ songs: [], artists: [], albums: [] });
                   setImportResult(null);
                 }}
               >
@@ -427,131 +507,311 @@ export const LabImport = () => {
         </Alert>
       )}
 
-      {/* Preview table */}
+      {/* Preview sections */}
       {previewTracks.length > 0 && !importResult && (
-        <Card withBorder>
-          <Stack gap="md">
-            <Group justify="space-between">
-              <Group gap="sm">
-                <Title order={4}>Preview</Title>
-                {previewType && (
-                  <Badge variant="light" color="violet">
-                    {previewType}
-                  </Badge>
-                )}
-                <Text size="sm" c="dimmed">
-                  {previewTracks.length} track(s) found
-                </Text>
-              </Group>
-              <Group gap="md">
-                <Checkbox
-                  label="Generate Profiles"
-                  checked={generateProfiles}
-                  onChange={(e) => setGenerateProfiles(e.currentTarget.checked)}
-                />
-                <Button
-                  leftSection={<IconCheck size={16} />}
-                  onClick={handleConfirm}
-                  loading={isConfirming}
-                  disabled={selectedIds.size === 0}
-                >
-                  Confirm Import ({selectedIds.size})
-                </Button>
-              </Group>
+        <Stack gap="md">
+          {/* Header with confirm button */}
+          <Group justify="space-between">
+            <Group gap="sm">
+              <Title order={3}>Preview</Title>
+              {previewType && (
+                <Badge variant="light" color="violet">
+                  {previewType}
+                </Badge>
+              )}
             </Group>
+            <Button
+              leftSection={<IconCheck size={16} />}
+              onClick={handleConfirm}
+              loading={isConfirming}
+              disabled={selectedIds.size === 0}
+            >
+              Confirm Import
+            </Button>
+          </Group>
 
-            <Table highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th w={40}>
-                    <Checkbox
-                      checked={allSelected}
-                      indeterminate={someSelected}
-                      onChange={toggleAll}
-                      aria-label="Select all"
-                    />
-                  </Table.Th>
-                  <Table.Th w={50}></Table.Th>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>Artists</Table.Th>
-                  <Table.Th>Album</Table.Th>
-                  <Table.Th>Release Date</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {previewTracks.map((track) => (
-                  <Table.Tr key={track.spotifyId}>
-                    <Table.Td>
+          {/* Songs section */}
+          <Card withBorder>
+            <Stack gap="sm">
+              <Group gap="xs">
+                <Title order={4}>Songs</Title>
+                <Badge variant="light" size="sm">{selectedTracks.length}</Badge>
+              </Group>
+              <Table highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th w={40}>
                       <Checkbox
-                        checked={selectedIds.has(track.spotifyId)}
-                        onChange={() => toggleTrack(track.spotifyId)}
-                        aria-label={`Select ${track.name}`}
+                        checked={allSelected}
+                        indeterminate={someSelected}
+                        onChange={toggleAll}
+                        aria-label="Select all"
                       />
-                    </Table.Td>
-                    <Table.Td>
-                      <Avatar
-                        size={32}
-                        radius="sm"
-                        src={track.imageUrl ?? null}
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <Anchor
-                        size="sm"
-                        fw={500}
-                        href={`https://open.spotify.com/track/${track.spotifyId}`}
-                        target="_blank"
-                        underline="hover"
-                      >
-                        {track.name}
-                      </Anchor>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap={4} wrap="wrap">
-                        {track.artists.map((a, i) => (
-                          <Badge
-                            key={i}
-                            variant="light"
+                    </Table.Th>
+                    <Table.Th w={50}></Table.Th>
+                    <Table.Th>Name</Table.Th>
+                    <Table.Th>Artists</Table.Th>
+                    <Table.Th>Album</Table.Th>
+                    <Table.Th>Release Date</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {previewTracks.map((track) => (
+                    <Table.Tr key={track.spotifyId}>
+                      <Table.Td>
+                        <Checkbox
+                          checked={selectedIds.has(track.spotifyId)}
+                          onChange={() => toggleTrack(track.spotifyId)}
+                          aria-label={`Select ${track.name}`}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <Avatar
+                          size={32}
+                          radius="sm"
+                          src={track.imageUrl ?? null}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <Group gap="xs">
+                          <Anchor
                             size="sm"
-                            component="a"
-                            href={a.spotifyId
-                              ? `https://open.spotify.com/artist/${a.spotifyId}`
-                              : `https://open.spotify.com/search/${encodeURIComponent(a.name)}`
+                            fw={500}
+                            href={`https://open.spotify.com/track/${track.spotifyId}`}
+                            target="_blank"
+                            underline="hover"
+                          >
+                            {track.name}
+                          </Anchor>
+                          {existingSongSet.has(track.spotifyId) && (
+                            <Badge size="xs" variant="light" color="red">Overrides</Badge>
+                          )}
+                        </Group>
+                      </Table.Td>
+                      <Table.Td>
+                        <Group gap={4} wrap="wrap">
+                          {track.artists.map((a, i) => (
+                            <Badge
+                              key={i}
+                              variant="light"
+                              size="sm"
+                              component="a"
+                              href={a.spotifyId
+                                ? `https://open.spotify.com/artist/${a.spotifyId}`
+                                : `https://open.spotify.com/search/${encodeURIComponent(a.name)}`
+                              }
+                              target="_blank"
+                              style={{ cursor: "pointer" }}
+                            >
+                              {a.name}
+                            </Badge>
+                          ))}
+                        </Group>
+                      </Table.Td>
+                      <Table.Td>
+                        {track.album?.name ? (
+                          <Anchor
+                            size="sm"
+                            href={track.album.spotifyId
+                              ? `https://open.spotify.com/album/${track.album.spotifyId}`
+                              : `https://open.spotify.com/search/${encodeURIComponent(track.album.name)}`
                             }
                             target="_blank"
-                            style={{ cursor: "pointer" }}
+                            underline="hover"
                           >
-                            {a.name}
-                          </Badge>
-                        ))}
-                      </Group>
-                    </Table.Td>
-                    <Table.Td>
-                      {track.album?.name ? (
-                        <Anchor
-                          size="sm"
-                          href={track.album.spotifyId
-                            ? `https://open.spotify.com/album/${track.album.spotifyId}`
-                            : `https://open.spotify.com/search/${encodeURIComponent(track.album.name)}`
-                          }
-                          target="_blank"
-                          underline="hover"
-                        >
-                          {track.album.name}
-                        </Anchor>
-                      ) : (
-                        <Text size="sm">-</Text>
-                      )}
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">{track.releaseDate ? formatDate(track.releaseDate) : "-"}</Text>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Stack>
-        </Card>
+                            {track.album.name}
+                          </Anchor>
+                        ) : (
+                          <Text size="sm">-</Text>
+                        )}
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">{track.releaseDate ? formatDate(track.releaseDate) : "-"}</Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Stack>
+          </Card>
+
+          {/* Artists section */}
+          {uniqueArtists.length > 0 && (() => {
+            const artistKeys = uniqueArtists.map(getArtistKey);
+            const selectedCount = artistKeys.filter((k) => !excludedArtistKeys.has(k)).length;
+            const allArtistsSelected = selectedCount === uniqueArtists.length;
+            const someArtistsSelected = selectedCount > 0 && !allArtistsSelected;
+            return (
+              <Card withBorder>
+                <Stack gap="sm">
+                  <Group gap="xs">
+                    <Title order={4}>Artists</Title>
+                    <Badge variant="light" size="sm">{selectedCount}</Badge>
+                  </Group>
+                  <Table highlightOnHover>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th w={40}>
+                          <Checkbox
+                            checked={allArtistsSelected}
+                            indeterminate={someArtistsSelected}
+                            onChange={() => toggleAllArtists(artistKeys)}
+                            aria-label="Select all artists"
+                          />
+                        </Table.Th>
+                        <Table.Th w={50}></Table.Th>
+                        <Table.Th>Name</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {uniqueArtists.map((artist) => {
+                        const key = getArtistKey(artist);
+                        return (
+                          <Table.Tr key={key}>
+                            <Table.Td>
+                              <Checkbox
+                                checked={!excludedArtistKeys.has(key)}
+                                onChange={() => toggleArtist(key)}
+                                aria-label={`Select ${artist.name}`}
+                              />
+                            </Table.Td>
+                            <Table.Td>
+                              <Avatar
+                                size={32}
+                                radius="sm"
+                                src={artist.imageUrl ?? null}
+                              />
+                            </Table.Td>
+                            <Table.Td>
+                              <Group gap="xs">
+                                <Anchor
+                                  size="sm"
+                                  fw={500}
+                                  href={artist.spotifyId
+                                    ? `https://open.spotify.com/artist/${artist.spotifyId}`
+                                    : `https://open.spotify.com/search/${encodeURIComponent(artist.name)}`
+                                  }
+                                  target="_blank"
+                                  underline="hover"
+                                >
+                                  {artist.name}
+                                </Anchor>
+                                {existingArtistSet.has(key) && (
+                                  <Badge size="xs" variant="light" color="red">Overrides</Badge>
+                                )}
+                              </Group>
+                            </Table.Td>
+                          </Table.Tr>
+                        );
+                      })}
+                    </Table.Tbody>
+                  </Table>
+                </Stack>
+              </Card>
+            );
+          })()}
+
+          {/* Albums section */}
+          {uniqueAlbums.length > 0 && (() => {
+            const albumKeys = uniqueAlbums.map(getAlbumKey);
+            const selectedCount = albumKeys.filter((k) => !excludedAlbumKeys.has(k)).length;
+            const allAlbumsSelected = selectedCount === uniqueAlbums.length;
+            const someAlbumsSelected = selectedCount > 0 && !allAlbumsSelected;
+            return (
+              <Card withBorder>
+                <Stack gap="sm">
+                  <Group gap="xs">
+                    <Title order={4}>Albums</Title>
+                    <Badge variant="light" size="sm">{selectedCount}</Badge>
+                  </Group>
+                  <Table highlightOnHover>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th w={40}>
+                          <Checkbox
+                            checked={allAlbumsSelected}
+                            indeterminate={someAlbumsSelected}
+                            onChange={() => toggleAllAlbums(albumKeys)}
+                            aria-label="Select all albums"
+                          />
+                        </Table.Th>
+                        <Table.Th w={50}></Table.Th>
+                        <Table.Th>Name</Table.Th>
+                        <Table.Th>Artists</Table.Th>
+                        <Table.Th>Release Date</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {uniqueAlbums.map((album) => {
+                        const key = getAlbumKey(album);
+                        return (
+                          <Table.Tr key={key}>
+                            <Table.Td>
+                              <Checkbox
+                                checked={!excludedAlbumKeys.has(key)}
+                                onChange={() => toggleAlbum(key)}
+                                aria-label={`Select ${album.name}`}
+                              />
+                            </Table.Td>
+                            <Table.Td>
+                              <Avatar
+                                size={32}
+                                radius="sm"
+                                src={album.imageUrl ?? null}
+                              />
+                            </Table.Td>
+                            <Table.Td>
+                              <Group gap="xs">
+                                <Anchor
+                                  size="sm"
+                                  fw={500}
+                                  href={album.spotifyId
+                                    ? `https://open.spotify.com/album/${album.spotifyId}`
+                                    : `https://open.spotify.com/search/${encodeURIComponent(album.name)}`
+                                  }
+                                  target="_blank"
+                                  underline="hover"
+                                >
+                                  {album.name}
+                                </Anchor>
+                                {existingAlbumSet.has(key) && (
+                                  <Badge size="xs" variant="light" color="red">Overrides</Badge>
+                                )}
+                              </Group>
+                            </Table.Td>
+                            <Table.Td>
+                              <Group gap={4} wrap="wrap">
+                                {album.artists.map((a, i) => (
+                                  <Badge
+                                    key={i}
+                                    variant="light"
+                                    size="sm"
+                                    component="a"
+                                    href={a.spotifyId
+                                      ? `https://open.spotify.com/artist/${a.spotifyId}`
+                                      : `https://open.spotify.com/search/${encodeURIComponent(a.name)}`
+                                    }
+                                    target="_blank"
+                                    style={{ cursor: "pointer" }}
+                                  >
+                                    {a.name}
+                                  </Badge>
+                                ))}
+                              </Group>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="sm">{album.releaseDate ? formatDate(album.releaseDate) : "-"}</Text>
+                            </Table.Td>
+                          </Table.Tr>
+                        );
+                      })}
+                    </Table.Tbody>
+                  </Table>
+                </Stack>
+              </Card>
+            );
+          })()}
+        </Stack>
       )}
     </Stack>
   );

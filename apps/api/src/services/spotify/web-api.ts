@@ -243,6 +243,59 @@ async function fetchPlaylist(
 }
 
 // ---------------------------------------------------------------------------
+// Artist enrichment
+// ---------------------------------------------------------------------------
+
+/**
+ * Batch-fetch artist details from Spotify to get images.
+ * Accepts up to 50 IDs per request (Spotify API limit).
+ */
+export async function enrichArtistImages(
+  tracks: SpotifyTrack[],
+  clientId: string,
+  clientSecret: string
+): Promise<SpotifyTrack[]> {
+  // Collect unique artist IDs
+  const artistIds = new Set<string>();
+  for (const t of tracks) {
+    for (const a of t.artists) {
+      if (a.spotifyId) artistIds.add(a.spotifyId);
+    }
+  }
+  if (artistIds.size === 0) return tracks;
+
+  // Batch fetch artist details
+  const artistImages = new Map<string, string>();
+  const ids = Array.from(artistIds);
+  for (let i = 0; i < ids.length; i += 50) {
+    const batch = ids.slice(i, i + 50);
+    try {
+      const data = await spotifyApiFetch(
+        `/artists?ids=${batch.join(",")}`,
+        clientId,
+        clientSecret
+      );
+      for (const artist of data.artists ?? []) {
+        if (!artist) continue;
+        const img = pickLargestImage(artist.images);
+        if (img) artistImages.set(artist.id, img);
+      }
+    } catch {
+      // Non-critical — skip enrichment on failure
+    }
+  }
+
+  // Apply images to track artist data
+  return tracks.map((t) => ({
+    ...t,
+    artists: t.artists.map((a) => ({
+      ...a,
+      imageUrl: a.spotifyId ? artistImages.get(a.spotifyId) : undefined,
+    })),
+  }));
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
