@@ -505,21 +505,21 @@ export const LabImport = () => {
                       </Anchor>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm">
+                      <Group gap={4} wrap="wrap">
                         {track.artists.map((a, i) => (
-                          <span key={i}>
-                            {i > 0 && ", "}
-                            <Anchor
-                              size="sm"
-                              href={`https://open.spotify.com/search/${encodeURIComponent(a.name)}`}
-                              target="_blank"
-                              underline="hover"
-                            >
-                              {a.name}
-                            </Anchor>
-                          </span>
+                          <Badge
+                            key={i}
+                            variant="light"
+                            size="sm"
+                            component="a"
+                            href={`https://open.spotify.com/search/${encodeURIComponent(a.name)}`}
+                            target="_blank"
+                            style={{ cursor: "pointer" }}
+                          >
+                            {a.name}
+                          </Badge>
                         ))}
-                      </Text>
+                      </Group>
                     </Table.Td>
                     <Table.Td>
                       {track.album?.name ? (

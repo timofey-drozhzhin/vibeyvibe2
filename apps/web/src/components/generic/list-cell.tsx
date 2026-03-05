@@ -1,4 +1,4 @@
-import { Anchor, Text, Avatar, Group } from "@mantine/core";
+import { Anchor, Badge, Text, Avatar, Group } from "@mantine/core";
 import { useNavigation } from "@refinedev/core";
 import { RatingDisplay } from "../shared/rating-field.js";
 import { ArchiveBadge } from "../shared/archive-toggle.js";
@@ -137,25 +137,19 @@ export const ListCell = ({ fieldKey, value, entity, record }: ListCellProps) => 
 
     return (
       <Group gap={4} wrap="wrap">
-        {items.map((item: any, i: number) => (
-          <span key={item.id}>
-            {targetResource ? (
-              <Anchor
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  show(targetResource, item.id);
-                }}
-              >
-                {item.name}
-              </Anchor>
-            ) : (
-              <Text size="sm" component="span">{item.name}</Text>
-            )}
-            {i < items.length - 1 && (
-              <Text size="sm" component="span" c="dimmed">, </Text>
-            )}
-          </span>
+        {items.map((item: any) => (
+          <Badge
+            key={item.id}
+            variant="light"
+            size="sm"
+            style={targetResource ? { cursor: "pointer" } : undefined}
+            onClick={targetResource ? (e: React.MouseEvent) => {
+              e.stopPropagation();
+              show(targetResource, item.id);
+            } : undefined}
+          >
+            {item.name}
+          </Badge>
         ))}
       </Group>
     );
