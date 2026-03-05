@@ -133,62 +133,62 @@ async function seed() {
 
   // ─── Artists (My Music) ──────────────────────────────────────────────────
   const [lunaEcho] = await db.insert(artists).values({
-    name: "Luna Echo", context: "my_music", isni: "0000000121581532", image_path: null, rating: 0.8,
+    name: "Luna Echo", context: "my_music", isni: "0000000121581532", image_path: null,
   }).returning();
   const [neonPulse] = await db.insert(artists).values({
-    name: "Neon Pulse", context: "my_music", isni: "0000000234567890", image_path: null, rating: 0.7,
+    name: "Neon Pulse", context: "my_music", isni: "0000000234567890", image_path: null,
   }).returning();
   const [theWanderers] = await db.insert(artists).values({
-    name: "The Wanderers", context: "my_music", isni: null, image_path: null, rating: 0.6,
+    name: "The Wanderers", context: "my_music", isni: null, image_path: null,
   }).returning();
 
   console.log("  My Music artists created");
 
   // ─── Artists (Lab) ──────────────────────────────────────────────────────
   const [daftPunk] = await db.insert(artists).values({
-    name: "Daft Punk", context: "lab", isni: "0000000118779068", image_path: null, rating: 0.9,
+    name: "Daft Punk", context: "lab", isni: "0000000118779068", image_path: null,
   }).returning();
   const [radiohead] = await db.insert(artists).values({
-    name: "Radiohead", context: "lab", isni: "0000000121070864", image_path: null, rating: 0.9,
+    name: "Radiohead", context: "lab", isni: "0000000121070864", image_path: null,
   }).returning();
 
   console.log("  Lab artists created");
 
   // ─── Albums (My Music) ───────────────────────────────────────────────────
   const [midnightFrequencies] = await db.insert(albums).values({
-    name: "Midnight Frequencies", context: "my_music", ean: null, release_date: "2024-03-15", rating: 0.8, image_path: null,
+    name: "Midnight Frequencies", context: "my_music", ean: null, release_date: "2024-03-15", image_path: null,
   }).returning();
   const [digitalDreams] = await db.insert(albums).values({
-    name: "Digital Dreams", context: "my_music", ean: null, release_date: "2023-11-20", rating: 0.7, image_path: null,
+    name: "Digital Dreams", context: "my_music", ean: null, release_date: "2023-11-20", image_path: null,
   }).returning();
 
   console.log("  My Music albums created");
 
   // ─── Songs (My Music) ────────────────────────────────────────────────────
   const [electricSunrise] = await db.insert(songs).values({
-    name: "Electric Sunrise", context: "my_music", isrc: "USRC12345678", release_date: "2024-03-15", rating: 0.9, spotify_uid: null, apple_music_uid: null, youtube_uid: null,
+    name: "Electric Sunrise", context: "my_music", isrc: "USRC12345678", release_date: "2024-03-15", spotify_uid: null, apple_music_uid: null, youtube_uid: null,
   }).returning();
   const [neonNights] = await db.insert(songs).values({
-    name: "Neon Nights", context: "my_music", isrc: "USRC12345679", release_date: "2024-03-15", rating: 0.7, spotify_uid: null,
+    name: "Neon Nights", context: "my_music", isrc: "USRC12345679", release_date: "2024-03-15", spotify_uid: null,
   }).returning();
   const [crystalWaves] = await db.insert(songs).values({
-    name: "Crystal Waves", context: "my_music", isrc: "USRC12345680", release_date: "2023-11-20", rating: 0.6, spotify_uid: null,
+    name: "Crystal Waves", context: "my_music", isrc: "USRC12345680", release_date: "2023-11-20", spotify_uid: null,
   }).returning();
   const [vaporTrail] = await db.insert(songs).values({
-    name: "Vapor Trail", context: "my_music", isrc: null, release_date: "2024-01-10", rating: 0.5,
+    name: "Vapor Trail", context: "my_music", isrc: null, release_date: "2024-01-10",
   }).returning();
   const [shadowDance] = await db.insert(songs).values({
-    name: "Shadow Dance", context: "my_music", isrc: null, release_date: null, rating: null,
+    name: "Shadow Dance", context: "my_music", isrc: null, release_date: null,
   }).returning();
 
   console.log("  My Music songs created");
 
   // ─── Songs (Lab) ────────────────────────────────────────────────────────
   const [aroundTheWorld] = await db.insert(songs).values({
-    name: "Around the World", context: "lab", isrc: "FRZ039800212", release_date: "1997-03-17", rating: 0.8, spotify_uid: "3nsfB1vus2qaloUdcBZvDu",
+    name: "Around the World", context: "lab", isrc: "FRZ039800212", release_date: "1997-03-17", spotify_uid: "3nsfB1vus2qaloUdcBZvDu",
   }).returning();
   const [everythingInItsRightPlace] = await db.insert(songs).values({
-    name: "Everything In Its Right Place", context: "lab", isrc: "GBAYE0000696", release_date: "2000-10-02", rating: 0.9, spotify_uid: "2kJwzbxV2ppN0wnMTKaqnC",
+    name: "Everything In Its Right Place", context: "lab", isrc: "GBAYE0000696", release_date: "2000-10-02", spotify_uid: "2kJwzbxV2ppN0wnMTKaqnC",
   }).returning();
 
   console.log("  Lab songs created");

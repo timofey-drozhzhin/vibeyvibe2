@@ -49,7 +49,6 @@ describe("Lab Songs", () => {
           name: `Lab Song ${ts}`,
           isrc,
           releaseDate: "2024-03-01",
-          rating: 8,
         })
       );
       expect(res.status).toBe(201);
@@ -155,16 +154,6 @@ describe("Lab Songs", () => {
   });
 
   describe("PUT /api/lab/songs/:id", () => {
-    it("updates song rating", async () => {
-      const res = await app.request(
-        `/api/lab/songs/${createdSongId}`,
-        jsonPut({ rating: 10 })
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.data.rating).toBe(10);
-    });
-
     it("archives a song", async () => {
       const res = await app.request(
         `/api/lab/songs/${createdSongId}`,
@@ -188,7 +177,7 @@ describe("Lab Songs", () => {
     it("returns 404 for non-existent song", async () => {
       const res = await app.request(
         "/api/lab/songs/nonexistent-xyz",
-        jsonPut({ rating: 5 })
+        jsonPut({ name: "Nope" })
       );
       expect(res.status).toBe(404);
     });
@@ -208,7 +197,6 @@ describe("Lab Artists", () => {
         json({
           name: `Lab Artist ${ts}`,
           isni,
-          rating: 7,
         })
       );
       expect(res.status).toBe(201);
@@ -443,7 +431,6 @@ describe("Lab Profiles", () => {
         name: `Profile Song ${ts}`,
         isrc,
         releaseDate: "2024-05-01",
-        rating: 6,
       })
     );
     expect(res.status).toBe(201);

@@ -30,7 +30,6 @@ const createSongSchema = z.object({
   isrc: z.string().nullable().optional(),
   image_path: z.string().nullable().optional(),
   release_date: z.string().nullable().optional(),
-  rating: ratingField,
   spotify_uid: z.string().nullable().optional(),
   apple_music_uid: z.string().nullable().optional(),
   youtube_uid: z.string().nullable().optional(),
@@ -45,7 +44,6 @@ const createArtistSchema = z.object({
   name: z.string().min(1).max(200),
   isni: z.string().nullable().optional(),
   image_path: z.string().nullable().optional(),
-  rating: ratingField,
   spotify_uid: z.string().nullable().optional(),
   apple_music_uid: z.string().nullable().optional(),
   youtube_uid: z.string().nullable().optional(),
@@ -61,7 +59,6 @@ const createAlbumSchema = z.object({
   ean: z.string().nullable().optional(),
   image_path: z.string().nullable().optional(),
   release_date: z.string().nullable().optional(),
-  rating: ratingField,
   spotify_uid: z.string().nullable().optional(),
   apple_music_uid: z.string().nullable().optional(),
   youtube_uid: z.string().nullable().optional(),
@@ -404,7 +401,6 @@ export const registry: EntityRouteConfig[] = [
     defaultOrder: "desc",
     sortableColumns: {
       name: songs.name,
-      rating: songs.rating,
       release_date: songs.release_date,
       created_at: songs.created_at,
     },
@@ -430,7 +426,6 @@ export const registry: EntityRouteConfig[] = [
     defaultOrder: "desc",
     sortableColumns: {
       name: artists.name,
-      rating: artists.rating,
       created_at: artists.created_at,
     },
     contextColumnValue: "my_music",
@@ -453,7 +448,6 @@ export const registry: EntityRouteConfig[] = [
     defaultOrder: "desc",
     sortableColumns: {
       name: albums.name,
-      rating: albums.rating,
       release_date: albums.release_date,
       created_at: albums.created_at,
     },
@@ -478,7 +472,6 @@ export const registry: EntityRouteConfig[] = [
     defaultOrder: "desc",
     sortableColumns: {
       name: songs.name,
-      rating: songs.rating,
       release_date: songs.release_date,
       created_at: songs.created_at,
     },
@@ -504,7 +497,6 @@ export const registry: EntityRouteConfig[] = [
     defaultOrder: "desc",
     sortableColumns: {
       name: artists.name,
-      rating: artists.rating,
       created_at: artists.created_at,
     },
     contextColumnValue: "lab",
@@ -527,7 +519,6 @@ export const registry: EntityRouteConfig[] = [
     defaultOrder: "desc",
     sortableColumns: {
       name: albums.name,
-      rating: albums.rating,
       release_date: albums.release_date,
       created_at: albums.created_at,
     },

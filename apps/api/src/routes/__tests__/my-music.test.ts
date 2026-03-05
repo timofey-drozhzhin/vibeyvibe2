@@ -54,14 +54,12 @@ describe("My Music Songs", () => {
           name: `Test Song ${ts}`,
           isrc,
           releaseDate: "2024-01-15",
-          rating: 7,
         })
       );
       expect(res.status).toBe(201);
       const data = await res.json();
       expect(data.name).toBe(`Test Song ${ts}`);
       expect(data.isrc).toBe(isrc);
-      expect(data.rating).toBe(7);
       expect(data.id).toBeDefined();
       expect(data.archived).toBe(false);
       createdSongId = data.id;
@@ -75,7 +73,6 @@ describe("My Music Songs", () => {
       expect(res.status).toBe(201);
       const data = await res.json();
       expect(data.name).toBe(`Minimal Song ${ts}`);
-      expect(data.rating).toBe(0);
     });
 
     it("returns 400 for empty name", async () => {
@@ -89,7 +86,7 @@ describe("My Music Songs", () => {
     it("returns 400 for missing name", async () => {
       const res = await app.request(
         "/api/my-music/songs",
-        json({ rating: 5 })
+        json({ })
       );
       expect(res.status).toBe(400);
     });
@@ -102,21 +99,6 @@ describe("My Music Songs", () => {
       expect(res.status).toBe(400);
     });
 
-    it("returns 400 for rating above 10", async () => {
-      const res = await app.request(
-        "/api/my-music/songs",
-        json({ name: "Bad Rating", rating: 15 })
-      );
-      expect(res.status).toBe(400);
-    });
-
-    it("returns 400 for rating below 0", async () => {
-      const res = await app.request(
-        "/api/my-music/songs",
-        json({ name: "Bad Rating", rating: -1 })
-      );
-      expect(res.status).toBe(400);
-    });
   });
 
   describe("GET /api/my-music/songs", () => {
@@ -190,16 +172,6 @@ describe("My Music Songs", () => {
       expect(data.name).toBe(`Updated Song ${ts}`);
     });
 
-    it("updates song rating", async () => {
-      const res = await app.request(
-        `/api/my-music/songs/${createdSongId}`,
-        jsonPut({ rating: 9 })
-      );
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.rating).toBe(9);
-    });
-
     it("archives a song", async () => {
       const res = await app.request(
         `/api/my-music/songs/${createdSongId}`,
@@ -243,7 +215,6 @@ describe("My Music Artists", () => {
         json({
           name: `Test Artist ${ts}`,
           isni,
-          rating: 8,
         })
       );
       expect(res.status).toBe(201);
@@ -350,7 +321,6 @@ describe("My Music Albums", () => {
           name: `Test Album ${ts}`,
           ean,
           releaseDate: "2024-06-01",
-          rating: 6,
         })
       );
       expect(res.status).toBe(201);
@@ -446,7 +416,7 @@ describe("My Music Relationships", () => {
   it("sets up test song, artist, and album", async () => {
     const songRes = await app.request(
       "/api/my-music/songs",
-      json({ name: `Rel Song ${ts}`, rating: 5 })
+      json({ name: `Rel Song ${ts}` })
     );
     const artistRes = await app.request(
       "/api/my-music/artists",

@@ -205,11 +205,6 @@ const songFields = (storageDir: string): FieldDef[] => [
     type: "date",
   },
   {
-    key: "rating",
-    label: "Rating",
-    type: "rating",
-  },
-  {
     key: "image_path",
     label: "Image",
     type: "image",
@@ -247,7 +242,6 @@ const songRelationships: RelationshipDef[] = [
     pivotTable: "artist_songs",
     columns: [
       { key: "name", label: "Name", type: "text" },
-      { key: "rating", label: "Rating", type: "rating" },
     ],
   },
   {
@@ -260,7 +254,6 @@ const songRelationships: RelationshipDef[] = [
     columns: [
       { key: "name", label: "Name", type: "text" },
       { key: "release_date", label: "Release Date", type: "date" },
-      { key: "rating", label: "Rating", type: "rating" },
     ],
   },
   {
@@ -320,7 +313,6 @@ const artistRelationships: RelationshipDef[] = [
     pivotTable: "artist_songs",
     columns: [
       { key: "name", label: "Name", type: "text" },
-      { key: "rating", label: "Rating", type: "rating" },
     ],
   },
 ];
@@ -335,7 +327,6 @@ const albumRelationships: RelationshipDef[] = [
     pivotTable: "album_songs",
     columns: [
       { key: "name", label: "Name", type: "text" },
-      { key: "rating", label: "Rating", type: "rating" },
     ],
   },
 ];
@@ -345,11 +336,6 @@ const artistFields = (storageDir: string): FieldDef[] => [
     key: "isni",
     label: "ISNI",
     type: "text",
-  },
-  {
-    key: "rating",
-    label: "Rating",
-    type: "rating",
   },
   {
     key: "image_path",
@@ -392,11 +378,6 @@ const albumFields = (storageDir: string): FieldDef[] => [
     type: "date",
   },
   {
-    key: "rating",
-    label: "Rating",
-    type: "rating",
-  },
-  {
     key: "image_path",
     label: "Image",
     type: "image",
@@ -433,8 +414,6 @@ const songSortPresets: SortPresetDef[] = [
   { label: "Added: Oldest", field: "created_at", order: "asc" },
   { label: "Released: Newest", field: "release_date", order: "desc" },
   { label: "Released: Oldest", field: "release_date", order: "asc" },
-  { label: "Most Liked", field: "rating", order: "desc" },
-  { label: "Least Liked", field: "rating", order: "asc" },
 ];
 
 const albumSortPresets: SortPresetDef[] = [
@@ -442,15 +421,11 @@ const albumSortPresets: SortPresetDef[] = [
   { label: "Added: Oldest", field: "created_at", order: "asc" },
   { label: "Released: Newest", field: "release_date", order: "desc" },
   { label: "Released: Oldest", field: "release_date", order: "asc" },
-  { label: "Most Liked", field: "rating", order: "desc" },
-  { label: "Least Liked", field: "rating", order: "asc" },
 ];
 
 const artistSortPresets: SortPresetDef[] = [
   { label: "Added: Newest", field: "created_at", order: "desc" },
   { label: "Added: Oldest", field: "created_at", order: "asc" },
-  { label: "Most Liked", field: "rating", order: "desc" },
-  { label: "Least Liked", field: "rating", order: "asc" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -475,8 +450,6 @@ export const entityRegistry: EntityDef[] = [
       "name",
       "artists",
       "release_date",
-      "rating",
-
       "created_at",
     ],
     asideFields: [
@@ -504,7 +477,6 @@ export const entityRegistry: EntityDef[] = [
     listColumns: [
       "image_path",
       "name",
-      "rating",
       "created_at",
     ],
     asideFields: [
@@ -534,7 +506,6 @@ export const entityRegistry: EntityDef[] = [
       "name",
       "artists",
       "release_date",
-      "rating",
       "created_at",
     ],
     asideFields: [
@@ -564,8 +535,6 @@ export const entityRegistry: EntityDef[] = [
       "name",
       "artists",
       "release_date",
-      "rating",
-
       "created_at",
     ],
     asideFields: [
@@ -593,7 +562,6 @@ export const entityRegistry: EntityDef[] = [
     listColumns: [
       "image_path",
       "name",
-      "rating",
       "created_at",
     ],
     asideFields: [
@@ -623,7 +591,6 @@ export const entityRegistry: EntityDef[] = [
       "name",
       "artists",
       "release_date",
-      "rating",
       "created_at",
     ],
     asideFields: [
