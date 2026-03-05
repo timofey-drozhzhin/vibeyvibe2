@@ -27,6 +27,8 @@ const envSchema = z.object({
   VIBES_SUNO_PROMPT_OPENROUTER_MODEL: optionalString,
   PROFILE_GENERATION_OPENROUTER_MODELS: optionalString,
   OPENROUTER_MODELS_AUTOPROCESS: optionalString,
+  SPOTIFY_CLIENT_ID: optionalString,
+  SPOTIFY_CLIENT_SECRET: optionalString,
 });
 
 export type Env = z.infer<typeof envSchema>;

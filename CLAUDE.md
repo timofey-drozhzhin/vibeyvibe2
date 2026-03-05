@@ -237,11 +237,28 @@ All responses include secure headers via Hono's `secureHeaders()` middleware.
 
 ## Spotify Import Service
 
-The Spotify metadata extraction service (`apps/api/src/services/spotify/index.ts`) uses the `spotify-url-info` library to scrape public Spotify embed pages and extract track metadata without requiring Spotify API credentials. Type declarations for the library are in `apps/api/src/types/spotify-url-info.d.ts`.
+The Spotify metadata extraction service (`apps/api/src/services/spotify/`) uses the official Spotify Web API as the primary data source, with the `spotify-url-info` scraping library as a fallback. The service is split into multiple files:
+
+```
+services/spotify/
+  index.ts               # Orchestrator: strategy selection + fallback
+  types.ts               # Shared types (SpotifyTrack, SpotifyArtist, SpotifyImportResult) + detectSpotifyType
+  web-api.ts             # Official Spotify Web API client (Client Credentials flow)
+  scraper.ts             # spotify-url-info scraping fallback
+  token-manager.ts       # Access token cache with TTL (60-second expiry buffer)
+```
+
+### Strategy
+When `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` are set in `.env`, the official Web API is used. On any failure (auth error, rate limit, network issue), it falls back to the scraper with a `console.warn`. When credentials are not set, the scraper is used directly.
 
 ### Public API
 - `fetchSpotifyData(url)` -- Fetches metadata for a Spotify URL (track, album, or playlist). Returns a `SpotifyImportResult` with an array of normalized `SpotifyTrack` objects containing name, artists, album, releaseDate, ISRC, imageUrl, and spotifyId.
 - `detectSpotifyType(url)` -- Detects whether a URL points to a track, album, playlist, or is unknown.
+
+### Configuration
+Optional environment variables in `.env`:
+- `SPOTIFY_CLIENT_ID` -- Spotify app client ID (from developer.spotify.com)
+- `SPOTIFY_CLIENT_SECRET` -- Spotify app client secret
 
 ### Import Flow
 1. User enters a Spotify URL on the Import page (`/lab/import`)

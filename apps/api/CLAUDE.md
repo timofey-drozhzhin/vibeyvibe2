@@ -45,7 +45,11 @@ src/
 │   ├── openrouter/
 │   │   └── index.ts      # OpenRouter chat completion API wrapper (edge-compatible)
 │   ├── spotify/
-│   │   └── index.ts      # Spotify metadata extraction (uses spotify-url-info library)
+│   │   ├── index.ts      # Orchestrator: Web API primary, scraper fallback
+│   │   ├── types.ts      # Shared types + detectSpotifyType
+│   │   ├── web-api.ts    # Official Spotify Web API client
+│   │   ├── scraper.ts    # spotify-url-info scraping fallback
+│   │   └── token-manager.ts # Client Credentials token cache
 │   └── storage/
 │       ├── index.ts      # StorageClient interface + factory (createStorageClient)
 │       ├── local.ts      # LocalStorageClient: filesystem-based storage for development
@@ -456,12 +460,39 @@ Returns `{ path: string, url: string }` (HTTP 201). Files are stored with timest
 
 ## Spotify Import Service
 
-The Spotify metadata extraction service (`services/spotify/index.ts`) uses the `spotify-url-info` library to scrape public Spotify embed pages and extract track metadata without requiring Spotify API credentials.
+The Spotify metadata extraction service (`services/spotify/`) uses the official Spotify Web API as the primary data source, with the `spotify-url-info` scraping library as a fallback.
+
+### Architecture
+
+```
+services/spotify/
+  index.ts               # Orchestrator: strategy selection + fallback, re-exports public API
+  types.ts               # Shared types (SpotifyTrack, SpotifyArtist, SpotifyImportResult) + detectSpotifyType
+  web-api.ts             # Official Spotify Web API client (Client Credentials flow)
+  scraper.ts             # spotify-url-info scraping fallback
+  token-manager.ts       # Access token cache with TTL (60-second expiry buffer)
+```
+
+### Strategy
+
+When `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` are configured, the official Web API is tried first. On any failure, it falls back to the scraper with a `console.warn`. When credentials are not set, the scraper is used directly.
+
+The Web API implementation:
+- **Track**: `GET /v1/tracks/{id}` — full data including ISRC and album in one call
+- **Album**: `GET /v1/albums/{id}` + `GET /v1/tracks?ids={ids}` batch to get ISRCs
+- **Playlist**: `GET /v1/playlists/{id}` with pagination (up to 500 tracks)
+- **Short URLs**: `spotify.link` URLs are resolved via redirect before processing
 
 ### Public API
 
 - `fetchSpotifyData(url: string): Promise<SpotifyImportResult>` -- Fetches metadata for a Spotify URL (track, album, or playlist). Returns normalized `SpotifyTrack` objects with name, artists, album, releaseDate, ISRC, imageUrl, and spotifyId.
 - `detectSpotifyType(url: string): "track" | "album" | "playlist" | "unknown"` -- Detects the Spotify resource type from a URL path.
+
+### Configuration
+
+Optional environment variables in `.env`:
+- `SPOTIFY_CLIENT_ID` -- Spotify app client ID (from developer.spotify.com)
+- `SPOTIFY_CLIENT_SECRET` -- Spotify app client secret
 
 ### Import Routes (extensions/lab-import.ts)
 
@@ -574,3 +605,5 @@ All env variables are validated by the Zod schema in `src/env.ts`. No defaults -
 | OPENROUTER_API_KEY | No | OpenRouter API key (enables AI generation) |
 | VIBES_SUNO_PROMPT_OPENROUTER_MODEL | No | OpenRouter model ID for Suno prompt generation |
 | PROFILE_GENERATION_OPENROUTER_MODEL | No | OpenRouter model ID for profile generation |
+| SPOTIFY_CLIENT_ID | No | Spotify app client ID (enables official Web API) |
+| SPOTIFY_CLIENT_SECRET | No | Spotify app client secret |
