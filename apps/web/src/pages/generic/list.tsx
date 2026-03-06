@@ -277,17 +277,27 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
     <Stack gap="lg">
       {/* Header */}
       <Group justify="space-between">
-        <Group gap="sm" align="baseline">
-          <Title order={1} fw={600} fz={30} c="white">{entity.pluralName}</Title>
+        <Title order={1} fw={600} fz={30} c="white">{entity.pluralName}</Title>
+        <Group gap="sm">
           {!isInitialLoading && total > 0 && (
-            <Text size="sm" c="dimmed">
-              {total}
-            </Text>
+            <Center
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                backgroundColor: "transparent",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
+            >
+              <Text fz={12} fw={500} c="rgb(180, 180, 185)">
+                {total}
+              </Text>
+            </Center>
           )}
+          <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
+            New
+          </Button>
         </Group>
-        <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-          New
-        </Button>
       </Group>
 
       {/* Toolbar — pill-style filter buttons */}
@@ -348,22 +358,17 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
 
         {/* Liked toggle — icon-only circle */}
         <ActionIcon
-          variant={likedFilter ? "filled" : "default"}
-          color={likedFilter ? "red" : "gray"}
+          variant="default"
           size={40}
           radius="xl"
           onClick={() => setLikedFilter((v) => !v)}
-          style={
-            likedFilter
-              ? undefined
-              : {
-                  backgroundColor: "transparent",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                }
-          }
+          style={{
+            backgroundColor: likedFilter ? "white" : "rgb(37, 37, 41)",
+            border: likedFilter ? "1px solid white" : "none",
+          }}
         >
           {likedFilter ? (
-            <IconHeartFilled size={18} />
+            <IconHeart size={18} color="black" />
           ) : (
             <IconHeart size={18} />
           )}
@@ -533,7 +538,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
                     <Menu.Target>
                       <ActionIcon
                         variant="filled"
-                        className="dots-menu"
+                        className="row-action"
                         size={40}
                         radius="xl"
                         style={{ backgroundColor: "rgb(37, 37, 41)", border: "none" }}

@@ -69,16 +69,16 @@ body {
   background-color: var(--mantine-color-dark-5);
 }
 
-.song-card-row .dots-menu,
-.card-row .dots-menu,
-.artist-card-item .dots-menu {
+.song-card-row .row-action,
+.card-row .row-action,
+.artist-card-item .row-action {
   opacity: 0.35;
   transition: opacity 150ms ease;
 }
 
-.song-card-row:hover .dots-menu,
-.card-row:hover .dots-menu,
-.artist-card-item:hover .dots-menu {
+.song-card-row:hover .row-action,
+.card-row:hover .row-action,
+.artist-card-item:hover .row-action {
   opacity: 1;
 }
 
@@ -90,5 +90,10 @@ body {
 
 /* Artist card list — Suno-style: no borders */
 .artist-card-item {
+  transition: background-color 150ms ease;
   border-radius: var(--mantine-radius-md);
+}
+
+.artist-card-item:hover {
+  background-color: var(--mantine-color-dark-5);
 }

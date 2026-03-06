@@ -128,6 +128,7 @@ export const SongCardRow = ({
               <Group gap={6} mt={8}>
                 <ActionIcon
                   variant="filled"
+                  className="row-action"
                   size={32}
                   radius="xl"
                   style={{ backgroundColor: darkPillBg, border: "none" }}
@@ -161,7 +162,7 @@ export const SongCardRow = ({
                 <Menu.Target>
                   <ActionIcon
                     variant="filled"
-                    className="dots-menu"
+                    className="row-action"
                     size={40}
                     radius="xl"
                     style={{ backgroundColor: darkPillBg, border: "none" }}

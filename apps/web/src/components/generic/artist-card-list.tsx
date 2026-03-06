@@ -7,7 +7,6 @@ import {
   IconBrandSpotify,
 } from "@tabler/icons-react";
 import { API_URL } from "../../config/constants.js";
-import { formatDate } from "../../utils/format-date.js";
 
 /** Circular thumbnail — same height as song-card-row */
 const THUMB = 72;
@@ -95,6 +94,7 @@ export const ArtistCardList = ({
             <Group gap={6} mt={8}>
               <ActionIcon
                 variant="filled"
+                className="row-action"
                 size={32}
                 radius="xl"
                 style={{ backgroundColor: darkPillBg, border: "none" }}
@@ -109,6 +109,7 @@ export const ArtistCardList = ({
               {record.spotify_uid && (
                 <ActionIcon
                   variant="filled"
+                  className="row-action"
                   size={32}
                   radius="xl"
                   style={{ backgroundColor: darkPillBg, border: "none" }}
@@ -125,21 +126,11 @@ export const ArtistCardList = ({
 
           {/* Right side: date + dots menu */}
           <Group gap="lg" wrap="nowrap" style={{ flexShrink: 0 }}>
-            {record.created_at && (
-              <Text
-                fz={12}
-                c="rgb(106, 106, 114)"
-                style={{ whiteSpace: "nowrap" }}
-              >
-                {formatDate(record.created_at)}
-              </Text>
-            )}
-
-            <Menu position="bottom-end" withArrow={false}>
+<Menu position="bottom-end" withArrow={false}>
               <Menu.Target>
                 <ActionIcon
                   variant="filled"
-                  className="dots-menu"
+                  className="row-action"
                   size={40}
                   radius="xl"
                   style={{ backgroundColor: darkPillBg, border: "none" }}
