@@ -17,7 +17,7 @@ export const AudioPlayer = ({ path, label }: AudioPlayerProps) => {
       <Box
         p="md"
         style={{
-          border: "1px dashed var(--mantine-color-dark-4)",
+          border: "1px dashed var(--mantine-color-dark-7)",
           borderRadius: "var(--mantine-radius-sm)",
         }}
       >
@@ -35,9 +35,9 @@ export const AudioPlayer = ({ path, label }: AudioPlayerProps) => {
     <Box
       p="sm"
       style={{
-        border: "1px solid var(--mantine-color-dark-4)",
+        border: "1px solid var(--mantine-color-dark-7)",
         borderRadius: "var(--mantine-radius-sm)",
-        backgroundColor: "var(--mantine-color-dark-6)",
+        backgroundColor: "var(--mantine-color-dark-8)",
       }}
     >
       <Text size="sm" fw={500} mb="xs" style={{ display: "flex", alignItems: "center", gap: 6 }}>

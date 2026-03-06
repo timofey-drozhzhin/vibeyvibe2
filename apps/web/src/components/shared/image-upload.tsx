@@ -115,8 +115,8 @@ export const ImageUpload = ({
               justifyContent: "center",
               gap: 8,
               borderRadius: "var(--mantine-radius-md)",
-              border: "1px dashed var(--mantine-color-dark-4)",
-              backgroundColor: "var(--mantine-color-dark-6)",
+              border: "1px dashed var(--mantine-color-dark-7)",
+              backgroundColor: "var(--mantine-color-dark-8)",
             }}
           >
             {uploading ? (

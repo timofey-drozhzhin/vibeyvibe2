@@ -21,7 +21,7 @@
 
 /* Suno-inspired dark aesthetic */
 body {
-  background-color: var(--mantine-color-dark-7);
+  background-color: var(--mantine-color-dark-9);
 }
 
 ::-webkit-scrollbar {
@@ -34,12 +34,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--mantine-color-dark-4);
+  background: var(--mantine-color-dark-7);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--mantine-color-dark-3);
+  background: var(--mantine-color-dark-7);
 }
 
 /* Card-row list items */
@@ -47,16 +47,16 @@ body {
   display: block;
   width: 100%;
   text-align: left;
-  border-bottom: 1px solid var(--mantine-color-dark-3);
+  border-bottom: 1px solid var(--mantine-color-dark-8);
   transition: background-color 150ms ease;
 }
 
 .card-row:hover {
-  background-color: var(--mantine-color-dark-5);
+  background-color: var(--mantine-color-dark-8);
 }
 
 .card-row:first-child {
-  border-top: 1px solid var(--mantine-color-dark-3);
+  border-top: 1px solid var(--mantine-color-dark-8);
 }
 
 /* Song card-row — Suno-style: no borders, rounded hover */
@@ -66,7 +66,7 @@ body {
 }
 
 .song-card-row:hover {
-  background-color: var(--mantine-color-dark-5);
+  background-color: var(--mantine-color-dark-8);
 }
 
 .song-card-row .row-action,
@@ -95,7 +95,7 @@ body {
 }
 
 .artist-card-item:hover {
-  background-color: var(--mantine-color-dark-5);
+  background-color: var(--mantine-color-dark-8);
 }
 
 /* Suno-style hover: dark pill elements lighten on hover */
@@ -104,7 +104,7 @@ body {
 }
 
 .dark-pill:hover {
-  background-color: rgb(52, 52, 58) !important;
+  background-color: var(--mantine-color-dark-7) !important;
 }
 
 .dark-pill-input input {
@@ -113,9 +113,9 @@ body {
 
 .dark-pill-input input:hover,
 .dark-pill-input input:focus {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: var(--mantine-color-dark-7) !important;
 }
 
 .row-action:hover {
-  background-color: rgb(52, 52, 58) !important;
+  background-color: var(--mantine-color-dark-7) !important;
 }

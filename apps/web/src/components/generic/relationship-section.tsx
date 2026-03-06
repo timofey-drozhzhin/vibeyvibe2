@@ -592,7 +592,7 @@ export const RelationshipSection = ({
           <ScrollArea h={400}>
             <Stack gap="xs">
               {viewModalData.map((entry: any, idx: number) => (
-                <div key={idx} style={{ borderBottom: idx < viewModalData.length - 1 ? '1px solid var(--mantine-color-dark-4)' : undefined, paddingBottom: 8 }}>
+                <div key={idx} style={{ borderBottom: idx < viewModalData.length - 1 ? '1px solid var(--mantine-color-dark-7)' : undefined, paddingBottom: 8 }}>
                   <Group gap="xs" mb={4}>
                     <Text size="sm" fw={600}>{entry.name || `Entry ${idx + 1}`}</Text>
                     {entry.category && <Badge size="xs">{entry.category}</Badge>}
@@ -619,7 +619,7 @@ export const RelationshipSection = ({
             <ScrollArea h={400}>
               <Stack gap="sm">
                 {editModalData.entries.map((entry: any, idx: number) => (
-                  <div key={idx} style={{ borderBottom: idx < editModalData.entries.length - 1 ? '1px solid var(--mantine-color-dark-4)' : undefined, paddingBottom: 8 }}>
+                  <div key={idx} style={{ borderBottom: idx < editModalData.entries.length - 1 ? '1px solid var(--mantine-color-dark-7)' : undefined, paddingBottom: 8 }}>
                     <Group gap="xs" mb={4}>
                       <Text size="sm" fw={600}>{entry.name || `Entry ${idx + 1}`}</Text>
                       {entry.category && <Badge size="xs">{entry.category}</Badge>}

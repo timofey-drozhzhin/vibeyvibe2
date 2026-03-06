@@ -433,7 +433,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
                       flexShrink: 0,
                       borderRadius: "var(--mantine-radius-sm)",
                       overflow: "hidden",
-                      background: "var(--mantine-color-dark-5)",
+                      background: "var(--mantine-color-dark-8)",
                     }}
                   >
                     {record[imageCol] ? (

@@ -99,8 +99,8 @@ export const MediaEmbeds = ({
               style={{
                 display: "block",
                 borderRadius: 12,
-                border: "1px solid var(--mantine-color-dark-4)",
-                backgroundColor: "var(--mantine-color-dark-6)",
+                border: "1px solid var(--mantine-color-dark-7)",
+                backgroundColor: "var(--mantine-color-dark-8)",
                 padding: "12px 16px",
                 textDecoration: "none",
                 cursor: "pointer",
@@ -226,8 +226,8 @@ const PlatformEmbed = ({
       style={{
         cursor: "pointer",
         borderRadius: 12,
-        border: "1px dashed var(--mantine-color-dark-4)",
-        backgroundColor: "var(--mantine-color-dark-6)",
+        border: "1px dashed var(--mantine-color-dark-7)",
+        backgroundColor: "var(--mantine-color-dark-8)",
         padding: "12px 16px",
       }}
     >

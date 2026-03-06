@@ -3,9 +3,7 @@ import { Group, Box, Text, ActionIcon, Menu, Stack, Center, Badge } from "@manti
 import { IconHeart, IconHeartFilled, IconDots, IconEye } from "@tabler/icons-react";
 import { API_URL } from "../../config/constants.js";
 import { formatDate } from "../../utils/format-date.js";
-import { darkPillBg, pillIconColor, likedIconColor } from "./card-styles.js";
 
-/** Square thumbnail */
 const THUMB = 72;
 
 interface SongCardRowProps {
@@ -29,17 +27,17 @@ export const SongCardRow = ({
 
       return (
         <Box key={record.id} className="song-card-row">
-          <Group wrap="nowrap" gap={16} py={12} px={12} align="center">
-            {/* Square thumbnail — 72×72, 12px radius, clickable */}
+          <Group wrap="nowrap" gap="md" py="sm" px="sm" align="center">
+            {/* Square thumbnail */}
             <Box
+              bg="dark.8"
               onClick={() => onNavigate(resource, record.id)}
               style={{
                 width: THUMB,
                 height: THUMB,
                 flexShrink: 0,
-                borderRadius: 12,
+                borderRadius: "var(--mantine-radius-md)",
                 overflow: "hidden",
-                background: "var(--mantine-color-dark-5)",
                 cursor: "pointer",
               }}
             >
@@ -56,7 +54,7 @@ export const SongCardRow = ({
                 />
               ) : (
                 <Center w={THUMB} h={THUMB}>
-                  <Text size="10px" c="dimmed">
+                  <Text fz="xs" c="dimmed">
                     No img
                   </Text>
                 </Center>
@@ -65,13 +63,11 @@ export const SongCardRow = ({
 
             {/* Content area */}
             <Box style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-              {/* Title (clickable link) + Artists + Release year inline */}
-              <Group gap={8} wrap="nowrap">
+              {/* Row 1: Title + Release year label */}
+              <Group gap="xs" wrap="nowrap">
                 <Text
                   fw={500}
-                  fz={14}
-                  lh="16px"
-                  c="rgb(247, 244, 239)"
+                  fz="md"
                   truncate
                   style={{ flexShrink: 0, cursor: "pointer" }}
                   className="clickable-name"
@@ -79,92 +75,77 @@ export const SongCardRow = ({
                 >
                   {record.name || ""}
                 </Text>
-                {artistsList.length > 0 && (
-                  <Group gap={4} wrap="nowrap" style={{ overflow: "hidden" }}>
-                    {artistsList.map((a) => (
-                      <Badge
+                {record.release_date && (
+                  <Badge
+                    variant="light"
+                    size="lg"
+                    color="gray"
+                    tt="none"
+                    fw={400}
+                    style={{ flexShrink: 0 }}
+                  >
+                    {new Date(record.release_date).getFullYear()}
+                  </Badge>
+                )}
+              </Group>
+
+              {/* Row 2: Artist names */}
+              {artistsList.length > 0 && (
+                <Group gap={4} wrap="nowrap" mt="xs" style={{ overflow: "hidden" }}>
+                  <Text fz="sm" c="dimmed" truncate>
+                    {artistsList.map((a, i) => (
+                      <Text
                         key={a.id}
                         component="a"
                         href={`/${artistResource}/show/${a.id}`}
-                        variant="filled"
-                        className="dark-pill row-action"
-                        size="sm"
-                        radius="sm"
-                        style={{
-                          backgroundColor: darkPillBg,
-                          color: pillIconColor,
-                          fontSize: 12,
-                          fontWeight: 400,
-                          textTransform: "none",
-                          textDecoration: "none",
-                          cursor: "pointer",
-                          flexShrink: 0,
-                        }}
+                        fz="sm"
+                        c="dimmed"
+                        className="clickable-name"
+                        style={{ textDecoration: "none", cursor: "pointer" }}
                         onClick={(e: React.MouseEvent) => {
                           e.preventDefault();
                           e.stopPropagation();
                           onNavigate(artistResource, a.id);
                         }}
                       >
-                        {a.name}
-                      </Badge>
+                        {a.name}{i < artistsList.length - 1 ? ", " : ""}
+                      </Text>
                     ))}
-                  </Group>
-                )}
-                {record.release_date && (
-                  <Text
-                    fz={12}
-                    fw={400}
-                    c="rgb(106, 106, 114)"
-                    style={{ flexShrink: 0, whiteSpace: "nowrap" }}
-                  >
-                    {new Date(record.release_date).getFullYear()}
                   </Text>
-                )}
-              </Group>
-
-              {/* Action icons — Suno-style dark pills, visual only */}
-              <Group gap={6} mt={8}>
-                <ActionIcon
-                  variant="filled"
-                  className="row-action"
-                  size={32}
-                  radius="xl"
-                  style={{ backgroundColor: darkPillBg, border: "none" }}
-                  onClick={(e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    onToggleLike?.(resource, record.id);
-                  }}
-                >
-                  {record.liked ? (
-                    <IconHeartFilled size={16} color={likedIconColor} />
-                  ) : (
-                    <IconHeart size={16} color={pillIconColor} />
-                  )}
-                </ActionIcon>
-              </Group>
+                </Group>
+              )}
             </Box>
 
-            {/* Right side: date + dots menu */}
-            <Group gap="lg" wrap="nowrap" style={{ flexShrink: 0 }}>
+            {/* Right side: date + like + dots menu */}
+            <Group gap="sm" wrap="nowrap" style={{ flexShrink: 0 }}>
               {record.created_at && (
-                <Text
-                  fz={12}
-                  c="rgb(106, 106, 114)"
-                  style={{ whiteSpace: "nowrap" }}
-                >
+                <Text fz="sm" c="dimmed" style={{ whiteSpace: "nowrap" }}>
                   {formatDate(record.created_at)}
                 </Text>
               )}
 
+              <ActionIcon
+                variant="default"
+                className="row-action"
+                size="xl"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  onToggleLike?.(resource, record.id);
+                }}
+              >
+                {record.liked ? (
+                  <IconHeartFilled size={16} />
+                ) : (
+                  <IconHeart size={16} />
+                )}
+              </ActionIcon>
+
               <Menu position="bottom-end" withArrow={false}>
                 <Menu.Target>
                   <ActionIcon
-                    variant="filled"
+                    variant="default"
                     className="row-action"
-                    size={40}
-                    radius="xl"
-                    style={{ backgroundColor: darkPillBg, border: "none" }}
+                    size="xl"
                   >
                     <IconDots size={16} />
                   </ActionIcon>

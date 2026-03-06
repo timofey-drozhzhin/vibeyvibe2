@@ -128,11 +128,11 @@ export const AudioUpload = ({
           p="xl"
           style={{
             cursor: "pointer",
-            border: `1px dashed var(--mantine-color-${dragging ? "violet-6" : "dark-4"})`,
+            border: `1px dashed var(--mantine-color-${dragging ? "violet-6" : "dark-7"})`,
             borderRadius: "var(--mantine-radius-sm)",
             backgroundColor: dragging
               ? "var(--mantine-color-violet-light)"
-              : "var(--mantine-color-dark-6)",
+              : "var(--mantine-color-dark-8)",
             transition: "border-color 0.2s, background-color 0.2s",
           }}
         >
@@ -161,11 +161,11 @@ export const AudioUpload = ({
         {...dragHandlers}
         p="sm"
         style={{
-          border: `1px solid var(--mantine-color-${dragging ? "violet-6" : "dark-4"})`,
+          border: `1px solid var(--mantine-color-${dragging ? "violet-6" : "dark-7"})`,
           borderRadius: "var(--mantine-radius-sm)",
           backgroundColor: dragging
             ? "var(--mantine-color-violet-light)"
-            : "var(--mantine-color-dark-6)",
+            : "var(--mantine-color-dark-8)",
           transition: "border-color 0.2s, background-color 0.2s",
         }}
       >

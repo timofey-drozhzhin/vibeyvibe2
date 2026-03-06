@@ -47,7 +47,7 @@ export const ArtistCardList = ({
                 borderRadius: "50%",
                 overflow: "hidden",
                 flexShrink: 0,
-                background: "var(--mantine-color-dark-5)",
+                background: "var(--mantine-color-dark-8)",
                 cursor: "pointer",
               }}
             >

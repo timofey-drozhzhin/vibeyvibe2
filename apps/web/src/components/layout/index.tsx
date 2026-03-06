@@ -10,7 +10,7 @@ export const Layout = ({ children }: PropsWithChildren) => {
         flex={1}
         p="lg"
         style={{
-          backgroundColor: "var(--mantine-color-dark-7)",
+          backgroundColor: "var(--mantine-color-dark-9)",
           overflowY: "auto",
         }}
       >
