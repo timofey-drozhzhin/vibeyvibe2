@@ -9,10 +9,10 @@ import {
 } from "@tabler/icons-react";
 import { API_URL } from "../../config/constants.js";
 
-/** Circular thumbnail — same height as song-card-row */
+/** Square thumbnail */
 const THUMB = 72;
 
-interface ArtistCardListProps {
+interface AlbumCardListProps {
   records: any[];
   resource: string;
   imageCol: string | undefined;
@@ -22,13 +22,13 @@ interface ArtistCardListProps {
   onToggleLike: (resource: string, id: number) => void;
 }
 
-export const ArtistCardList = ({
+export const AlbumCardList = ({
   records,
   resource,
   imageCol,
   onNavigate,
   onToggleLike,
-}: ArtistCardListProps) => (
+}: AlbumCardListProps) => (
   <Box
     style={{
       display: "grid",
@@ -37,22 +37,25 @@ export const ArtistCardList = ({
     }}
   >
     {records.map((record: any) => {
-      const year = record.created_at
-        ? new Date(record.created_at).getFullYear()
+      const year = record.release_date
+        ? new Date(record.release_date).getFullYear()
         : null;
       const songCount: number | undefined = record.song_count;
+      const artistsList: { id: number; name: string }[] =
+        Array.isArray(record.artists) ? record.artists : [];
+      const artistResource = resource.replace(/\/[^/]+$/, "/artists");
 
       return (
         <Box key={record.id} className="artist-card-item">
           <Group wrap="nowrap" gap="md" py="sm" px="sm" align="center">
-            {/* Circular artist thumbnail — 72×72 */}
+            {/* Square album thumbnail — 72×72 */}
             {imageCol && (
               <Box
                 onClick={() => onNavigate(resource, record.id)}
                 style={{
                   width: THUMB,
                   height: THUMB,
-                  borderRadius: "50%",
+                  borderRadius: "var(--mantine-radius-md)",
                   overflow: "hidden",
                   flexShrink: 0,
                   background: "var(--mantine-color-dark-8)",
@@ -82,7 +85,7 @@ export const ArtistCardList = ({
 
             {/* Content area */}
             <Box style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-              {/* Row 1: Artist name + year badge */}
+              {/* Row 1: Album name + release year badge */}
               <Group gap="xs" wrap="nowrap">
                 <Text
                   fw={500}
@@ -108,12 +111,37 @@ export const ArtistCardList = ({
                 )}
               </Group>
 
-              {/* Row 2: Song count */}
-              {songCount !== undefined && (
-                <Text fz="sm" c="dimmed" mt="xs">
-                  {songCount} {songCount === 1 ? "song" : "songs"}
-                </Text>
-              )}
+              {/* Row 2: Artist names + song count */}
+              <Group gap={4} wrap="nowrap" mt="xs" style={{ overflow: "hidden" }}>
+                {artistsList.length > 0 ? (
+                  <Text fz="sm" c="dimmed" truncate>
+                    {artistsList.map((a, i) => (
+                      <Text
+                        key={a.id}
+                        component="a"
+                        href={`/${artistResource}/show/${a.id}`}
+                        fz="sm"
+                        c="dimmed"
+                        className="clickable-name"
+                        style={{ textDecoration: "none", cursor: "pointer" }}
+                        onClick={(e: React.MouseEvent) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onNavigate(artistResource, a.id);
+                        }}
+                      >
+                        {a.name}{i < artistsList.length - 1 ? ", " : ""}
+                      </Text>
+                    ))}
+                  </Text>
+                ) : null}
+                {songCount !== undefined && songCount > 0 && (
+                  <Text fz="sm" c="dimmed" style={{ flexShrink: 0 }}>
+                    {artistsList.length > 0 ? " \u00B7 " : ""}
+                    {songCount} {songCount === 1 ? "song" : "songs"}
+                  </Text>
+                )}
+              </Group>
             </Box>
 
             {/* Right side: spotify + heart + dots menu */}
@@ -124,7 +152,7 @@ export const ArtistCardList = ({
                   className="row-action dark-pill"
                   size="xl"
                   component="a"
-                  href={`https://open.spotify.com/artist/${record.spotify_uid}`}
+                  href={`https://open.spotify.com/album/${record.spotify_uid}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

@@ -130,6 +130,8 @@ export const RelationshipSection = ({
     return () => clearInterval(interval);
   }, [hasProcessingItems, stableRefresh, relationship.pollInterval]);
 
+  const isReadOnly = relationship.readOnly === true;
+
   // Check if this relationship has row actions or archivable
   const hasRowActions = (relationship.rowActions?.length ?? 0) > 0;
   const actionsColWidth = relationship.archivable || relationship.removeAction
@@ -408,7 +410,7 @@ export const RelationshipSection = ({
                       </Group>
                     );
                   })}
-                  {!relationship.hideAssign && (
+                  {!relationship.hideAssign && !isReadOnly && (
                     <Button
                       size="xs"
                       variant="light"
@@ -430,7 +432,7 @@ export const RelationshipSection = ({
                 </Group>
               ),
             }
-          : relationship.hideAssign
+          : (relationship.hideAssign || isReadOnly)
             ? {}
             : {
                 action: {
@@ -445,13 +447,13 @@ export const RelationshipSection = ({
               {relationship.columns.map((col) => (
                 <Table.Th key={col.key}>{col.label}</Table.Th>
               ))}
-              <Table.Th w={actionsColWidth}>Actions</Table.Th>
+              {!isReadOnly && <Table.Th w={actionsColWidth}>Actions</Table.Th>}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {items.length === 0 && (
               <Table.Tr>
-                <Table.Td colSpan={relationship.columns.length + 1}>
+                <Table.Td colSpan={relationship.columns.length + (isReadOnly ? 0 : 1)}>
                   <Text c="dimmed" ta="center" py="md">
                     No {relationship.label.toLowerCase()} yet.
                   </Text>
@@ -493,7 +495,7 @@ export const RelationshipSection = ({
                     )}
                   </Table.Td>
                 ))}
-                <Table.Td>
+                {!isReadOnly && <Table.Td>
                   <Group gap={4} wrap="nowrap">
                     {/* Row actions */}
                     {relationship.rowActions?.map((action, idx) => {
@@ -560,7 +562,7 @@ export const RelationshipSection = ({
                       </Tooltip>
                     )}
                   </Group>
-                </Table.Td>
+                </Table.Td>}
               </Table.Tr>
             ))}
           </Table.Tbody>

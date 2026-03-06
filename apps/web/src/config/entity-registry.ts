@@ -94,6 +94,8 @@ export interface RelationshipDef {
     type: "unlink" | "delete";
   };
   hideAssign?: boolean;
+  /** Read-only: hides assign button and all action columns */
+  readOnly?: boolean;
   /** Max items to display (rest hidden behind "View all") */
   maxItems?: number;
   /** Per-row action buttons */
@@ -153,7 +155,7 @@ export interface EntityDef {
   /** Predefined sort options shown in a dropdown on the list page */
   sortPresets?: SortPresetDef[];
   /** Layout mode for the list page. Defaults to "card-row". */
-  listLayout?: "card-row" | "card-grid" | "artist-card" | "song-row";
+  listLayout?: "card-row" | "card-grid" | "artist-card" | "album-card" | "song-row";
 }
 
 export interface ExtensionDef {
@@ -320,6 +322,17 @@ const artistRelationships: RelationshipDef[] = [
 ];
 
 const albumRelationships: RelationshipDef[] = [
+  {
+    type: "many-to-many",
+    target: "artists",
+    label: "Artists",
+    subResource: "artists",
+    assignFieldName: "artistId",
+    columns: [
+      { key: "name", label: "Name", type: "text" },
+    ],
+    readOnly: true,
+  },
   {
     type: "many-to-many",
     target: "songs",
@@ -520,6 +533,7 @@ export const entityRegistry: EntityDef[] = [
     ],
     allowDelete: true,
     sortPresets: albumSortPresets,
+    listLayout: "album-card",
   },
 
   // =========================================================================
@@ -607,6 +621,7 @@ export const entityRegistry: EntityDef[] = [
     ],
     allowDelete: true,
     sortPresets: albumSortPresets,
+    listLayout: "album-card",
   },
 
   // =========================================================================

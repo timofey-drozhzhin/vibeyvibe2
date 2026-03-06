@@ -281,9 +281,61 @@ async function albumListEnricher(db: any, rows: any[]) {
     }
   }
 
+  // Count songs per album
+  const countRows = await db
+    .select({
+      albumId: albumSongs.album_id,
+      songCount: sql<number>`COUNT(*)`,
+    })
+    .from(albumSongs)
+    .where(
+      sql`${albumSongs.album_id} IN (${sql.join(
+        albumIds.map((id: number) => sql`${id}`),
+        sql`, `
+      )})`
+    )
+    .groupBy(albumSongs.album_id);
+
+  const countMap: Record<number, number> = {};
+  for (const row of countRows) {
+    countMap[row.albumId] = row.songCount;
+  }
+
   return rows.map((album: any) => ({
     ...album,
     artists: artistMap[album.id] || [],
+    song_count: countMap[album.id] || 0,
+  }));
+}
+
+/**
+ * Batch-load song counts for an array of artist rows via the artistSongs pivot.
+ */
+async function artistListEnricher(db: any, rows: any[]) {
+  if (rows.length === 0) return rows;
+  const artistIds = rows.map((r: any) => r.id);
+  const countRows = await db
+    .select({
+      artistId: artistSongs.artist_id,
+      songCount: sql<number>`COUNT(*)`,
+    })
+    .from(artistSongs)
+    .where(
+      sql`${artistSongs.artist_id} IN (${sql.join(
+        artistIds.map((id: number) => sql`${id}`),
+        sql`, `
+      )})`
+    )
+    .groupBy(artistSongs.artist_id);
+
+  const countMap: Record<number, number> = {};
+  for (const row of countRows) {
+    countMap[row.artistId] = row.songCount;
+  }
+
+  return rows.map((artist: any) => ({
+    ...artist,
+    song_count: countMap[artist.id] || 0,
   }));
 }
 
@@ -306,14 +358,35 @@ async function artistDetailEnricher(db: any, entity: any) {
  * Load related songs for a single album detail view.
  */
 async function albumDetailEnricher(db: any, entity: any) {
-  const relatedSongs = await db
-    .select()
-    .from(songs)
-    .innerJoin(albumSongs, eq(albumSongs.song_id, songs.id))
-    .where(eq(albumSongs.album_id, entity.id));
+  const [relatedSongs, derivedArtists] = await Promise.all([
+    db
+      .select()
+      .from(songs)
+      .innerJoin(albumSongs, eq(albumSongs.song_id, songs.id))
+      .where(eq(albumSongs.album_id, entity.id)),
+    db
+      .select({
+        artistId: artists.id,
+        artistName: artists.name,
+        artistImagePath: artists.image_path,
+      })
+      .from(albumSongs)
+      .innerJoin(artistSongs, eq(artistSongs.song_id, albumSongs.song_id))
+      .innerJoin(artists, eq(artists.id, artistSongs.artist_id))
+      .where(eq(albumSongs.album_id, entity.id)),
+  ]);
+
+  // Deduplicate artists
+  const seen = new Set<number>();
+  const uniqueArtists = derivedArtists.filter((a: any) => {
+    if (seen.has(a.artistId)) return false;
+    seen.add(a.artistId);
+    return true;
+  }).map((a: any) => ({ id: a.artistId, name: a.artistName, image_path: a.artistImagePath }));
 
   return {
     songs: relatedSongs.map((r: any) => r.songs),
+    artists: uniqueArtists,
   };
 }
 
@@ -432,6 +505,7 @@ export const registry: EntityRouteConfig[] = [
       created_at: artists.created_at,
     },
     contextColumnValue: "my_music",
+    listEnricher: artistListEnricher,
     detailEnricher: artistDetailEnricher,
     relationships: artistRelationships,
     allowDelete: true,
@@ -509,6 +583,7 @@ export const registry: EntityRouteConfig[] = [
       created_at: artists.created_at,
     },
     contextColumnValue: "lab",
+    listEnricher: artistListEnricher,
     detailEnricher: artistDetailEnricher,
     relationships: artistRelationships,
     allowDelete: true,

@@ -37,6 +37,7 @@ export const theme = createTheme({
   colors: { dark },
   defaultRadius: "xl",
   components: {
+    Button: { defaultProps: { fw: 500 } },
     Card: { defaultProps: { shadow: "none" } },
     Paper: { defaultProps: { shadow: "none" } },
     Modal: { defaultProps: { radius: "lg" } },

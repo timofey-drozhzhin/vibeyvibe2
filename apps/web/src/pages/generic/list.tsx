@@ -12,7 +12,6 @@ import {
   Loader,
   Center,
   ActionIcon,
-  Tooltip,
   Image,
   Menu,
   Box,
@@ -28,12 +27,13 @@ import {
   IconChevronDown,
   IconCheck,
 } from "@tabler/icons-react";
-import { ListToolbar, pillStyle } from "../../components/shared/list-toolbar.js";
+import { ListToolbar } from "../../components/shared/list-toolbar.js";
 import { PlatformLinks } from "../../components/shared/platform-links.js";
 import { RatingDisplay } from "../../components/shared/rating-field.js";
 import { CardGrid } from "../../components/generic/card-grid.js";
 import { ArtistCardList } from "../../components/generic/artist-card-list.js";
 import { SongCardRow } from "../../components/generic/song-card-row.js";
+import { AlbumCardList } from "../../components/generic/album-card-list.js";
 import { useLikeToggle } from "../../hooks/use-like-toggle.js";
 import type { EntityDef, FieldDef } from "../../config/entity-registry.js";
 import { getResourceName } from "../../config/entity-registry.js";
@@ -277,22 +277,19 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
     <Stack gap="lg">
       {/* Header */}
       <Group justify="space-between">
-        <Title order={1} fw={600} fz={30} c="white">{entity.pluralName}</Title>
+        <Title order={1} fw={600} fz={30}>{entity.pluralName}</Title>
         <Group gap="sm">
           {!isInitialLoading && total > 0 && (
-            <Center
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                backgroundColor: "transparent",
-                border: "1px solid rgba(255,255,255,0.12)",
-              }}
+            <ActionIcon
+              variant="default"
+              size="xl"
+              radius="xl"
+              style={{ pointerEvents: "none" }}
             >
-              <Text fz={12} fw={500} c="rgb(180, 180, 185)">
+              <Text fz={12} fw={500} c="dimmed">
                 {total}
               </Text>
-            </Center>
+            </ActionIcon>
           )}
           <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
             New
@@ -322,11 +319,10 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
             <Menu.Target>
               <Button
                 variant="default"
-                size="sm"
+                size="md"
                 className="dark-pill"
                 leftSection={<IconCalendar size={14} />}
                 rightSection={<IconChevronDown size={12} />}
-                style={pillStyle}
               >
                 {releaseYear ?? "Year"}
               </Button>
@@ -359,15 +355,11 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
 
         {/* Liked toggle — icon-only circle */}
         <ActionIcon
-          variant="default"
+          variant={likedFilter ? "filled" : "default"}
+          color={likedFilter ? "gray.0" : undefined}
           className={likedFilter ? undefined : "dark-pill"}
-          size={40}
-          radius="xl"
+          size="xl"
           onClick={() => setLikedFilter((v) => !v)}
-          style={{
-            backgroundColor: likedFilter ? "white" : "rgb(37, 37, 41)",
-            border: likedFilter ? "1px solid white" : "none",
-          }}
         >
           {likedFilter ? (
             <IconHeart size={18} color="black" />
@@ -389,6 +381,16 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
 
         {listLayout === "artist-card" ? (
           <ArtistCardList
+            records={records}
+            resource={resource}
+            imageCol={imageCol}
+            showPlatformLinks={showPlatformLinks}
+            platformType={platformType}
+            onNavigate={(res, id) => show(res, id)}
+            onToggleLike={(res, id) => toggleLike(res, id)}
+          />
+        ) : listLayout === "album-card" ? (
+          <AlbumCardList
             records={records}
             resource={resource}
             imageCol={imageCol}
@@ -539,11 +541,9 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
                   <Menu position="bottom-end" withArrow={false}>
                     <Menu.Target>
                       <ActionIcon
-                        variant="filled"
-                        className="row-action"
-                        size={40}
-                        radius="xl"
-                        style={{ backgroundColor: "rgb(37, 37, 41)", border: "none" }}
+                        variant="default"
+                        className="row-action dark-pill"
+                        size="xl"
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
                       >
                         <IconDots size={16} />
