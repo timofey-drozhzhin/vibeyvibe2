@@ -152,6 +152,8 @@ export interface EntityDef {
   allowDelete?: boolean;
   /** Predefined sort options shown in a dropdown on the list page */
   sortPresets?: SortPresetDef[];
+  /** Layout mode for the list page. Defaults to "card-row". */
+  listLayout?: "card-row" | "card-grid" | "artist-card" | "song-row";
 }
 
 export interface ExtensionDef {
@@ -460,6 +462,7 @@ export const entityRegistry: EntityDef[] = [
     ],
     allowDelete: true,
     sortPresets: songSortPresets,
+    listLayout: "song-row",
   },
 
   // =========================================================================
@@ -487,6 +490,7 @@ export const entityRegistry: EntityDef[] = [
     ],
     allowDelete: true,
     sortPresets: artistSortPresets,
+    listLayout: "artist-card",
   },
 
   // =========================================================================
@@ -545,6 +549,7 @@ export const entityRegistry: EntityDef[] = [
     ],
     allowDelete: true,
     sortPresets: songSortPresets,
+    listLayout: "song-row",
   },
 
   // =========================================================================
@@ -572,6 +577,7 @@ export const entityRegistry: EntityDef[] = [
     ],
     allowDelete: true,
     sortPresets: artistSortPresets,
+    listLayout: "artist-card",
   },
 
   // =========================================================================

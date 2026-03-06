@@ -41,3 +41,54 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--mantine-color-dark-3);
 }
+
+/* Card-row list items */
+.card-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid var(--mantine-color-dark-3);
+  transition: background-color 150ms ease;
+}
+
+.card-row:hover {
+  background-color: var(--mantine-color-dark-5);
+}
+
+.card-row:first-child {
+  border-top: 1px solid var(--mantine-color-dark-3);
+}
+
+/* Song card-row — Suno-style: no borders, rounded hover */
+.song-card-row {
+  transition: background-color 150ms ease;
+  border-radius: var(--mantine-radius-md);
+}
+
+.song-card-row:hover {
+  background-color: var(--mantine-color-dark-5);
+}
+
+.song-card-row .dots-menu,
+.card-row .dots-menu,
+.artist-card-item .dots-menu {
+  opacity: 0.35;
+  transition: opacity 150ms ease;
+}
+
+.song-card-row:hover .dots-menu,
+.card-row:hover .dots-menu,
+.artist-card-item:hover .dots-menu {
+  opacity: 1;
+}
+
+/* Card-grid list items (artist rows with circular images) */
+.card-grid-item {
+  transition: background-color 150ms ease;
+  border-radius: var(--mantine-radius-sm);
+}
+
+/* Artist card list — Suno-style: no borders */
+.artist-card-item {
+  border-radius: var(--mantine-radius-md);
+}

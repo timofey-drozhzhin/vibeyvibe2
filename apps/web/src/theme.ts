@@ -52,22 +52,59 @@ export const theme = createTheme({
     },
     TextInput: {
       defaultProps: {
-        radius: "md",
+        variant: "filled",
+        radius: 20,
+      },
+      styles: {
+        input: {
+          border: "none",
+          backgroundColor: "rgba(255,255,255,0.1)",
+          backdropFilter: "blur(100px)",
+          fontSize: "16px",
+        },
       },
     },
     PasswordInput: {
       defaultProps: {
-        radius: "md",
+        variant: "filled",
+        radius: 20,
+      },
+      styles: {
+        input: {
+          border: "none",
+          backgroundColor: "rgba(255,255,255,0.1)",
+          backdropFilter: "blur(100px)",
+          fontSize: "16px",
+        },
       },
     },
     Select: {
       defaultProps: {
-        radius: "md",
+        variant: "filled",
+        radius: 20,
+      },
+      styles: {
+        input: {
+          border: "none",
+          backgroundColor: "rgba(255,255,255,0.1)",
+          backdropFilter: "blur(100px)",
+          fontSize: "16px",
+        },
       },
     },
     Textarea: {
       defaultProps: {
-        radius: "md",
+        variant: "filled",
+        radius: 20,
+      },
+      styles: {
+        input: {
+          border: "none",
+          backgroundColor: "rgba(255,255,255,0.1)",
+          backdropFilter: "blur(100px)",
+          fontSize: "16px",
+          padding: "16px",
+        },
       },
     },
     Pagination: {
@@ -101,6 +138,11 @@ export const theme = createTheme({
     Notification: {
       defaultProps: {
         radius: "lg",
+      },
+    },
+    Menu: {
+      defaultProps: {
+        radius: "md",
       },
     },
   },
