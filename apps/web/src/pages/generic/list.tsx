@@ -323,6 +323,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
               <Button
                 variant="default"
                 size="sm"
+                className="dark-pill"
                 leftSection={<IconCalendar size={14} />}
                 rightSection={<IconChevronDown size={12} />}
                 style={pillStyle}
@@ -359,6 +360,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
         {/* Liked toggle — icon-only circle */}
         <ActionIcon
           variant="default"
+          className={likedFilter ? undefined : "dark-pill"}
           size={40}
           radius="xl"
           onClick={() => setLikedFilter((v) => !v)}

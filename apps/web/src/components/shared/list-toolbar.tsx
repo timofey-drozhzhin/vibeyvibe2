@@ -86,6 +86,7 @@ export const ListToolbar = ({
         onChange={(e) => onSearchChange(e.currentTarget.value)}
         radius={50}
         size="md"
+        className="dark-pill-input"
         styles={{
           input: {
             height: 40,
@@ -94,6 +95,7 @@ export const ListToolbar = ({
             border: "none",
             color: "rgba(255,255,255,0.9)",
             "--input-placeholder-color": "rgba(247, 244, 239, 0.5)",
+            transition: "background-color 75ms ease",
           } as any,
         }}
         style={{ flex: 1, minWidth: 200 }}
@@ -106,6 +108,7 @@ export const ListToolbar = ({
             <Button
               variant="default"
               size="sm"
+              className="dark-pill"
               leftSection={<IconArrowsSort size={14} />}
               rightSection={<IconChevronDown size={12} />}
               style={pillStyle}
@@ -140,6 +143,7 @@ export const ListToolbar = ({
           <Button
             variant="default"
             size="sm"
+            className="dark-pill"
             leftSection={<IconFilter size={14} />}
             rightSection={<IconChevronDown size={12} />}
             style={pillStyle}

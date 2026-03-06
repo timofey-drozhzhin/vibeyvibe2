@@ -3,12 +3,10 @@ import { Group, Box, Text, ActionIcon, Menu, Stack, Center, Badge } from "@manti
 import { IconHeart, IconHeartFilled, IconDots, IconEye } from "@tabler/icons-react";
 import { API_URL } from "../../config/constants.js";
 import { formatDate } from "../../utils/format-date.js";
+import { darkPillBg, pillIconColor, likedIconColor } from "./card-styles.js";
 
 /** Square thumbnail */
 const THUMB = 72;
-
-/** Suno dark pill bg */
-const darkPillBg = "rgb(37, 37, 41)";
 
 interface SongCardRowProps {
   records: any[];
@@ -89,11 +87,12 @@ export const SongCardRow = ({
                         component="a"
                         href={`/${artistResource}/show/${a.id}`}
                         variant="filled"
+                        className="dark-pill row-action"
                         size="sm"
                         radius="sm"
                         style={{
                           backgroundColor: darkPillBg,
-                          color: "rgb(180, 180, 185)",
+                          color: pillIconColor,
                           fontSize: 12,
                           fontWeight: 400,
                           textTransform: "none",
@@ -138,9 +137,9 @@ export const SongCardRow = ({
                   }}
                 >
                   {record.liked ? (
-                    <IconHeartFilled size={16} color="rgb(200, 200, 200)" />
+                    <IconHeartFilled size={16} color={likedIconColor} />
                   ) : (
-                    <IconHeart size={16} color="rgb(200, 200, 200)" />
+                    <IconHeart size={16} color={pillIconColor} />
                   )}
                 </ActionIcon>
               </Group>

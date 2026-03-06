@@ -7,12 +7,10 @@ import {
   IconBrandSpotify,
 } from "@tabler/icons-react";
 import { API_URL } from "../../config/constants.js";
+import { darkPillBg, pillIconColor, likedIconColor } from "./card-styles.js";
 
 /** Circular thumbnail — same height as song-card-row */
 const THUMB = 72;
-
-/** Suno dark pill bg — matches song-card-row */
-const darkPillBg = "rgb(37, 37, 41)";
 
 interface ArtistCardListProps {
   records: any[];
@@ -101,9 +99,9 @@ export const ArtistCardList = ({
                 onClick={() => onToggleLike(resource, record.id)}
               >
                 {record.liked ? (
-                  <IconHeartFilled size={16} color="rgb(200, 200, 200)" />
+                  <IconHeartFilled size={16} color={likedIconColor} />
                 ) : (
-                  <IconHeart size={16} color="rgb(200, 200, 200)" />
+                  <IconHeart size={16} color={pillIconColor} />
                 )}
               </ActionIcon>
               {record.spotify_uid && (
@@ -118,7 +116,7 @@ export const ArtistCardList = ({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <IconBrandSpotify size={16} color="rgb(200, 200, 200)" />
+                  <IconBrandSpotify size={16} color={pillIconColor} />
                 </ActionIcon>
               )}
             </Group>

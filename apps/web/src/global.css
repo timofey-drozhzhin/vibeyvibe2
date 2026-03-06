@@ -97,3 +97,25 @@ body {
 .artist-card-item:hover {
   background-color: var(--mantine-color-dark-5);
 }
+
+/* Suno-style hover: dark pill elements lighten on hover */
+.dark-pill {
+  transition: background-color 75ms ease;
+}
+
+.dark-pill:hover {
+  background-color: rgb(52, 52, 58) !important;
+}
+
+.dark-pill-input input {
+  transition: background-color 75ms ease;
+}
+
+.dark-pill-input input:hover,
+.dark-pill-input input:focus {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.row-action:hover {
+  background-color: rgb(52, 52, 58) !important;
+}
