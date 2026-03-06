@@ -52,5 +52,6 @@ export const theme = createTheme({
     Select: { defaultProps: { variant: "filled" } },
     Divider: { defaultProps: { color: "dark.7" } },
     Table: { defaultProps: { verticalSpacing: "sm", horizontalSpacing: "md" } },
+    Tabs: { defaultProps: { radius: 0 } },
   },
 });

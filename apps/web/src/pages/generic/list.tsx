@@ -3,7 +3,6 @@ import { useInfiniteList, useNavigation, useCreate } from "@refinedev/core";
 import {
   Group,
   Button,
-  Title,
   Stack,
   Text,
   LoadingOverlay,
@@ -275,28 +274,6 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
 
   return (
     <Stack gap="lg">
-      {/* Header */}
-      <Group justify="space-between">
-        <Title order={1} fw={600} fz={30}>{entity.pluralName}</Title>
-        <Group gap="sm">
-          {!isInitialLoading && total > 0 && (
-            <ActionIcon
-              variant="default"
-              size="xl"
-              radius="xl"
-              style={{ pointerEvents: "none" }}
-            >
-              <Text fz={12} fw={500} c="dimmed">
-                {total}
-              </Text>
-            </ActionIcon>
-          )}
-          <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-            New
-          </Button>
-        </Group>
-      </Group>
-
       {/* Toolbar — pill-style filter buttons */}
       <ListToolbar
         search={search}
@@ -308,6 +285,11 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
         }
         activeSortPreset={activeSortPreset}
         onSortPresetChange={handleSortPresetChange}
+        trailing={
+          <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
+            New
+          </Button>
+        }
       >
         {/* Year filter pill dropdown */}
         {showYearFilter && (
@@ -367,6 +349,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
             <IconHeart size={18} />
           )}
         </ActionIcon>
+
       </ListToolbar>
 
       {/* Record list */}

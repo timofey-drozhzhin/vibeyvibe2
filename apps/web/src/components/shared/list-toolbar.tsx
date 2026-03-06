@@ -19,6 +19,7 @@ interface ListToolbarProps {
   archiveFilter: string;
   onArchiveFilterChange: (value: string) => void;
   children?: ReactNode;
+  trailing?: ReactNode;
   sortPresets?: SortPresetOption[];
   activeSortPreset?: string | null;
   onSortPresetChange?: (value: string | null) => void;
@@ -35,6 +36,7 @@ export const ListToolbar = ({
   archiveFilter,
   onArchiveFilterChange,
   children,
+  trailing,
   sortPresets,
   activeSortPreset,
   onSortPresetChange,
@@ -122,6 +124,8 @@ export const ListToolbar = ({
           ))}
         </Menu.Dropdown>
       </Menu>
+
+      {trailing}
     </Group>
   );
 };

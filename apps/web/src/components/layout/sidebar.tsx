@@ -1,11 +1,9 @@
-import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { useGetIdentity, useLogout } from "@refinedev/core";
 import {
   ActionIcon,
   Avatar,
   Box,
-  Collapse,
   Group,
   NavLink,
   ScrollArea,
@@ -13,7 +11,6 @@ import {
   Stack,
   Text,
   Title,
-  UnstyledButton,
 } from "@mantine/core";
 import {
   IconMusic,
@@ -21,7 +18,6 @@ import {
   IconTrash,
   IconBrain,
   IconShield,
-  IconChevronRight,
   IconLayoutDashboard,
   IconLogout,
 } from "@tabler/icons-react";
@@ -34,7 +30,6 @@ import {
 } from "../../config/entity-registry.js";
 import type { SectionContext } from "../../config/entity-registry.js";
 
-// Map section contexts to their header icons
 const sectionIcons: Record<SectionContext, React.ElementType> = {
   "my-music": IconMusic,
   "lab": IconDna,
@@ -43,16 +38,12 @@ const sectionIcons: Record<SectionContext, React.ElementType> = {
   "admin": IconShield,
 };
 
-interface SidebarItem {
-  label: string;
-  to: string;
-}
-
 interface SidebarSection {
   label: string;
   icon: React.ElementType;
   color: string;
-  items: SidebarItem[];
+  context: SectionContext;
+  defaultPath: string;
 }
 
 function buildSidebarSections(userRole?: string): SidebarSection[] {
@@ -61,79 +52,26 @@ function buildSidebarSections(userRole?: string): SidebarSection[] {
       if (!section.requiredRole) return true;
       return userRole === section.requiredRole;
     })
-    .map((section) => ({
-      label: section.label,
-      icon: sectionIcons[section.context],
-      color: section.color,
-      items: [
-        ...entityRegistry
-          .filter((e) => e.context === section.context)
-          .map((e) => ({
-            label: e.pluralName,
-            to: getRoutePath(e),
-          })),
-        ...standalonePages
-          .filter((p) => p.context === section.context)
-          .map((p) => ({
-            label: p.label,
-            to: p.path,
-          })),
-      ],
-    }));
+    .map((section) => {
+      const firstEntity = entityRegistry.find(
+        (e) => e.context === section.context,
+      );
+      const firstStandalone = standalonePages.find(
+        (p) => p.context === section.context,
+      );
+      const defaultPath = firstEntity
+        ? getRoutePath(firstEntity)
+        : firstStandalone?.path ?? `/${section.context}`;
+
+      return {
+        label: section.label,
+        icon: sectionIcons[section.context],
+        color: section.color,
+        context: section.context,
+        defaultPath,
+      };
+    });
 }
-
-const SectionGroup = ({ section }: { section: SidebarSection }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const isActive = section.items.some((item) =>
-    location.pathname.startsWith(item.to),
-  );
-  const [opened, setOpened] = useState(isActive);
-
-  return (
-    <Box>
-      <UnstyledButton
-        onClick={() => setOpened((o) => !o)}
-        w="100%"
-        px="md"
-        py="xs"
-      >
-        <Group justify="space-between">
-          <Group gap="xs">
-            <section.icon
-              size={18}
-              color={`var(--mantine-color-${section.color}-6)`}
-            />
-            <Text size="sm" fw={600}>
-              {section.label}
-            </Text>
-          </Group>
-          <IconChevronRight
-            size={14}
-            style={{
-              transform: opened ? "rotate(90deg)" : "none",
-              transition: "transform 200ms ease",
-            }}
-          />
-        </Group>
-      </UnstyledButton>
-
-      <Collapse in={opened}>
-        <Stack gap={0} pl="md">
-          {section.items.map((item) => (
-            <NavLink
-              key={item.to}
-              label={item.label}
-              active={location.pathname.startsWith(item.to)}
-              onClick={() => navigate(item.to)}
-              variant="light"
-            />
-          ))}
-        </Stack>
-      </Collapse>
-    </Box>
-  );
-};
 
 interface Identity {
   id: string;
@@ -154,8 +92,8 @@ export const Sider = () => {
 
   return (
     <Box
-      w={260}
-      miw={260}
+      w={220}
+      miw={220}
       h="100vh"
       style={{
         position: "sticky",
@@ -167,16 +105,17 @@ export const Sider = () => {
       }}
     >
       <Box px="md" py="lg">
-        <Title
-          order={3}
+        <Text
           style={{
             fontFamily: "'Righteous', cursive",
+            fontSize: 32,
+            lineHeight: 1,
             cursor: "pointer",
           }}
           onClick={() => navigate("/")}
         >
           vibeyvibe
-        </Title>
+        </Text>
       </Box>
 
       <ScrollArea flex={1} px="xs">
@@ -189,9 +128,32 @@ export const Sider = () => {
             variant="light"
           />
 
-          {sidebarSections.map((section) => (
-            <SectionGroup key={section.label} section={section} />
-          ))}
+          {sidebarSections.map((section) => {
+            const Icon = section.icon;
+            const isActive = location.pathname.startsWith(
+              `/${section.context}`,
+            );
+
+            return (
+              <NavLink
+                key={section.context}
+                label={section.label}
+                leftSection={
+                  <Icon
+                    size={18}
+                    color={
+                      isActive
+                        ? `var(--mantine-color-${section.color}-6)`
+                        : undefined
+                    }
+                  />
+                }
+                active={isActive}
+                onClick={() => navigate(section.defaultPath)}
+                variant="light"
+              />
+            );
+          })}
         </Stack>
       </ScrollArea>
 
