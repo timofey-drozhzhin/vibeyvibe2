@@ -201,10 +201,10 @@ sunoPromptGenerator.post(
     const prompt = buildPrompt(song, artistNames, songVibeEntries);
 
     const env = getEnv();
-    const model = env.VIBES_SUNO_PROMPT_OPENROUTER_MODEL;
+    const model = env.SUNO_PROMPT_MODEL;
     if (!model) {
       return c.json(
-        { error: "Suno prompt generation is not configured. Set VIBES_SUNO_PROMPT_OPENROUTER_MODEL." },
+        { error: "Suno prompt generation is not configured. Set SUNO_PROMPT_MODEL." },
         503,
       );
     }

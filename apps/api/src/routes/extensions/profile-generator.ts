@@ -11,14 +11,8 @@ import {
   profiles,
   aiQueue,
 } from "../../db/schema/index.js";
-import { processNextJob } from "../../services/ai-queue/index.js";
+import { processNextJob, getOpenRouterModels } from "../../services/ai-queue/index.js";
 import { getEnv } from "../../env.js";
-
-function getAutoprocessModels(): string[] {
-  const raw = getEnv().OPENROUTER_MODELS_AUTOPROCESS;
-  if (!raw) return [];
-  return raw.split(",").map((m) => m.trim()).filter(Boolean);
-}
 
 const profileGenerator = new Hono();
 
@@ -33,7 +27,7 @@ const generateSchema = z.object({
 
 function getAllowedModels(): string[] {
   const env = getEnv();
-  const raw = env.PROFILE_GENERATION_OPENROUTER_MODELS;
+  const raw = env.PROFILE_GENERATION_MODELS;
   if (!raw) return [];
   return raw.split(",").map((m) => m.trim()).filter(Boolean);
 }
@@ -119,7 +113,7 @@ profileGenerator.get("/models", (c) => {
   const models = getAllowedModels();
   if (models.length === 0) {
     return c.json(
-      { error: "Profile generation is not configured. Set PROFILE_GENERATION_OPENROUTER_MODELS." },
+      { error: "Profile generation is not configured. Set PROFILE_GENERATION_MODELS." },
       503,
     );
   }
@@ -141,7 +135,7 @@ profileGenerator.post(
     const allowedModels = getAllowedModels();
     if (allowedModels.length === 0) {
       return c.json(
-        { error: "Profile generation is not configured. Set PROFILE_GENERATION_OPENROUTER_MODELS." },
+        { error: "Profile generation is not configured. Set PROFILE_GENERATION_MODELS." },
         503,
       );
     }
@@ -211,7 +205,7 @@ profileGenerator.post(
       .returning();
 
     // 8. Fire-and-forget: trigger processing (only if model is autoprocessable)
-    if (getAutoprocessModels().includes(model)) {
+    if (getOpenRouterModels().includes(model)) {
       processNextJob().catch((err) =>
         console.error("[profile-generator] Fire-and-forget error:", err),
       );

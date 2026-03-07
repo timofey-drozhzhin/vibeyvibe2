@@ -124,21 +124,23 @@ export const SongCardRow = ({
                 </Text>
               )}
 
-              <ActionIcon
-                variant="default"
-                className="row-action"
-                size="xl"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  onToggleLike?.(resource, record.id);
-                }}
-              >
-                {record.liked ? (
-                  <IconHeartFilled size={16} />
-                ) : (
-                  <IconHeart size={16} />
-                )}
-              </ActionIcon>
+              {onToggleLike && (
+                <ActionIcon
+                  variant="default"
+                  className="row-action"
+                  size="xl"
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    onToggleLike(resource, record.id);
+                  }}
+                >
+                  {record.liked ? (
+                    <IconHeartFilled size={16} />
+                  ) : (
+                    <IconHeart size={16} />
+                  )}
+                </ActionIcon>
+              )}
 
               <Menu position="bottom-end" withArrow={false}>
                 <Menu.Target>

@@ -43,7 +43,7 @@ function parseProfileResponse(
 }
 
 export const profileGenerationHandler: QueueJobHandler = {
-  async execute(queueItemId: number, prompt: string, model: string) {
+  async processResponse(queueItemId: number, rawResponse: string) {
     const db = getDb();
 
     // Look up the profile linked to this queue item
@@ -56,12 +56,6 @@ export const profileGenerationHandler: QueueJobHandler = {
     if (!profile) {
       throw new Error(`No profile found for queue item ${queueItemId}`);
     }
-
-    // Call OpenRouter
-    const rawResponse = await chatCompletion(
-      [{ role: "user", content: prompt }],
-      { model },
-    );
 
     // Fetch active vibes for response mapping
     const activeVibes = await db
@@ -81,6 +75,18 @@ export const profileGenerationHandler: QueueJobHandler = {
       })
       .where(eq(profiles.id, profile.id));
 
-    return { rawResponse, outputId: profile.id };
+    return { outputId: profile.id };
+  },
+
+  async execute(queueItemId: number, prompt: string, model: string) {
+    // Call OpenRouter
+    const rawResponse = await chatCompletion(
+      [{ role: "user", content: prompt }],
+      { model },
+    );
+
+    // Delegate to processResponse for parsing + DB update
+    const result = await this.processResponse(queueItemId, rawResponse);
+    return { rawResponse, outputId: result.outputId };
   },
 };

@@ -536,7 +536,7 @@ Extension route at `routes/extensions/profile-generator.ts`. Mounted at `/api/pr
 - Accepts `{ songId: number }`
 - Fetches the song, its artists, and all active vibes
 - Builds a detailed prompt instructing the AI to analyze the song and produce vibe values
-- Calls OpenRouter using `PROFILE_GENERATION_OPENROUTER_MODEL`
+- Calls the AI provider using the model from `PROFILE_GENERATION_MODELS`
 - Maps the AI response (vibe ID -> value) into a JSON array of `{ name, category, value }` objects using vibe metadata
 - Inserts a `profiles` record with `method: "vibes"` and the JSON array as `value`
 - Returns `{ data: { id, songId, method, totalVibes } }`
@@ -560,7 +560,7 @@ Extension route at `routes/extensions/suno-prompt-generator.ts`. Mounted at `/ap
 - Accepts `{ profileId: number }`
 - Fetches the profile, parses its JSON value (`Array<{ name, category, value }>`), fetches the linked song and artists
 - Builds a detailed prompt instructing the AI to generate Suno-compatible lyrics and style
-- Calls OpenRouter (using `VIBES_SUNO_PROMPT_OPENROUTER_MODEL`), parses JSON response (`{ lyrics, style }`)
+- Calls the AI provider (using `SUNO_PROMPT_MODEL`), parses JSON response (`{ lyrics, style }`)
 - Creates a new `suno_prompts` record with the generated lyrics/style, linked to the source song via `song_id`
 - Returns `{ data: { id, name, songId } }`
 
@@ -605,7 +605,8 @@ All env variables are validated by the Zod schema in `src/env.ts`. No defaults -
 | DEV_AUTH_BYPASS | No | Set "true" to bypass auth in dev |
 | FRONTEND_URL | Yes | Frontend origin for CORS |
 | OPENROUTER_API_KEY | No | OpenRouter API key (enables AI generation) |
-| VIBES_SUNO_PROMPT_OPENROUTER_MODEL | No | OpenRouter model ID for Suno prompt generation |
-| PROFILE_GENERATION_OPENROUTER_MODEL | No | OpenRouter model ID for profile generation |
+| SUNO_PROMPT_MODEL | No | Model ID for Suno prompt generation |
+| PROFILE_GENERATION_MODELS | No | Comma-separated allowed model IDs for profile generation |
+| CLI_MODELS | No | Comma-separated model IDs for CLI queue worker |
 | SPOTIFY_CLIENT_ID | No | Spotify app client ID (enables official Web API) |
 | SPOTIFY_CLIENT_SECRET | No | Spotify app client secret |

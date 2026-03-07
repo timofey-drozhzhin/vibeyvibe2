@@ -81,7 +81,7 @@ function buildListQuerySchema(config: EntityRouteConfig) {
     order: z.enum(["asc", "desc"]).default(config.defaultOrder ?? "desc"),
     search: z.string().optional(),
     archived: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
-    liked: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
+    ...(config.enableLikes ? { liked: z.enum(["true", "false"]).transform((v) => v === "true").optional() } : {}),
   };
   if (config.extraFilters) {
     for (const f of config.extraFilters) {
@@ -153,8 +153,8 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
       }
     }
 
-    // Liked filter
-    if (likedFilter !== undefined && user) {
+    // Liked filter (only when likes are enabled)
+    if (config.enableLikes && likedFilter !== undefined && user) {
       const likedSubquery = likedFilter
         ? sql`${config.table.id} IN (SELECT ${likes.entity_id} FROM ${likes} WHERE ${likes.user_id} = ${user.id} AND ${likes.entity} = ${entityKey})`
         : sql`${config.table.id} NOT IN (SELECT ${likes.entity_id} FROM ${likes} WHERE ${likes.user_id} = ${user.id} AND ${likes.entity} = ${entityKey})`;
@@ -177,23 +177,25 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
       enriched = await config.listEnricher(db, enriched);
     }
 
-    // Enrich with liked status
-    if (user && enriched.length > 0) {
-      const ids = enriched.map((r: any) => r.id);
-      const likedRows = await db
-        .select({ entity_id: likes.entity_id })
-        .from(likes)
-        .where(
-          and(
-            eq(likes.user_id, user.id),
-            eq(likes.entity, entityKey),
-            inArray(likes.entity_id, ids),
-          ),
-        );
-      const likedSet = new Set(likedRows.map((r) => r.entity_id));
-      enriched = enriched.map((r: any) => ({ ...r, liked: likedSet.has(r.id) }));
-    } else {
-      enriched = enriched.map((r: any) => ({ ...r, liked: false }));
+    // Enrich with liked status (only when likes are enabled)
+    if (config.enableLikes) {
+      if (user && enriched.length > 0) {
+        const ids = enriched.map((r: any) => r.id);
+        const likedRows = await db
+          .select({ entity_id: likes.entity_id })
+          .from(likes)
+          .where(
+            and(
+              eq(likes.user_id, user.id),
+              eq(likes.entity, entityKey),
+              inArray(likes.entity_id, ids),
+            ),
+          );
+        const likedSet = new Set(likedRows.map((r) => r.entity_id));
+        enriched = enriched.map((r: any) => ({ ...r, liked: likedSet.has(r.id) }));
+      } else {
+        enriched = enriched.map((r: any) => ({ ...r, liked: false }));
+      }
     }
 
     return c.json({ data: enriched, total: countResult[0].count, page, pageSize });
@@ -267,26 +269,29 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
       }
     }
 
-    // Enrich with liked status
-    const user = c.get("user" as never) as { id: string } | null;
-    const entityKey = `${config.context}/${config.slug}`;
-    let liked = false;
-    if (user) {
-      const likeRow = await db
-        .select()
-        .from(likes)
-        .where(
-          and(
-            eq(likes.user_id, user.id),
-            eq(likes.entity, entityKey),
-            eq(likes.entity_id, id),
-          ),
-        )
-        .get();
-      liked = !!likeRow;
+    // Enrich with liked status (only when likes are enabled)
+    if (config.enableLikes) {
+      const user = c.get("user" as never) as { id: string } | null;
+      const entityKey = `${config.context}/${config.slug}`;
+      let liked = false;
+      if (user) {
+        const likeRow = await db
+          .select()
+          .from(likes)
+          .where(
+            and(
+              eq(likes.user_id, user.id),
+              eq(likes.entity, entityKey),
+              eq(likes.entity_id, id),
+            ),
+          )
+          .get();
+        liked = !!likeRow;
+      }
+      return c.json({ ...entity, ...enrichments, liked });
     }
 
-    return c.json({ ...entity, ...enrichments, liked });
+    return c.json({ ...entity, ...enrichments });
   });
 
   // ---- PUT /:id ----

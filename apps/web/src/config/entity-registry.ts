@@ -156,6 +156,10 @@ export interface EntityDef {
   sortPresets?: SortPresetDef[];
   /** Layout mode for the list page. Defaults to "card-row". */
   listLayout?: "card-row" | "card-grid" | "artist-card" | "album-card" | "song-row";
+  /** Enable per-user likes (heart icon, liked filter). Disabled by default. */
+  enableLikes?: boolean;
+  /** Columns rendered as Badges on Row 1 of the card-row layout (next to name). */
+  listBadgeColumns?: string[];
 }
 
 export interface ExtensionDef {
@@ -476,6 +480,7 @@ export const entityRegistry: EntityDef[] = [
     allowDelete: true,
     sortPresets: songSortPresets,
     listLayout: "song-row",
+    enableLikes: true,
   },
 
   // =========================================================================
@@ -504,6 +509,7 @@ export const entityRegistry: EntityDef[] = [
     allowDelete: true,
     sortPresets: artistSortPresets,
     listLayout: "artist-card",
+    enableLikes: true,
   },
 
   // =========================================================================
@@ -534,6 +540,7 @@ export const entityRegistry: EntityDef[] = [
     allowDelete: true,
     sortPresets: albumSortPresets,
     listLayout: "album-card",
+    enableLikes: true,
   },
 
   // =========================================================================
@@ -564,6 +571,7 @@ export const entityRegistry: EntityDef[] = [
     allowDelete: true,
     sortPresets: songSortPresets,
     listLayout: "song-row",
+    enableLikes: true,
   },
 
   // =========================================================================
@@ -592,6 +600,7 @@ export const entityRegistry: EntityDef[] = [
     allowDelete: true,
     sortPresets: artistSortPresets,
     listLayout: "artist-card",
+    enableLikes: true,
   },
 
   // =========================================================================
@@ -622,6 +631,7 @@ export const entityRegistry: EntityDef[] = [
     allowDelete: true,
     sortPresets: albumSortPresets,
     listLayout: "album-card",
+    enableLikes: true,
   },
 
   // =========================================================================
@@ -692,6 +702,11 @@ export const entityRegistry: EntityDef[] = [
         type: "readonly",
       },
       {
+        key: "started_at",
+        label: "Started",
+        type: "readonly",
+      },
+      {
         key: "error",
         label: "Error",
         type: "textarea",
@@ -708,16 +723,17 @@ export const entityRegistry: EntityDef[] = [
       },
     ],
     relationships: [],
-    listColumns: ["name", "type", "status", "model", "attempts", "created_at"],
+    listColumns: ["name", "status", "model", "created_at"],
     asideFields: [],
+    listBadgeColumns: ["status"],
     showActions: [
       {
-        label: "Process",
-        endpoint: "/api/admin/ai-queue/process",
-        color: "teal",
-        icon: "play",
+        label: "Retry",
+        endpoint: "/api/admin/ai-queue/retry",
+        color: "orange",
+        icon: "refresh",
         conditionField: "status",
-        conditionValues: ["pending", "failed"],
+        conditionValues: ["pending", "failed", "processing"],
       },
     ],
   },
@@ -764,6 +780,7 @@ export const entityRegistry: EntityDef[] = [
     relationships: [],
     listColumns: ["name", "asset_path", "rating", "created_at"],
     asideFields: [],
+    enableLikes: true,
   },
 
   // =========================================================================
@@ -834,6 +851,7 @@ export const entityRegistry: EntityDef[] = [
       "created_at",
     ],
     asideFields: ["image_path", "suno_uid"],
+    enableLikes: true,
   },
 
   // =========================================================================
@@ -871,6 +889,7 @@ export const entityRegistry: EntityDef[] = [
     relationships: [],
     listColumns: ["name", "created_at"],
     asideFields: [],
+    enableLikes: true,
   },
 ];
 

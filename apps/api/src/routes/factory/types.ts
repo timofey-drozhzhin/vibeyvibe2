@@ -59,4 +59,5 @@ export interface EntityRouteConfig {
 
   allowDelete?: boolean;  // Enable DELETE /:id route (admin-only)
   cascadeDeletes?: Array<{ table: any; fk: any }>;  // 1:N tables to cascade on delete
+  enableLikes?: boolean;  // Enable per-user likes (liked filter, liked enrichment)
 }

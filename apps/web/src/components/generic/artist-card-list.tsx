@@ -19,7 +19,7 @@ interface ArtistCardListProps {
   showPlatformLinks: boolean;
   platformType: "track" | "album" | "artist";
   onNavigate: (resource: string, id: number) => void;
-  onToggleLike: (resource: string, id: number) => void;
+  onToggleLike?: (resource: string, id: number) => void;
 }
 
 export const ArtistCardList = ({
@@ -132,21 +132,23 @@ export const ArtistCardList = ({
                 </ActionIcon>
               )}
 
-              <ActionIcon
-                variant="default"
-                className="row-action dark-pill"
-                size="xl"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  onToggleLike(resource, record.id);
-                }}
-              >
-                {record.liked ? (
-                  <IconHeartFilled size={16} />
-                ) : (
-                  <IconHeart size={16} />
-                )}
-              </ActionIcon>
+              {onToggleLike && (
+                <ActionIcon
+                  variant="default"
+                  className="row-action dark-pill"
+                  size="xl"
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    onToggleLike(resource, record.id);
+                  }}
+                >
+                  {record.liked ? (
+                    <IconHeartFilled size={16} />
+                  ) : (
+                    <IconHeart size={16} />
+                  )}
+                </ActionIcon>
+              )}
 
               <Menu position="bottom-end" withArrow={false}>
                 <Menu.Target>

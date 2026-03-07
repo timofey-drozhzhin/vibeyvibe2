@@ -1,6 +1,7 @@
 export {
   registerHandler,
   getHandler,
+  getOpenRouterModels,
   processNextJob,
   processJobById,
   startQueueProcessor,

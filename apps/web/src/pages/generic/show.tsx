@@ -126,8 +126,8 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
         showQuery.refetch();
       }}
       archived={record.archived}
-      liked={record.liked}
-      onLikeToggle={() => toggleLike(resource, record.id as number)}
+      liked={entity.enableLikes ? record.liked : undefined}
+      onLikeToggle={entity.enableLikes ? () => toggleLike(resource, record.id as number) : undefined}
       onArchiveToggle={async (val) => {
         await updateRecord({
           resource,

@@ -13,7 +13,7 @@ interface CardGridProps {
   showPlatformLinks: boolean;
   platformType: "track" | "album" | "artist";
   onNavigate: (resource: string, id: number) => void;
-  onToggleLike: (resource: string, id: number) => void;
+  onToggleLike?: (resource: string, id: number) => void;
 }
 
 const IMG_SIZE = 48;
@@ -83,21 +83,23 @@ export const CardGrid = ({
               {record.name || ""}
             </Text>
             <Group gap={6} mt={2}>
-              <ActionIcon
-                variant="subtle"
-                color={record.liked ? "red" : "gray"}
-                size="xs"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  onToggleLike(resource, record.id);
-                }}
-              >
-                {record.liked ? (
-                  <IconHeartFilled size={14} />
-                ) : (
-                  <IconHeart size={14} />
-                )}
-              </ActionIcon>
+              {onToggleLike && (
+                <ActionIcon
+                  variant="subtle"
+                  color={record.liked ? "red" : "gray"}
+                  size="xs"
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    onToggleLike(resource, record.id);
+                  }}
+                >
+                  {record.liked ? (
+                    <IconHeartFilled size={14} />
+                  ) : (
+                    <IconHeart size={14} />
+                  )}
+                </ActionIcon>
+              )}
               {showPlatformLinks && (
                 <Box
                   onClick={(e: React.MouseEvent) => e.stopPropagation()}

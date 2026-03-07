@@ -14,6 +14,7 @@ import {
   Image,
   Menu,
   Box,
+  Badge,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -37,7 +38,7 @@ import { useLikeToggle } from "../../hooks/use-like-toggle.js";
 import type { EntityDef, FieldDef } from "../../config/entity-registry.js";
 import { getResourceName } from "../../config/entity-registry.js";
 import { API_URL } from "../../config/constants.js";
-import { formatDate } from "../../utils/format-date.js";
+import { formatDate, formatTimeAgo } from "../../utils/format-date.js";
 import { resolveFkDisplayName } from "../../utils/resolve-fk-display.js";
 
 const PAGE_SIZE = 100;
@@ -72,6 +73,16 @@ function getPlatformType(entity: EntityDef): "track" | "album" | "artist" {
 
 function getCreateExtraFields(entity: EntityDef): FieldDef[] {
   return entity.fields.filter((f) => f.createField);
+}
+
+function getBadgeColor(value: string): string {
+  switch (value.toLowerCase()) {
+    case "pending": return "yellow";
+    case "processing": return "blue";
+    case "completed": return "green";
+    case "failed": return "red";
+    default: return "gray";
+  }
 }
 
 function categorizeColumns(entity: EntityDef) {
@@ -217,7 +228,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
         operator: "eq",
         value: archiveFilter === "archived",
       },
-      ...(likedFilter
+      ...(entity.enableLikes && likedFilter
         ? [
             {
               field: "liked" as const,
@@ -336,19 +347,21 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
         )}
 
         {/* Liked toggle — icon-only circle */}
-        <ActionIcon
-          variant={likedFilter ? "filled" : "default"}
-          color={likedFilter ? "gray.0" : undefined}
-          className={likedFilter ? undefined : "dark-pill"}
-          size="xl"
-          onClick={() => setLikedFilter((v) => !v)}
-        >
-          {likedFilter ? (
-            <IconHeart size={18} color="black" />
-          ) : (
-            <IconHeart size={18} />
-          )}
-        </ActionIcon>
+        {entity.enableLikes && (
+          <ActionIcon
+            variant={likedFilter ? "filled" : "default"}
+            color={likedFilter ? "gray.0" : undefined}
+            className={likedFilter ? undefined : "dark-pill"}
+            size="xl"
+            onClick={() => setLikedFilter((v) => !v)}
+          >
+            {likedFilter ? (
+              <IconHeart size={18} color="black" />
+            ) : (
+              <IconHeart size={18} />
+            )}
+          </ActionIcon>
+        )}
 
       </ListToolbar>
 
@@ -370,7 +383,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
             showPlatformLinks={showPlatformLinks}
             platformType={platformType}
             onNavigate={(res, id) => show(res, id)}
-            onToggleLike={(res, id) => toggleLike(res, id)}
+            onToggleLike={entity.enableLikes ? (res, id) => toggleLike(res, id) : undefined}
           />
         ) : listLayout === "album-card" ? (
           <AlbumCardList
@@ -380,7 +393,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
             showPlatformLinks={showPlatformLinks}
             platformType={platformType}
             onNavigate={(res, id) => show(res, id)}
-            onToggleLike={(res, id) => toggleLike(res, id)}
+            onToggleLike={entity.enableLikes ? (res, id) => toggleLike(res, id) : undefined}
           />
         ) : listLayout === "card-grid" ? (
           <CardGrid
@@ -390,164 +403,168 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
             showPlatformLinks={showPlatformLinks}
             platformType={platformType}
             onNavigate={(res, id) => show(res, id)}
-            onToggleLike={(res, id) => toggleLike(res, id)}
+            onToggleLike={entity.enableLikes ? (res, id) => toggleLike(res, id) : undefined}
           />
         ) : listLayout === "song-row" ? (
           <SongCardRow
             records={records}
             resource={resource}
             onNavigate={(res, id) => show(res, id)}
-            onToggleLike={(res, id) => toggleLike(res, id)}
+            onToggleLike={entity.enableLikes ? (res, id) => toggleLike(res, id) : undefined}
           />
         ) : (
         <Stack gap={0}>
-          {records.map((record: any) => (
-            <Box
-              key={record.id}
-              className="card-row"
-              onClick={() => show(resource, record.id)}
-              style={{ cursor: "pointer" }}
-            >
-              <Group wrap="nowrap" gap="md" py={10} px="xs">
-                {/* Square thumbnail */}
-                {imageCol && (
-                  <Box
-                    style={{
-                      width: THUMB_SIZE,
-                      height: THUMB_SIZE,
-                      flexShrink: 0,
-                      borderRadius: "var(--mantine-radius-sm)",
-                      overflow: "hidden",
-                      background: "var(--mantine-color-dark-8)",
-                    }}
-                  >
-                    {record[imageCol] ? (
-                      <Image
-                        src={`${API_URL}/api/storage/${record[imageCol]}`}
-                        w={THUMB_SIZE}
-                        h={THUMB_SIZE}
-                        fit="cover"
-                      />
-                    ) : (
-                      <Center h={THUMB_SIZE}>
-                        <Text size="xs" c="dimmed">
-                          No img
-                        </Text>
-                      </Center>
-                    )}
-                  </Box>
-                )}
+          {records.map((record: any) => {
+            const badgeSet = new Set(entity.listBadgeColumns ?? []);
+            const row2Cols = metadataCols.filter((col) => !badgeSet.has(col));
 
-                {/* Content area */}
-                <Box style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-                  {/* Row 1: Name  Artists  Release date */}
-                  <Group gap="sm" wrap="nowrap">
-                    <Text
-                      fw={600}
-                      size="sm"
-                      style={{ whiteSpace: "nowrap" }}
-                    >
-                      {record.name || ""}
-                    </Text>
-                    {metadataCols.map((col) => {
-                      const rendered = renderMetadataValue(
-                        col,
-                        record,
-                        entity,
-                      );
-                      if (!rendered) return null;
-                      return (
-                        <Text
-                          key={col}
-                          size="xs"
-                          c="dimmed"
-                          style={{ whiteSpace: "nowrap" }}
-                        >
-                          {rendered}
-                        </Text>
-                      );
-                    })}
-                  </Group>
-
-                  {/* Row 2: Action icons */}
-                  <Group gap={6} mt={4}>
-                    <ActionIcon
-                      variant="subtle"
-                      color={record.liked ? "red" : "gray"}
-                      size="xs"
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation();
-                        toggleLike(resource, record.id);
+            return (
+              <Box
+                key={record.id}
+                className="card-row"
+                onClick={() => show(resource, record.id)}
+                style={{ cursor: "pointer" }}
+              >
+                <Group wrap="nowrap" gap="md" py="sm" px="sm" align="center">
+                  {/* Square thumbnail */}
+                  {imageCol && (
+                    <Box
+                      style={{
+                        width: THUMB_SIZE,
+                        height: THUMB_SIZE,
+                        flexShrink: 0,
+                        borderRadius: "var(--mantine-radius-sm)",
+                        overflow: "hidden",
+                        background: "var(--mantine-color-dark-8)",
                       }}
                     >
-                      {record.liked ? (
-                        <IconHeartFilled size={14} />
-                      ) : (
-                        <IconHeart size={14} />
-                      )}
-                    </ActionIcon>
-                    {showPlatformLinks && (
-                      <Box
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                      >
-                        <PlatformLinks
-                          spotifyId={record.spotify_uid}
-                          appleMusicId={record.apple_music_uid}
-                          youtubeId={record.youtube_uid}
-                          type={platformType}
-                          size={14}
+                      {record[imageCol] ? (
+                        <Image
+                          src={`${API_URL}/api/storage/${record[imageCol]}`}
+                          w={THUMB_SIZE}
+                          h={THUMB_SIZE}
+                          fit="cover"
                         />
-                      </Box>
-                    )}
-                    {ratingCol && (
-                      <Box
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      ) : (
+                        <Center h={THUMB_SIZE}>
+                          <Text size="xs" c="dimmed">
+                            No img
+                          </Text>
+                        </Center>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Content area */}
+                  <Box style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                    {/* Row 1: Name + badge columns */}
+                    <Group gap="xs" wrap="nowrap">
+                      <Text
+                        fw={500}
+                        fz="md"
+                        truncate
+                        className="clickable-name"
                       >
+                        {record.name || ""}
+                      </Text>
+                      {[...badgeSet].map((col) => {
+                        const value = record[col];
+                        if (!value) return null;
+                        const label = String(value);
+                        const ago = col === "status" && record.started_at && label.toLowerCase() === "processing"
+                          ? ` \u00B7 ${formatTimeAgo(record.started_at)}`
+                          : "";
+                        return (
+                          <Badge
+                            key={col}
+                            variant="light"
+                            size="lg"
+                            color={getBadgeColor(label)}
+                            tt="none"
+                            fw={400}
+                            style={{ flexShrink: 0 }}
+                          >
+                            {label}{ago}
+                          </Badge>
+                        );
+                      })}
+                    </Group>
+
+                    {/* Row 2: Remaining metadata */}
+                    {row2Cols.length > 0 && (
+                      <Group gap={4} wrap="nowrap" mt="xs" style={{ overflow: "hidden" }}>
+                        <Text fz="sm" c="dimmed" truncate>
+                          {row2Cols
+                            .map((col) => renderMetadataValue(col, record, entity))
+                            .filter(Boolean)
+                            .join(" \u00B7 ")}
+                        </Text>
+                      </Group>
+                    )}
+                  </Box>
+
+                  {/* Right side: rating + date + like + dots menu */}
+                  <Group gap="sm" wrap="nowrap" style={{ flexShrink: 0 }}>
+                    {ratingCol && (
+                      <Box onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                         <RatingDisplay value={record[ratingCol] ?? 0} />
                       </Box>
                     )}
-                  </Group>
-                </Box>
-
-                {/* Right: timestamp + (...) menu */}
-                <Group gap="lg" wrap="nowrap" style={{ flexShrink: 0 }}>
-                  {timestampCols.map((col) => (
-                    <Text
-                      key={col}
-                      size="xs"
-                      c="dimmed"
-                      style={{ whiteSpace: "nowrap" }}
-                    >
-                      {formatDate(record[col])}
-                    </Text>
-                  ))}
-                  <Menu position="bottom-end" withArrow={false}>
-                    <Menu.Target>
+                    {timestampCols.map((col) => (
+                      <Text
+                        key={col}
+                        fz="sm"
+                        c="dimmed"
+                        style={{ whiteSpace: "nowrap" }}
+                      >
+                        {formatDate(record[col])}
+                      </Text>
+                    ))}
+                    {entity.enableLikes && (
                       <ActionIcon
                         variant="default"
                         className="row-action dark-pill"
                         size="xl"
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                      >
-                        <IconDots size={16} />
-                      </ActionIcon>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Item
-                        leftSection={<IconEye size={14} />}
                         onClick={(e: React.MouseEvent) => {
                           e.stopPropagation();
-                          show(resource, record.id);
+                          toggleLike(resource, record.id);
                         }}
                       >
-                        View Details
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
+                        {record.liked ? (
+                          <IconHeartFilled size={16} />
+                        ) : (
+                          <IconHeart size={16} />
+                        )}
+                      </ActionIcon>
+                    )}
+                    <Menu position="bottom-end" withArrow={false}>
+                      <Menu.Target>
+                        <ActionIcon
+                          variant="default"
+                          className="row-action dark-pill"
+                          size="xl"
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        >
+                          <IconDots size={16} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconEye size={14} />}
+                          onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation();
+                            show(resource, record.id);
+                          }}
+                        >
+                          View Details
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Group>
                 </Group>
-              </Group>
-            </Box>
-          ))}
+              </Box>
+            );
+          })}
         </Stack>
         )}
       </div>

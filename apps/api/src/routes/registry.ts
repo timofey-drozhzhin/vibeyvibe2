@@ -483,6 +483,7 @@ export const registry: EntityRouteConfig[] = [
     relationships: songRelationships,
     allowDelete: true,
     cascadeDeletes: [{ table: profiles, fk: profiles.song_id }],
+    enableLikes: true,
     extraFilters: [
       { param: "release_year", column: songs.release_date, schema: z.string().optional(), mode: "starts_with" },
     ],
@@ -509,6 +510,7 @@ export const registry: EntityRouteConfig[] = [
     detailEnricher: artistDetailEnricher,
     relationships: artistRelationships,
     allowDelete: true,
+    enableLikes: true,
   },
 
   // =========================================================================
@@ -533,6 +535,7 @@ export const registry: EntityRouteConfig[] = [
     detailEnricher: albumDetailEnricher,
     relationships: albumRelationships,
     allowDelete: true,
+    enableLikes: true,
     extraFilters: [
       { param: "release_year", column: albums.release_date, schema: z.string().optional(), mode: "starts_with" },
     ],
@@ -561,6 +564,7 @@ export const registry: EntityRouteConfig[] = [
     relationships: songRelationships,
     allowDelete: true,
     cascadeDeletes: [{ table: profiles, fk: profiles.song_id }],
+    enableLikes: true,
     extraFilters: [
       { param: "release_year", column: songs.release_date, schema: z.string().optional(), mode: "starts_with" },
     ],
@@ -587,6 +591,7 @@ export const registry: EntityRouteConfig[] = [
     detailEnricher: artistDetailEnricher,
     relationships: artistRelationships,
     allowDelete: true,
+    enableLikes: true,
   },
 
   // =========================================================================
@@ -611,6 +616,7 @@ export const registry: EntityRouteConfig[] = [
     detailEnricher: albumDetailEnricher,
     relationships: albumRelationships,
     allowDelete: true,
+    enableLikes: true,
     extraFilters: [
       { param: "release_year", column: albums.release_date, schema: z.string().optional(), mode: "starts_with" },
     ],
@@ -716,6 +722,7 @@ export const registry: EntityRouteConfig[] = [
       created_at: binSongs.created_at,
     },
     contextColumnValue: "bin",
+    enableLikes: true,
     extraFilters: [
       {
         param: "bin_source_id",
@@ -746,6 +753,7 @@ export const registry: EntityRouteConfig[] = [
       created_at: sunoPrompts.created_at,
     },
     contextColumnValue: "suno",
+    enableLikes: true,
     detailEnricher: sunoPromptDetailEnricher,
     extraFilters: [
       {
@@ -793,6 +801,7 @@ export const registry: EntityRouteConfig[] = [
       created_at: sunoSongs.created_at,
     },
     contextColumnValue: "suno",
+    enableLikes: true,
     fkEnrichments: [
       { column: "suno_prompt_id", targetTable: sunoPrompts },
       { column: "bin_song_id", targetTable: binSongs },

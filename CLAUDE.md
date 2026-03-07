@@ -24,6 +24,8 @@ The API serves all data through a `/api` prefix. The web app proxies `/api` requ
 ├── tmp/                  # Temporary files, local dev storage (gitignored)
 │   ├── storage/          # Local file storage for dev (mimics Bunny CDN)
 │   └── playwright/       # MCP Playwright screenshots, PDFs, and exports
+├── scripts/
+│   └── queue-worker.sh   # CLI queue worker (processes AI jobs via claude/gemini CLIs)
 ├── .devcontainer/        # Dev container configuration (Debian + Node)
 ├── .claude/              # Claude Code settings
 ├── package.json          # Root workspace scripts
@@ -176,6 +178,9 @@ pnpm db:seed          # Seed database with sample data
 # Quality
 pnpm lint             # Lint all packages
 pnpm typecheck        # TypeScript type checking
+
+# CLI Worker
+pnpm cli:worker       # Start AI queue CLI worker (polls for jobs)
 ```
 
 ## Environment Setup
@@ -307,20 +312,20 @@ Accepts an array of tracks (from the preview step) and creates `songs`, `artists
 
 ## Profile Generator
 
-AI-powered generation of song profiles. Uses OpenRouter API to call an LLM that analyzes a song and all active vibes, producing a JSON array of `{ name, category, value }` entries stored in the `profiles` table (1:N from songs).
+AI-powered generation of song profiles. Uses the AI queue system to call an LLM that analyzes a song and all active vibes, producing a JSON array of `{ name, category, value }` entries stored in the `profiles` table (1:N from songs). Supports OpenRouter, Anthropic (Claude), and Google (Gemini) models.
 
 ### Configuration
 Requires environment variables in `.env`:
-- `OPENROUTER_API_KEY` -- API key for OpenRouter
-- `PROFILE_GENERATION_OPENROUTER_MODEL` -- Model to use for profile generation
+- `PROFILE_GENERATION_MODELS` -- Comma-separated list of allowed model IDs (e.g., `claude-opus-4-6,gemini-2.5-pro,anthropic/claude-sonnet-4-20250514`)
+- Provider API key or CLI auth for the chosen model: `OPENROUTER_API_KEY` for OpenRouter models, or authenticated `claude`/`gemini` CLI for native models
 
 ### POST /api/profile-generator/generate
-Generates a profile for a song. Fetches the song, its artists, and all active vibes, builds a prompt, calls OpenRouter, maps the response into a JSON array of `{ name, category, value }` objects (enriched from vibe metadata), and inserts a `profiles` record with `method: "vibes"`.
+Generates a profile for a song. Fetches the song, its artists, and all active vibes, builds a prompt, queues an AI job, and creates a `profiles` record linked to the queue item. The queue processor (embedded or CLI worker) picks up the job and calls the appropriate AI provider based on the model prefix.
 
-**Schema**: `{ songId: number }`
-**Returns**: `{ data: { id, songId, method, totalVibes } }`
+**Schema**: `{ songId: number, model: string }`
+**Returns**: `{ data: { id, songId, queueId, status } }`
 
-**Error codes**: 404 (song not found), 400 (no active vibes), 503 (env not configured), 502 (OpenRouter error), 422 (unparseable response)
+**Error codes**: 404 (song not found), 400 (no active vibes or invalid model), 503 (env not configured), 502 (AI provider error), 422 (unparseable response)
 
 ### PUT /api/profiles/:id
 Archive or restore a profile.
@@ -333,15 +338,15 @@ The Profiles section appears on song show pages as a one-to-many relationship. I
 
 ## Suno Prompt Generator
 
-AI-powered generation of Suno AI prompts (lyrics + style) from a song profile. Uses OpenRouter API to analyze a profile's vibe data and produce a ready-to-use Suno prompt.
+AI-powered generation of Suno AI prompts (lyrics + style) from a song profile. Uses the AI provider abstraction to analyze a profile's vibe data and produce a ready-to-use Suno prompt. Supports OpenRouter, Anthropic (Claude), and Google (Gemini) models.
 
 ### Configuration
 Requires environment variables in `.env`:
-- `OPENROUTER_API_KEY` -- API key for OpenRouter
-- `VIBES_SUNO_PROMPT_OPENROUTER_MODEL` -- Model to use for Suno prompt generation
+- `SUNO_PROMPT_MODEL` -- Model ID for Suno prompt generation
+- Provider API key for the chosen model: `OPENROUTER_API_KEY`, or authenticated CLI
 
 ### POST /api/suno-prompt-generator/generate-from-profile
-Generates a Suno prompt from a profile's JSON data. Fetches the profile, parses its JSON value (array of `{ name, category, value }` entries), fetches the linked song and artists, builds a detailed prompt instructing the AI to produce lyrics and style, calls OpenRouter, parses the JSON response, and creates a new `suno_prompts` record linked to the source song via `song_id`.
+Generates a Suno prompt from a profile's JSON data. Fetches the profile, parses its JSON value (array of `{ name, category, value }` entries), fetches the linked song and artists, builds a detailed prompt instructing the AI to produce lyrics and style, calls the AI provider based on the model prefix, parses the JSON response, and creates a new `suno_prompts` record linked to the source song via `song_id`.
 
 **Schema**: `{ profileId: number }`
 **Returns**: `{ data: { id, name, songId } }`
@@ -350,6 +355,38 @@ Generates a Suno prompt from a profile's JSON data. Fetches the profile, parses 
 
 ### Frontend
 The "Suno Prompt" button appears as a row action on each profile in the Profiles section on song show pages. On success, it navigates to the newly created suno prompt's show page.
+
+## AI Queue CLI Worker
+
+Shell script-based worker (`scripts/queue-worker.sh`) that processes AI queue jobs using the Claude and Gemini CLIs. Runs independently from the API server's embedded queue processor.
+
+### How It Works
+1. Polls `POST /api/admin/ai-queue/claim` for pending jobs matching models in `CLI_MODELS`
+2. Claims a job atomically (prevents double-processing with concurrent workers)
+3. Routes to the correct CLI tool based on model prefix:
+   - `claude-*` models -> `claude -p` (Claude CLI)
+   - `gemini-*` models -> `gemini -p -m "$model"` (Gemini CLI)
+4. Submits the raw AI response back via `POST /api/admin/ai-queue/:id/complete`
+5. The API processes the response (parses JSON, updates linked profile, etc.)
+
+### Configuration
+- `CLI_MODELS` -- Comma-separated model IDs this worker processes (e.g., `claude-opus-4-6,gemini-2.5-pro`)
+- `POLL_INTERVAL` -- Seconds between polls (default: 5)
+- `CLI_TIMEOUT` -- Max seconds for CLI tool execution (default: 300)
+- `API_BASE` -- API URL (default: `http://localhost:3001/api`)
+
+### Running
+```bash
+pnpm cli:worker  # Start the CLI queue worker
+```
+
+### API Endpoints (for CLI worker communication)
+- `POST /api/admin/ai-queue/claim` -- Claim next pending job. Body: `{ models: string[] }`. Returns job data or 204.
+- `POST /api/admin/ai-queue/:id/complete` -- Submit response. Body: `{ response: string }`. Calls handler's `processResponse()`.
+- `POST /api/admin/ai-queue/:id/fail` -- Report failure. Body: `{ error: string }`.
+
+### Coexistence with API Server
+The API server's embedded processor handles `OPENROUTER_MODELS` models. The CLI worker handles `CLI_MODELS`. Keep these lists disjoint. The claim endpoint's atomic WHERE clause prevents double-processing if they overlap.
 
 ## Relationship Assignment Routes
 

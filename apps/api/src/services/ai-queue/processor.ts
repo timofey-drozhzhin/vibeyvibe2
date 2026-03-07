@@ -5,8 +5,12 @@ import { getEnv } from "../../env.js";
 
 const MAX_ATTEMPTS = 3;
 
-function getAutoprocessModels(): string[] {
-  const raw = getEnv().OPENROUTER_MODELS_AUTOPROCESS;
+/**
+ * Returns the list of models the embedded OpenRouter processor is allowed to handle.
+ * This is the single source of truth — no other code should bypass this check.
+ */
+export function getOpenRouterModels(): string[] {
+  const raw = getEnv().OPENROUTER_MODELS;
   if (!raw) return [];
   return raw.split(",").map((m) => m.trim()).filter(Boolean);
 }
@@ -21,6 +25,11 @@ export interface QueueJobHandler {
     prompt: string,
     model: string,
   ): Promise<{ rawResponse: string; outputId: number }>;
+
+  processResponse(
+    queueItemId: number,
+    rawResponse: string,
+  ): Promise<{ outputId: number }>;
 }
 
 const handlers = new Map<string, QueueJobHandler>();
@@ -96,7 +105,7 @@ async function executeJob(job: typeof aiQueue.$inferSelect): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function processNextJob(): Promise<boolean> {
-  const autoModels = getAutoprocessModels();
+  const autoModels = getOpenRouterModels();
   if (autoModels.length === 0) return false;
 
   const db = getDb();

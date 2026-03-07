@@ -24,9 +24,10 @@ const envSchema = z.object({
   DEV_AUTH_BYPASS: optionalString,
   FRONTEND_URL: z.string().url(),
   OPENROUTER_API_KEY: optionalString,
-  VIBES_SUNO_PROMPT_OPENROUTER_MODEL: optionalString,
-  PROFILE_GENERATION_OPENROUTER_MODELS: optionalString,
-  OPENROUTER_MODELS_AUTOPROCESS: optionalString,
+  SUNO_PROMPT_MODEL: optionalString,
+  PROFILE_GENERATION_MODELS: optionalString,
+  OPENROUTER_MODELS: optionalString,
+  CLI_MODELS: optionalString,
   SPOTIFY_CLIENT_ID: optionalString,
   SPOTIFY_CLIENT_SECRET: optionalString,
 });
