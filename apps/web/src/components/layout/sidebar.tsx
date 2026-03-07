@@ -125,7 +125,6 @@ export const Sider = () => {
             leftSection={<IconLayoutDashboard size={18} />}
             active={location.pathname === "/"}
             onClick={() => navigate("/")}
-            variant="light"
           />
 
           {sidebarSections.map((section) => {
@@ -150,7 +149,6 @@ export const Sider = () => {
                 }
                 active={isActive}
                 onClick={() => navigate(section.defaultPath)}
-                variant="light"
               />
             );
           })}

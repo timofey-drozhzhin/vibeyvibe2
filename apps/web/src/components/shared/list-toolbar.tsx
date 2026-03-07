@@ -51,12 +51,11 @@ export const ListToolbar = ({
       {/* Search input */}
       <TextInput
         placeholder="Search"
-        leftSection={<IconSearch size={20} stroke={2} />}
+        leftSection={<IconSearch size={20} stroke={2} color="var(--mantine-color-dark-0)" />}
         leftSectionWidth={44}
         value={search}
         onChange={(e) => onSearchChange(e.currentTarget.value)}
         size="md"
-        className="dark-pill-input"
         style={{ flex: 1, minWidth: 200 }}
       />
 
@@ -67,7 +66,6 @@ export const ListToolbar = ({
             <Button
               variant="default"
               size="md"
-              className="dark-pill"
               leftSection={<IconArrowsSort size={14} />}
               rightSection={<IconChevronDown size={12} />}
             >
@@ -101,7 +99,6 @@ export const ListToolbar = ({
           <Button
             variant="default"
             size="md"
-            className="dark-pill"
             leftSection={<IconFilter size={14} />}
             rightSection={<IconChevronDown size={12} />}
           >

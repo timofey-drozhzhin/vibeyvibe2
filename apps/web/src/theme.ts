@@ -1,10 +1,11 @@
 import { createTheme, type MantineColorsTuple, type CSSVariablesResolver } from "@mantine/core";
+import tabClasses from "./components/layout/tabs.module.css";
 
 // Suno-matched dark palette
 // 0–6: text shades (brightest → dimmest)
 // 7–9: surface shades (hover → surface → app bg)
 const dark: MantineColorsTuple = [
-  "#f7f4ef", // 0 - primary text
+  "#ffffff", // 0 - primary text
   "#c2c2c1", // 1 - secondary text
   "#a3a3a3", // 2 - muted text (subtitles)
   "#8a8a90", // 3 - dim text
@@ -47,11 +48,17 @@ export const theme = createTheme({
     Tooltip: { defaultProps: { radius: "md" } },
     Checkbox: { defaultProps: { radius: "sm" } },
     Textarea: { defaultProps: { variant: "filled", radius: "lg" } },
-    TextInput: { defaultProps: { variant: "filled" } },
-    PasswordInput: { defaultProps: { variant: "filled" } },
-    Select: { defaultProps: { variant: "filled" } },
+    TextInput: { defaultProps: { variant: "filled" }, styles: { input: { "--input-bg": "var(--mantine-color-default)" } } },
+    PasswordInput: { defaultProps: { variant: "filled" }, styles: { input: { "--input-bg": "var(--mantine-color-default)" } } },
+    Select: { defaultProps: { variant: "filled" }, styles: { input: { "--input-bg": "var(--mantine-color-default)" } } },
     Divider: { defaultProps: { color: "dark.7" } },
     Table: { defaultProps: { verticalSpacing: "sm", horizontalSpacing: "md" } },
-    Tabs: { defaultProps: { radius: 0 } },
+    Tabs: {
+      defaultProps: { color: "dark.0" },
+      classNames: { tab: tabClasses.tab },
+    },
+    NavLink: {
+      classNames: { root: tabClasses.navlink },
+    },
   },
 });

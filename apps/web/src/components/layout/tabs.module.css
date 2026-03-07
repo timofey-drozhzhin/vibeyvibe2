@@ -1,0 +1,21 @@
+.tab {
+  &:hover {
+    color: var(--mantine-color-dark-0) !important;
+    background: transparent !important;
+  }
+}
+
+.navlink {
+  color: var(--mantine-color-dark-3) !important;
+  background: transparent !important;
+
+  &:hover {
+    color: var(--mantine-color-dark-0) !important;
+    background: transparent !important;
+  }
+
+  &[data-active] {
+    color: var(--mantine-color-dark-0) !important;
+    background: transparent !important;
+  }
+}

@@ -23,9 +23,11 @@ app.use(
     origin: (origin) => {
       const frontendUrl = process.env.FRONTEND_URL;
       const allowed = new Set([frontendUrl]);
-      // Only allow localhost in non-production environments
+      // In non-production, allow any localhost/127.0.0.1 origin (any port)
       if (process.env.NODE_ENV !== "production") {
-        allowed.add("http://localhost:5173");
+        if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+          return origin;
+        }
       }
       return allowed.has(origin) ? origin : "";
     },
