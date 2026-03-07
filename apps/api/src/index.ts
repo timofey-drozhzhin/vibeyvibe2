@@ -3,18 +3,18 @@ import { config } from "dotenv";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Load .env from workspace root (two levels up from apps/api/)
+// Load .env from workspace root BEFORE importing app (which checks env vars at module level)
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, "../../../.env") });
 
-import app from "./app.js";
-import { getEnv } from "./env.js";
-import {
-  registerHandler,
-  startQueueProcessor,
-  resetStaleJobs,
-} from "./services/ai-queue/index.js";
-import { profileGenerationHandler } from "./services/ai-queue/handlers/profile-generation.js";
+const { default: app } = await import("./app.js");
+const { getEnv } = await import("./env.js");
+const { registerHandler, startQueueProcessor, resetStaleJobs } = await import(
+  "./services/ai-queue/index.js"
+);
+const { profileGenerationHandler } = await import(
+  "./services/ai-queue/handlers/profile-generation.js"
+);
 
 const env = getEnv();
 const port = parseInt(process.env.PORT || "3001", 10);
