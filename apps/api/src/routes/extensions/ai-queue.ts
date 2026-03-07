@@ -1,12 +1,17 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, like, sql } from "drizzle-orm";
 import { getDb } from "../../db/index.js";
 import { aiQueue } from "../../db/schema/index.js";
 import { getHandler } from "../../services/ai-queue/index.js";
 
 const aiQueueRoutes = new Hono();
+
+// Sanitize a prefix for SQL LIKE: escape wildcards, then append %
+function prefixToLike(prefix: string): string {
+  return prefix.replaceAll("%", "\\%").replaceAll("_", "\\_") + "%";
+}
 
 const idParamSchema = z.object({
   id: z.coerce.number().int().positive(),
@@ -99,15 +104,24 @@ aiQueueRoutes.post(
 // ---------------------------------------------------------------------------
 
 const claimSchema = z.object({
-  models: z.array(z.string().min(1)).min(1),
+  models: z.array(z.string().min(1)).min(1).optional(),
+  prefix: z.string().min(1).optional(),
+}).refine((d) => d.models || d.prefix, {
+  message: "Either models or prefix is required",
 });
 
 aiQueueRoutes.post(
   "/claim",
   zValidator("json", claimSchema),
   async (c) => {
-    const { models } = c.req.valid("json");
+    const { models, prefix } = c.req.valid("json");
     const db = getDb();
+
+    // Build model filter: exact match via models[] or starts-with match via prefix
+    // e.g. prefix "anthropic/claude-" matches "anthropic/claude-sonnet-4.6"
+    const modelFilter = prefix
+      ? like(aiQueue.model, prefixToLike(prefix))
+      : inArray(aiQueue.model, models!);
 
     // Find the oldest pending job matching requested models
     const [job] = await db
@@ -116,7 +130,7 @@ aiQueueRoutes.post(
       .where(
         and(
           eq(aiQueue.status, "pending"),
-          inArray(aiQueue.model, models),
+          modelFilter,
           sql`${aiQueue.attempts} < 3`,
         ),
       )
@@ -292,17 +306,20 @@ aiQueueRoutes.post(
 
 const resetStaleSchema = z.object({
   models: z.array(z.string().min(1)).min(1).optional(),
+  prefix: z.string().min(1).optional(),
 });
 
 aiQueueRoutes.post(
   "/reset-stale",
   zValidator("json", resetStaleSchema),
   async (c) => {
-    const { models } = c.req.valid("json");
+    const { models, prefix } = c.req.valid("json");
     const db = getDb();
 
     const conditions = [eq(aiQueue.status, "processing")];
-    if (models && models.length > 0) {
+    if (prefix) {
+      conditions.push(like(aiQueue.model, prefixToLike(prefix)));
+    } else if (models && models.length > 0) {
       conditions.push(inArray(aiQueue.model, models));
     }
 

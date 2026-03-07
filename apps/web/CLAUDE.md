@@ -378,6 +378,11 @@ Located in `components/shared/`:
 | `resolveFkDisplayName` | `utils/resolve-fk-display.ts` | Resolves FK display names from API-enriched record data. Checks enriched objects, camelCase, and snake_case name keys. Used by `FieldRow` and `ListCell`. |
 | `formatDate` | `utils/format-date.ts` | Formats ISO date strings for display. |
 
+## Interaction Rules
+
+### No Nested Interactive Elements
+Never make a whole component (card, row, container) clickable if it contains interactive elements inside (links, buttons, inputs, toggles). Adding an `onClick` to a parent that has clickable children causes broken UX: clicks on inner elements (like an unlink button or a rating) bubble up and trigger the parent navigation. Instead, make only the specific text or element that should navigate into a clickable element.
+
 ## Component Patterns
 
 ### Refine Hooks

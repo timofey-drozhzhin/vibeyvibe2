@@ -160,6 +160,10 @@ export interface EntityDef {
   enableLikes?: boolean;
   /** Columns rendered as Badges on Row 1 of the card-row layout (next to name). */
   listBadgeColumns?: string[];
+  /** Auto-poll list and show pages when records have any of these status values */
+  pollWhileStatus?: string[];
+  /** Poll interval in ms (default 4000) */
+  pollInterval?: number;
 }
 
 export interface ExtensionDef {
@@ -726,6 +730,8 @@ export const entityRegistry: EntityDef[] = [
     listColumns: ["name", "status", "model", "created_at"],
     asideFields: [],
     listBadgeColumns: ["status"],
+    pollWhileStatus: ["pending", "processing"],
+    pollInterval: 4000,
     showActions: [
       {
         label: "Retry",

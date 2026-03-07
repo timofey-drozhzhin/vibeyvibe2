@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useInfiniteList, useNavigation, useCreate } from "@refinedev/core";
 import {
   Group,
@@ -253,6 +253,18 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
   const records = result.data?.pages.flatMap((p) => p.data) ?? [];
   const total = result.data?.pages[0]?.total ?? 0;
   const isInitialLoading = query.isLoading;
+
+  // Auto-poll when any visible records have a matching status
+  const hasPollingRecords = useMemo(() => {
+    if (!entity.pollWhileStatus?.length) return false;
+    return records.some((r: any) => entity.pollWhileStatus!.includes(r.status));
+  }, [records, entity.pollWhileStatus]);
+
+  useEffect(() => {
+    if (!hasPollingRecords) return;
+    const interval = setInterval(() => query.refetch(), entity.pollInterval ?? 4000);
+    return () => clearInterval(interval);
+  }, [hasPollingRecords, query.refetch, entity.pollInterval]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 

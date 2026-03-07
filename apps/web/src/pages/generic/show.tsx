@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useShow, useUpdate, useDelete, useNavigation, useCustomMutation, useGetIdentity } from "@refinedev/core";
 import { useLikeToggle } from "../../hooks/use-like-toggle.js";
 import { Table, Button, Group } from "@mantine/core";
@@ -29,6 +29,19 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
 
   const record = showQuery?.data?.data;
   const isLoading = showQuery?.isPending;
+
+  // Auto-poll when record has a matching status
+  const shouldPoll = !!(
+    entity.pollWhileStatus?.length &&
+    record?.status &&
+    entity.pollWhileStatus.includes(record.status)
+  );
+
+  useEffect(() => {
+    if (!shouldPoll) return;
+    const interval = setInterval(() => showQuery.refetch(), entity.pollInterval ?? 4000);
+    return () => clearInterval(interval);
+  }, [shouldPoll, showQuery.refetch, entity.pollInterval]);
 
   // Inline save helper
   const saveField = async (field: string, value: any) => {
