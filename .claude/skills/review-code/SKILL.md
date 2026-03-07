@@ -78,7 +78,7 @@ Review the structural health of the codebase.
 - Avoid type assertions (`as any`, `as SomeType`) unless absolutely necessary and documented
 
 **Dead Code:**
-- Look for unused imports, unreachable code, commented-out blocks, deprecated exports still present
+- Look for unused components, unused imports, unreachable code, commented-out blocks, deprecated exports still present
 - Migration/one-time code that runs repeatedly but has no effect should be removed
 - Features marked `@deprecated` with no remaining consumers should be deleted
 
