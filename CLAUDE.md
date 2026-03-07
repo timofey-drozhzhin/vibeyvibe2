@@ -83,6 +83,9 @@ apps/web/src/
 
 ## Global Rules
 
+### Never Read .env Files
+Never read `.env`, `.env.*`, or any environment files. These contain secrets (API keys, tokens, passwords). All env variable names and their purposes are documented in this file and in `apps/api/src/env.ts`. If you need to know what variables exist, read `env.ts` or the `.env.dev-example` / `.env.prod-example` templates instead.
+
 ### Framework Conventions Are Law
 The conventions of the tech stack (Refine, Drizzle ORM, Mantine, Hono, Zod, etc.) always supersede project-specific conventions. Never implement something that contradicts how the framework is intended to be used. If you receive instructions that conflict with a framework's conventions or intended usage patterns, do not proceed -- notify the user immediately and explain the conflict.
 
@@ -98,7 +101,7 @@ When adding, removing, or changing any feature or behavior, you MUST search the 
 Additionally, before implementing any rendering or formatting logic inline, check if a shared utility or component already exists for that purpose (e.g., `formatDate` in `utils/format-date.ts`). If one exists, use it. If one doesn't exist but the same logic appears in multiple places, create a shared utility and replace all inline instances. The goal is zero duplication -- every piece of display logic should flow through a single shared implementation so that a change in one place updates the entire app.
 
 ### No Default Environment Values
-Never set default/fallback values for environment variables in code. All env values must be explicitly set in `.env`. If a required env variable is missing, return an appropriate error (e.g., 503) rather than falling back to a default. This prevents unexpected behavior from implicit configuration.
+Never set default/fallback values for environment variables in code. If a required env variable is missing, return an appropriate error (e.g., 503) rather than falling back to a default. This prevents unexpected behavior from implicit configuration.
 
 ### No Faking Features
 If a feature cannot be properly implemented, do not fake it with placeholder logic or mock behavior. Either implement it correctly or tell me that you are unable to create it.
@@ -185,15 +188,9 @@ pnpm cli:worker       # Start AI queue CLI worker (polls for jobs)
 
 ## Environment Setup
 
-**There is exactly one `.env` file for the entire project, located at the workspace root (`/workspace/.env`).** Never create `.env` files inside `apps/api/`, `apps/web/`, or any subdirectory. Both apps load environment variables from the root `.env` file. All paths in `.env` (like `DATABASE_URL`, `STORAGE_LOCAL_PATH`) are relative to `apps/api/` since that's where the API process runs.
+One env file at the workspace root. Never create env files inside `apps/` subdirectories. Both apps load from the root. Paths like `DATABASE_URL` and `STORAGE_LOCAL_PATH` are relative to `apps/api/` since that's where the API process runs.
 
-**No env variables have default values.** All values must be explicitly set in `.env`. The Zod schema in `apps/api/src/env.ts` validates all variables on startup and throws if any required values are missing.
-
-Two example files are provided:
-- `.env.dev-example` -- Development defaults (local SQLite, local storage, auth bypass enabled)
-- `.env.prod-example` -- Production template (libSQL remote, Bunny CDN, real auth)
-
-For local development, `pnpm dev` automatically copies `.env.dev-example` to `.env` if `.env` doesn't exist (via the `predev` script).
+All env variable names and validation rules are defined in `apps/api/src/env.ts`. Reference the `.env.dev-example` and `.env.prod-example` templates to see available variables. `pnpm dev` auto-copies the dev example if no env file exists.
 
 ## Database
 
@@ -266,14 +263,14 @@ services/spotify/
 ```
 
 ### Strategy
-When `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` are set in `.env`, the official Web API is used. On any failure (auth error, rate limit, network issue), it falls back to the scraper with a `console.warn`. When credentials are not set, the scraper is used directly.
+When `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` are configured, the official Web API is used. On any failure (auth error, rate limit, network issue), it falls back to the scraper with a `console.warn`. When credentials are not set, the scraper is used directly.
 
 ### Public API
 - `fetchSpotifyData(url)` -- Fetches metadata for a Spotify URL (track, album, or playlist). Returns a `SpotifyImportResult` with an array of normalized `SpotifyTrack` objects containing name, artists, album, releaseDate, ISRC, imageUrl, and spotifyId.
 - `detectSpotifyType(url)` -- Detects whether a URL points to a track, album, playlist, or is unknown.
 
 ### Configuration
-Optional environment variables in `.env`:
+Optional environment variables:
 - `SPOTIFY_CLIENT_ID` -- Spotify app client ID (from developer.spotify.com)
 - `SPOTIFY_CLIENT_SECRET` -- Spotify app client secret
 
@@ -315,7 +312,7 @@ Accepts an array of tracks (from the preview step) and creates `songs`, `artists
 AI-powered generation of song profiles. Uses the AI queue system to call an LLM that analyzes a song and all active vibes, producing a JSON array of `{ name, category, value }` entries stored in the `profiles` table (1:N from songs). Supports OpenRouter, Anthropic (Claude), and Google (Gemini) models.
 
 ### Configuration
-Requires environment variables in `.env`:
+Required environment variables:
 - `PROFILE_GENERATION_MODELS` -- Comma-separated list of allowed model IDs (e.g., `claude-opus-4-6,gemini-2.5-pro,anthropic/claude-sonnet-4-20250514`)
 - Provider API key or CLI auth for the chosen model: `OPENROUTER_API_KEY` for OpenRouter models, or authenticated `claude`/`gemini` CLI for native models
 
@@ -341,7 +338,7 @@ The Profiles section appears on song show pages as a one-to-many relationship. I
 AI-powered generation of Suno AI prompts (lyrics + style) from a song profile. Uses the AI provider abstraction to analyze a profile's vibe data and produce a ready-to-use Suno prompt. Supports OpenRouter, Anthropic (Claude), and Google (Gemini) models.
 
 ### Configuration
-Requires environment variables in `.env`:
+Required environment variables:
 - `SUNO_PROMPT_MODEL` -- Model ID for Suno prompt generation
 - Provider API key for the chosen model: `OPENROUTER_API_KEY`, or authenticated CLI
 
