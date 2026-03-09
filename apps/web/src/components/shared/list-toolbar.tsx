@@ -6,6 +6,7 @@ import {
   IconChevronDown,
   IconFilter,
   IconCheck,
+  IconX,
 } from "@tabler/icons-react";
 
 interface SortPresetOption {
@@ -23,6 +24,8 @@ interface ListToolbarProps {
   sortPresets?: SortPresetOption[];
   activeSortPreset?: string | null;
   onSortPresetChange?: (value: string | null) => void;
+  /** When provided, shows a reset button to clear all filters */
+  onReset?: () => void;
 }
 
 const archiveOptions = [
@@ -40,6 +43,7 @@ export const ListToolbar = ({
   sortPresets,
   activeSortPreset,
   onSortPresetChange,
+  onReset,
 }: ListToolbarProps) => {
   const activeSortLabel =
     sortPresets?.find((p) => p.value === activeSortPreset)?.label ?? "Sort";
@@ -51,7 +55,7 @@ export const ListToolbar = ({
       {/* Search input */}
       <TextInput
         placeholder="Search"
-        leftSection={<IconSearch size={20} stroke={2} color="var(--mantine-color-dark-0)" />}
+        leftSection={<IconSearch size={20} stroke={2} />}
         leftSectionWidth={44}
         value={search}
         onChange={(e) => onSearchChange(e.currentTarget.value)}
@@ -121,6 +125,17 @@ export const ListToolbar = ({
           ))}
         </Menu.Dropdown>
       </Menu>
+
+      {onReset && (
+        <Button
+          variant="filled"
+          size="md"
+          leftSection={<IconX size={14} />}
+          onClick={onReset}
+        >
+          Reset
+        </Button>
+      )}
 
       {trailing}
     </Group>

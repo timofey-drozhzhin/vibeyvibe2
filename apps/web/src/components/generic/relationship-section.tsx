@@ -13,6 +13,8 @@ import {
   Stack,
   Textarea,
   Select,
+  Checkbox,
+  Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useNavigation, useCustomMutation } from "@refinedev/core";
@@ -26,12 +28,16 @@ import {
   IconEye,
   IconArchive,
   IconPencil,
+  IconGitCompare,
 } from "@tabler/icons-react";
 import { SectionCard } from "../shared/entity-page.js";
 import { formatDate } from "../../utils/format-date.js";
 import { AssignModal } from "../shared/assign-modal.js";
+import { ArtistCardList } from "./artist-card-list.js";
+import { AlbumCardList } from "./album-card-list.js";
 import { RatingDisplay } from "../shared/rating-field.js";
 import { EditableField } from "../shared/editable-field.js";
+import { CompareModal } from "../shared/compare-modal.js";
 import type {
   RelationshipDef,
   EntityDef,
@@ -64,9 +70,12 @@ export const RelationshipSection = ({
   const [rowGeneratingId, setRowGeneratingId] = useState<string | number | null>(null);
   const [archivingId, setArchivingId] = useState<string | number | null>(null);
   const [viewModalData, setViewModalData] = useState<any[] | null>(null);
+  const [viewModalItem, setViewModalItem] = useState<any | null>(null);
   const [editModalData, setEditModalData] = useState<{ entries: any[]; itemId: string | number; endpoint: string } | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
+  const [compareOpened, { open: openCompare, close: closeCompare }] = useDisclosure(false);
   const { mutateAsync } = useCustomMutation();
 
   // Normalize generateAction to always be an array
@@ -137,6 +146,30 @@ export const RelationshipSection = ({
   const actionsColWidth = relationship.archivable || relationship.removeAction
     ? 60 + (hasRowActions ? (relationship.rowActions!.length * 36) : 0)
     : hasRowActions ? (relationship.rowActions!.length * 36) : 60;
+
+  // Compare action
+  const hasCompareAction = !!relationship.compareAction;
+  const selectedItems = useMemo(
+    () => items.filter((item) => selectedIds.has(item.id)),
+    [items, selectedIds],
+  );
+
+  const toggleSelect = useCallback((id: string | number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === items.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map((item) => item.id)));
+    }
+  }, [items, selectedIds.size]);
 
   const handleRemove = async (relatedId: string | number) => {
     setRemovingId(relatedId);
@@ -213,6 +246,10 @@ export const RelationshipSection = ({
   };
 
   const handleViewJson = (item: any, viewField: string) => {
+    if (hasCompareAction) {
+      setViewModalItem(item);
+      return;
+    }
     try {
       const parsed = typeof item[viewField] === "string"
         ? JSON.parse(item[viewField])
@@ -372,88 +409,163 @@ export const RelationshipSection = ({
     }
   };
 
+  // Resolve target entity image column for cards mode
+  const targetImageCol = targetEntity
+    ? targetEntity.fields.find(
+        (f) => targetEntity.listColumns.includes(f.key) && f.type === "image",
+      )?.key
+    : undefined;
+
+  // Shared header actions for both cards and table modes
+  const headerActions = (
+    <Group gap="xs">
+      {hasCompareAction && selectedIds.size >= 2 && (
+        <Button
+          size="xs"
+          variant="light"
+          color="blue"
+          leftSection={<IconGitCompare size={14} />}
+          onClick={openCompare}
+        >
+          Compare ({selectedIds.size})
+        </Button>
+      )}
+      {generateActions.map((action, idx) => {
+        const ActionIcon_ =
+          action.icon === "music" ? IconMusic : IconSparkles;
+        const models = action.modelsEndpoint ? (availableModels[idx] ?? []) : [];
+        return (
+          <Group key={idx} gap={4} wrap="nowrap">
+            {models.length > 0 && (
+              <Select
+                size="xs"
+                w={200}
+                data={models}
+                value={modelSelections[idx] ?? null}
+                onChange={(val) => val && setModelSelections((prev) => ({ ...prev, [idx]: val }))}
+                allowDeselect={false}
+              />
+            )}
+            <Button
+              size="xs"
+              variant="light"
+              color={action.color ?? "violet"}
+              leftSection={<ActionIcon_ size={14} />}
+              loading={generatingIdx === idx}
+              disabled={(generatingIdx !== null && generatingIdx !== idx) || (models.length > 0 && !modelSelections[idx])}
+              onClick={() => handleGenerate(action, idx)}
+            >
+              {action.label}
+            </Button>
+          </Group>
+        );
+      })}
+      {!relationship.hideAssign && !isReadOnly && (
+        <Button
+          size="xs"
+          variant="light"
+          leftSection={<IconPlus size={14} />}
+          onClick={openAssign}
+        >
+          {`Assign ${relationship.label.replace(/s$/, "")}`}
+        </Button>
+      )}
+      {hasMore && (
+        <Button
+          size="xs"
+          variant="subtle"
+          onClick={() => setShowAll((v) => !v)}
+        >
+          {showAll ? "See less" : `See all (${allItems.length})`}
+        </Button>
+      )}
+    </Group>
+  );
+
+  // Check if any header actions exist
+  const hasHeaderActions = generateActions.length > 0 || hasCompareAction || (!relationship.hideAssign && !isReadOnly) || hasMore;
+
+  // Cards mode: use ArtistCardList / AlbumCardList (same components as list pages)
+  const isCardsMode = relationship.displayMode === "cards";
+
+  const renderCardsContent = () => {
+    if (items.length === 0) {
+      return (
+        <Text c="dimmed" ta="center" py="md">
+          No {relationship.label.toLowerCase()} yet.
+        </Text>
+      );
+    }
+    const cardLayout = targetEntity?.listLayout;
+    if (cardLayout === "artist-card") {
+      return (
+        <ArtistCardList
+          records={items}
+          resource={targetResource}
+          imageCol={targetImageCol}
+          showPlatformLinks={false}
+          platformType="artist"
+          onNavigate={(res, id) => show(res, id)}
+        />
+      );
+    }
+    if (cardLayout === "album-card") {
+      return (
+        <AlbumCardList
+          records={items}
+          resource={targetResource}
+          imageCol={targetImageCol}
+          showPlatformLinks={false}
+          platformType="album"
+          onNavigate={(res, id) => show(res, id)}
+        />
+      );
+    }
+    // Fallback: render as table
+    return null;
+  };
+
   return (
     <>
+      {isCardsMode ? (
+        <Stack gap="sm">
+          <Group justify="space-between">
+            <Title order={5} fw={600} c="dark.1">{relationship.label}</Title>
+            {hasHeaderActions && headerActions}
+          </Group>
+          {renderCardsContent()}
+        </Stack>
+      ) : (
       <SectionCard
         title={relationship.label}
-        {...(generateActions.length > 0
-          ? {
-              actions: (
-                <Group gap="xs">
-                  {generateActions.map((action, idx) => {
-                    const ActionIcon_ =
-                      action.icon === "music" ? IconMusic : IconSparkles;
-                    const models = action.modelsEndpoint ? (availableModels[idx] ?? []) : [];
-                    return (
-                      <Group key={idx} gap={4} wrap="nowrap">
-                        {models.length > 0 && (
-                          <Select
-                            size="xs"
-                            w={200}
-                            data={models}
-                            value={modelSelections[idx] ?? null}
-                            onChange={(val) => val && setModelSelections((prev) => ({ ...prev, [idx]: val }))}
-                            allowDeselect={false}
-                          />
-                        )}
-                        <Button
-                          size="xs"
-                          variant="light"
-                          color={action.color ?? "violet"}
-                          leftSection={<ActionIcon_ size={14} />}
-                          loading={generatingIdx === idx}
-                          disabled={(generatingIdx !== null && generatingIdx !== idx) || (models.length > 0 && !modelSelections[idx])}
-                          onClick={() => handleGenerate(action, idx)}
-                        >
-                          {action.label}
-                        </Button>
-                      </Group>
-                    );
-                  })}
-                  {!relationship.hideAssign && !isReadOnly && (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconPlus size={14} />}
-                      onClick={openAssign}
-                    >
-                      {`Assign ${relationship.label.replace(/s$/, "")}`}
-                    </Button>
-                  )}
-                  {hasMore && (
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      onClick={() => setShowAll((v) => !v)}
-                    >
-                      {showAll ? "See less" : `See all (${allItems.length})`}
-                    </Button>
-                  )}
-                </Group>
-              ),
-            }
-          : (relationship.hideAssign || isReadOnly)
-            ? {}
-            : {
-                action: {
-                  label: `Assign ${relationship.label.replace(/s$/, "")}`,
-                  onClick: openAssign,
-                },
-              })}
+        {...(hasHeaderActions
+          ? { actions: headerActions }
+          : {})}
       >
         <Table>
           <Table.Thead>
             <Table.Tr>
+              {hasCompareAction && (
+                <Table.Th w={40}>
+                  <Checkbox
+                    checked={items.length > 0 && selectedIds.size === items.length}
+                    indeterminate={selectedIds.size > 0 && selectedIds.size < items.length}
+                    onChange={toggleSelectAll}
+                    aria-label="Select all"
+                    size="xs"
+                  />
+                </Table.Th>
+              )}
               {relationship.columns.map((col) => (
-                <Table.Th key={col.key}>{col.label}</Table.Th>
+                <Table.Th key={col.key} fw={500} c="dimmed">{col.label}</Table.Th>
               ))}
-              {!isReadOnly && <Table.Th w={actionsColWidth}>Actions</Table.Th>}
+              {!isReadOnly && <Table.Th w={actionsColWidth} fw={500} c="dimmed">Actions</Table.Th>}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {items.length === 0 && (
               <Table.Tr>
-                <Table.Td colSpan={relationship.columns.length + (isReadOnly ? 0 : 1)}>
+                <Table.Td colSpan={relationship.columns.length + (isReadOnly ? 0 : 1) + (hasCompareAction ? 1 : 0)}>
                   <Text c="dimmed" ta="center" py="md">
                     No {relationship.label.toLowerCase()} yet.
                   </Text>
@@ -462,6 +574,16 @@ export const RelationshipSection = ({
             )}
             {items.map((item) => (
               <Table.Tr key={item.id}>
+                {hasCompareAction && (
+                  <Table.Td>
+                    <Checkbox
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => toggleSelect(item.id)}
+                      aria-label="Select for comparison"
+                      size="xs"
+                    />
+                  </Table.Td>
+                )}
                 {relationship.columns.map((col) => (
                   <Table.Td key={col.key}>
                     {payloadKeys.has(col.key) ? (
@@ -568,6 +690,7 @@ export const RelationshipSection = ({
           </Table.Tbody>
         </Table>
       </SectionCard>
+      )}
 
       {record.id && !relationship.hideAssign && (
         <AssignModal
@@ -652,6 +775,31 @@ export const RelationshipSection = ({
           </>
         )}
       </Modal>
+
+      {/* Compare Modal (multi-select) */}
+      {hasCompareAction && (
+        <CompareModal
+          opened={compareOpened}
+          onClose={() => {
+            closeCompare();
+            setSelectedIds(new Set());
+          }}
+          items={selectedItems}
+          compareAction={relationship.compareAction!}
+          title={`Compare ${relationship.label}`}
+        />
+      )}
+
+      {/* View single item modal (reuses compare layout when compareAction exists) */}
+      {hasCompareAction && viewModalItem && (
+        <CompareModal
+          opened={viewModalItem !== null}
+          onClose={() => setViewModalItem(null)}
+          items={[viewModalItem]}
+          compareAction={relationship.compareAction!}
+          title={`${relationship.label} Details`}
+        />
+      )}
     </>
   );
 };

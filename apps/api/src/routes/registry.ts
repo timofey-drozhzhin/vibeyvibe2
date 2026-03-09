@@ -225,9 +225,87 @@ async function songDetailEnricher(db: any, entity: any) {
         : "processing",
   }));
 
+  // Compute song_count for each related artist
+  const artistRows = relatedArtists.map((r: any) => r.artists);
+  const artistIds = artistRows.map((a: any) => a.id);
+  let artistSongCounts: Record<number, number> = {};
+  if (artistIds.length > 0) {
+    const countRows = await db
+      .select({
+        artistId: artistSongs.artist_id,
+        songCount: sql<number>`COUNT(*)`,
+      })
+      .from(artistSongs)
+      .where(
+        sql`${artistSongs.artist_id} IN (${sql.join(
+          artistIds.map((id: number) => sql`${id}`),
+          sql`, `
+        )})`
+      )
+      .groupBy(artistSongs.artist_id);
+    for (const row of countRows) {
+      artistSongCounts[row.artistId] = row.songCount;
+    }
+  }
+
+  // Enrich related albums with artists and song_count
+  const albumRows = relatedAlbums.map((r: any) => r.albums);
+  const albumIds = albumRows.map((a: any) => a.id);
+  let albumArtistMap: Record<number, { id: number; name: string }[]> = {};
+  let albumSongCounts: Record<number, number> = {};
+  if (albumIds.length > 0) {
+    // Artists per album (via album_songs -> artist_songs -> artists)
+    const albumArtistRows = await db
+      .select({
+        albumId: albumSongs.album_id,
+        artistId: artists.id,
+        artistName: artists.name,
+      })
+      .from(albumSongs)
+      .innerJoin(artistSongs, eq(artistSongs.song_id, albumSongs.song_id))
+      .innerJoin(artists, eq(artists.id, artistSongs.artist_id))
+      .where(
+        sql`${albumSongs.album_id} IN (${sql.join(
+          albumIds.map((id: number) => sql`${id}`),
+          sql`, `
+        )})`
+      );
+    for (const row of albumArtistRows) {
+      if (!albumArtistMap[row.albumId]) albumArtistMap[row.albumId] = [];
+      const existing = albumArtistMap[row.albumId];
+      if (!existing.some((a) => a.id === row.artistId)) {
+        existing.push({ id: row.artistId, name: row.artistName });
+      }
+    }
+    // Song count per album
+    const albumCountRows = await db
+      .select({
+        albumId: albumSongs.album_id,
+        songCount: sql<number>`COUNT(*)`,
+      })
+      .from(albumSongs)
+      .where(
+        sql`${albumSongs.album_id} IN (${sql.join(
+          albumIds.map((id: number) => sql`${id}`),
+          sql`, `
+        )})`
+      )
+      .groupBy(albumSongs.album_id);
+    for (const row of albumCountRows) {
+      albumSongCounts[row.albumId] = row.songCount;
+    }
+  }
+
   return {
-    artists: relatedArtists.map((r: any) => r.artists),
-    albums: relatedAlbums.map((r: any) => r.albums),
+    artists: artistRows.map((a: any) => ({
+      ...a,
+      song_count: artistSongCounts[a.id] || 0,
+    })),
+    albums: albumRows.map((a: any) => ({
+      ...a,
+      artists: albumArtistMap[a.id] || [],
+      song_count: albumSongCounts[a.id] || 0,
+    })),
     profiles: enrichedProfiles,
   };
 }

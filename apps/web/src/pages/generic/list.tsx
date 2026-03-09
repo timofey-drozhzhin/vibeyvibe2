@@ -190,6 +190,38 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
   const { mutate: createRecord, mutation: createMutation } = useCreate();
   const { toggle: toggleLike } = useLikeToggle(() => query.refetch());
 
+  const defaultSortPreset = (() => {
+    if (!entity.sortPresets) return null;
+    const defaultComposite = "created_at:desc";
+    return sortPresetOptions.find((p) => p.value === defaultComposite)
+      ? defaultComposite
+      : null;
+  })();
+
+  const isFiltered =
+    search !== "" ||
+    archiveFilter !== "active" ||
+    likedFilter !== false ||
+    releaseYear !== null ||
+    activeSortPreset !== defaultSortPreset;
+
+  const resetFilters = () => {
+    setSearch("");
+    setArchiveFilter("active");
+    setLikedFilter(false);
+    setReleaseYear(null);
+    if (defaultSortPreset) {
+      setActiveSortPreset(defaultSortPreset);
+      const [field, order] = defaultSortPreset.split(":");
+      setSortField(field);
+      setSortOrder(order as "asc" | "desc");
+    } else {
+      setActiveSortPreset(null);
+      setSortField("created_at");
+      setSortOrder("desc");
+    }
+  };
+
   const handleSortPresetChange = (value: string | null) => {
     if (!value) return;
     setActiveSortPreset(value);
@@ -308,8 +340,9 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
         }
         activeSortPreset={activeSortPreset}
         onSortPresetChange={handleSortPresetChange}
+        onReset={isFiltered ? resetFilters : undefined}
         trailing={
-          <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
+          <Button variant="default" size="md" leftSection={<IconPlus size={16} />} onClick={openCreate}>
             New
           </Button>
         }

@@ -2,6 +2,10 @@
 
 Refine v5 (headless) + Mantine UI v8 single-page application for the vibeyvibe music management system.
 
+## Documentation
+
+- **Mantine UI v8**: https://mantine.dev/llms.txt
+
 ## Overview
 
 The web app is a React 19 SPA built with Refine (headless CRUD framework) and Mantine (component library). It communicates with the API backend through a REST data provider. Authentication is handled via Better Auth session cookies. The app uses Vite for development and production builds, and deploys as static files to Bunny CDN.
@@ -46,6 +50,10 @@ src/
 ```
 
 There are NO per-entity page directories. The old `pages/my-music/songs/`, `pages/lab/artists/`, etc. directories are all gone. Everything is driven by the entity registry and the two generic page components.
+
+## Documentation
+
+- **Mantine UI v8**: https://mantine.dev/llms.txt
 
 ## Entity Registry
 

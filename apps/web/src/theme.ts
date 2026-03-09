@@ -1,64 +1,43 @@
-import { createTheme, type MantineColorsTuple, type CSSVariablesResolver } from "@mantine/core";
+import { createTheme, type MantineColorsTuple } from "@mantine/core";
 import tabClasses from "./components/layout/tabs.module.css";
 
-// Suno-matched dark palette
+// Custom dark palette
 // 0–6: text shades (brightest → dimmest)
 // 7–9: surface shades (hover → surface → app bg)
 const dark: MantineColorsTuple = [
-  "#ffffff", // 0 - primary text
-  "#c2c2c1", // 1 - secondary text
-  "#a3a3a3", // 2 - muted text (subtitles)
-  "#8a8a90", // 3 - dim text
-  "#7a7a80", // 4 - faint text
-  "#727278", // 5 - near-inactive text
-  "#6a6a72", // 6 - inactive text (nav items)
-  "#252529", // 7 - hover bg
-  "#1c1c1f", // 8 - surface bg, borders
-  "#101012", // 9 - app bg
+  "#f0f1f2", // 0 - primary text
+  "#d9dbdf", // 1 - secondary text
+  "#b6b9c2", // 2 - muted text (subtitles)
+  "#979ba8", // 3 - dim text
+  "#797e8d", // 4 - faint text
+  "#5a5e6b", // 5 - near-inactive text
+  "#434550", // 6 - inactive text (nav items)
+  "#31323a", // 7 - hover bg
+  "#212329", // 8 - surface bg, borders
+  "#0c0d10", // 9 - app bg
 ];
 
-export const cssVariablesResolver: CSSVariablesResolver = (theme) => ({
-  variables: {},
-  light: {},
-  dark: {
-    "--mantine-color-body": theme.colors.dark[9],
-    "--mantine-color-default": theme.colors.dark[8],
-    "--mantine-color-default-hover": theme.colors.dark[7],
-    "--mantine-color-default-border": theme.colors.dark[8],
-  },
-});
+const darkShifted: MantineColorsTuple = [
+  "#ffffff",
+  "#f0f1f2",
+  "#d9dbdf",
+  "#b6b9c2",
+  "#979ba8",
+  "#797e8d",
+  "#5a5e6b",
+  "#434550",
+  "#31323a",
+  "#212329",
+];
 
 export const theme = createTheme({
-  fontFamily: "Poppins, sans-serif",
-  headings: { fontFamily: "Poppins, sans-serif" },
+  colors: { dark, darkShifted },
   primaryColor: "violet",
   primaryShade: { light: 6, dark: 7 },
-  autoContrast: true,
-  cursorType: "pointer",
-  colors: { dark },
-  defaultRadius: "xl",
   components: {
-    Button: { defaultProps: { fw: 500 } },
-    Card: { defaultProps: { shadow: "none" } },
-    Paper: { defaultProps: { shadow: "none" } },
-    Modal: { defaultProps: { radius: "lg" } },
-    Menu: { defaultProps: { radius: "lg" } },
-    Popover: { defaultProps: { radius: "lg" } },
-    Notification: { defaultProps: { radius: "lg" } },
-    Tooltip: { defaultProps: { radius: "md" } },
-    Checkbox: { defaultProps: { radius: "sm" } },
-    Textarea: { defaultProps: { variant: "filled", radius: "lg" } },
-    TextInput: { defaultProps: { variant: "filled" }, styles: { input: { "--input-bg": "var(--mantine-color-default)" } } },
-    PasswordInput: { defaultProps: { variant: "filled" }, styles: { input: { "--input-bg": "var(--mantine-color-default)" } } },
-    Select: { defaultProps: { variant: "filled" }, styles: { input: { "--input-bg": "var(--mantine-color-default)" } } },
-    Divider: { defaultProps: { color: "dark.7" } },
-    Table: { defaultProps: { verticalSpacing: "sm", horizontalSpacing: "md" } },
-    Tabs: {
-      defaultProps: { color: "dark.0" },
-      classNames: { tab: tabClasses.tab },
-    },
-    NavLink: {
-      classNames: { root: tabClasses.navlink },
-    },
+    Popover: { defaultProps: { withinPortal: false } },
+    Select: { defaultProps: { comboboxProps: { withinPortal: false }, checkIconPosition: "right" } },
+    Menu: { defaultProps: { withinPortal: false } },
+    Tooltip: { defaultProps: { withinPortal: false } },
   },
 });

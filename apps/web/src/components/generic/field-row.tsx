@@ -43,7 +43,7 @@ export const FieldRow = ({ field, value, onSave, entity, record }: FieldRowProps
 
   return (
     <Table.Tr>
-      <Table.Td fw={600} w={180}>{field.label}</Table.Td>
+      <Table.Td fw={500} c="dimmed">{field.label}</Table.Td>
       <Table.Td>{content}</Table.Td>
     </Table.Tr>
   );

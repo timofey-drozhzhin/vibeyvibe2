@@ -73,9 +73,6 @@ export const Layout = ({ children }: PropsWithChildren) => {
           <Box
             px="lg"
             pt="lg"
-            style={{
-              borderBottom: "1px solid var(--mantine-color-dark-8)",
-            }}
           >
             <Title order={2} fw={600} mb="md">
               {section.label}
@@ -92,7 +89,6 @@ export const Layout = ({ children }: PropsWithChildren) => {
                   <Tabs.Tab
                     key={tab.path}
                     value={tab.path}
-                    c={activeTab === tab.path ? "dark.0" : "dark.3"}
                   >
                     {tab.label}
                   </Tabs.Tab>

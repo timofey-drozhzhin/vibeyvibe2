@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useShow, useUpdate, useDelete, useNavigation, useCustomMutation, useGetIdentity } from "@refinedev/core";
 import { useLikeToggle } from "../../hooks/use-like-toggle.js";
-import { Table, Button, Group } from "@mantine/core";
+import { Table, Button, Group, SimpleGrid, Stack } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconPlayerPlay, IconSparkles, IconRefresh } from "@tabler/icons-react";
 import { EntityPage, SectionCard } from "../../components/shared/entity-page.js";
@@ -126,6 +126,90 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
     );
   }
 
+  // -------------------------------------------------------------------------
+  // Build section renderers keyed by ID
+  // -------------------------------------------------------------------------
+  const sectionRenderers: Record<string, () => ReactNode> = {};
+
+  // "details" section
+  if (mainFields.length > 0) {
+    sectionRenderers["details"] = () => (
+      <SectionCard
+        title={`${entity.name} Details`}
+        {...(entity.showActions && entity.showActions.length > 0
+          ? {
+              actions: (
+                <Group gap="xs">
+                  {entity.showActions
+                    .filter((action) => {
+                      if (!action.conditionField || !action.conditionValues) return true;
+                      return action.conditionValues.includes(record[action.conditionField]);
+                    })
+                    .map((action) => (
+                      <Button
+                        key={action.endpoint}
+                        size="xs"
+                        variant="light"
+                        color={action.color ?? "violet"}
+                        leftSection={showActionIcon(action.icon)}
+                        loading={actionLoading === action.endpoint}
+                        onClick={() => handleShowAction(action)}
+                      >
+                        {action.label}
+                      </Button>
+                    ))}
+                </Group>
+              ),
+            }
+          : {})}
+      >
+        <Table>
+          <Table.Tbody>
+            {mainFields.map((field) => (
+              <FieldRow
+                key={field.key}
+                field={field}
+                value={record[field.key]}
+                onSave={(v) => saveField(field.key, v)}
+                entity={entity}
+                record={record}
+              />
+            ))}
+            <Table.Tr>
+              <Table.Td fw={500} c="dimmed">Created</Table.Td>
+              <Table.Td>{formatDate(record.created_at) || "--"}</Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td fw={500} c="dimmed">Updated</Table.Td>
+              <Table.Td>{formatDate(record.updated_at) || "--"}</Table.Td>
+            </Table.Tr>
+          </Table.Tbody>
+        </Table>
+      </SectionCard>
+    );
+  }
+
+  // Relationship sections
+  entity.relationships.forEach((rel) => {
+    sectionRenderers[rel.subResource] = () => (
+      <RelationshipSection
+        key={rel.subResource}
+        relationship={rel}
+        record={record}
+        sourceEntity={entity}
+        onRefresh={() => showQuery.refetch()}
+      />
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Determine compact grid vs full-width sections
+  // -------------------------------------------------------------------------
+  const compactGrid = entity.showLayout?.compactGrid;
+  const gridSectionKeys = new Set(compactGrid?.flat() ?? []);
+  const allSectionKeys = Object.keys(sectionRenderers);
+  const fullWidthKeys = allSectionKeys.filter((k) => !gridSectionKeys.has(k));
+
   return (
     <EntityPage
       title={record[titleField] || ""}
@@ -172,72 +256,25 @@ export const GenericEntityDetail = ({ entity }: GenericEntityDetailProps) => {
         ) : undefined
       }
     >
-      {/* Main details */}
-      {mainFields.length > 0 && (
-        <SectionCard
-          title={`${entity.name} Details`}
-          {...(entity.showActions && entity.showActions.length > 0
-            ? {
-                actions: (
-                  <Group gap="xs">
-                    {entity.showActions
-                      .filter((action) => {
-                        if (!action.conditionField || !action.conditionValues) return true;
-                        return action.conditionValues.includes(record[action.conditionField]);
-                      })
-                      .map((action) => (
-                        <Button
-                          key={action.endpoint}
-                          size="xs"
-                          variant="light"
-                          color={action.color ?? "violet"}
-                          leftSection={showActionIcon(action.icon)}
-                          loading={actionLoading === action.endpoint}
-                          onClick={() => handleShowAction(action)}
-                        >
-                          {action.label}
-                        </Button>
-                      ))}
-                  </Group>
-                ),
-              }
-            : {})}
-        >
-          <Table>
-            <Table.Tbody>
-              {mainFields.map((field) => (
-                <FieldRow
-                  key={field.key}
-                  field={field}
-                  value={record[field.key]}
-                  onSave={(v) => saveField(field.key, v)}
-                  entity={entity}
-                  record={record}
-                />
-              ))}
-              <Table.Tr>
-                <Table.Td fw={600} w={180}>Created</Table.Td>
-                <Table.Td>{formatDate(record.created_at) || "--"}</Table.Td>
-              </Table.Tr>
-              <Table.Tr>
-                <Table.Td fw={600}>Updated</Table.Td>
-                <Table.Td>{formatDate(record.updated_at) || "--"}</Table.Td>
-              </Table.Tr>
-            </Table.Tbody>
-          </Table>
-        </SectionCard>
+      {/* Compact grid sections */}
+      {compactGrid && compactGrid.length > 0 && (
+        <SimpleGrid cols={{ base: 1, md: compactGrid.length }} spacing="md">
+          {compactGrid.map((column, colIdx) => (
+            <Stack key={colIdx} gap="md" style={{ minWidth: 0 }}>
+              {column.map((sectionKey) => {
+                const renderer = sectionRenderers[sectionKey];
+                return renderer ? <div key={sectionKey}>{renderer()}</div> : null;
+              })}
+            </Stack>
+          ))}
+        </SimpleGrid>
       )}
 
-      {/* Relationships */}
-      {entity.relationships.map((rel) => (
-        <RelationshipSection
-          key={rel.subResource}
-          relationship={rel}
-          record={record}
-          sourceEntity={entity}
-          onRefresh={() => showQuery.refetch()}
-        />
-      ))}
+      {/* Full-width sections (or all sections if no compactGrid) */}
+      {fullWidthKeys.map((key) => {
+        const renderer = sectionRenderers[key];
+        return renderer ? <div key={key}>{renderer()}</div> : null;
+      })}
     </EntityPage>
   );
 };

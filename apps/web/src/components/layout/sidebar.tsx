@@ -98,7 +98,7 @@ export const Sider = () => {
       style={{
         position: "sticky",
         top: 0,
-        borderRight: "1px solid var(--mantine-color-dark-8)",
+        borderRight: "1px solid var(--mantine-color-default-border)",
         display: "flex",
         flexDirection: "column",
         backgroundColor: "var(--mantine-color-dark-9)",

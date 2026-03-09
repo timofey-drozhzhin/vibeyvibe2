@@ -31,9 +31,9 @@ interface SectionCardProps {
 }
 
 export const SectionCard = ({ title, action, actions, children }: SectionCardProps) => (
-  <Card withBorder>
+  <Card>
     <Group justify="space-between" mb="md">
-      <Title order={4}>{title}</Title>
+      <Title order={5} fw={600} c="dark.1">{title}</Title>
       {actions
         ? actions
         : action && (

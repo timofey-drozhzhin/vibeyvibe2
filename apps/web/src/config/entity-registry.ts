@@ -72,6 +72,13 @@ export interface RowActionDef {
   color?: string;
 }
 
+export interface CompareActionDef {
+  /** Which JSON field on the item to parse and display in comparison columns */
+  viewField: string;
+  /** Item field keys to use as column headers (e.g., ["created_at", "model"]) */
+  labelFields: string[];
+}
+
 export interface RelationshipDef {
   type: "many-to-many" | "one-to-many";
   target: string;
@@ -108,6 +115,10 @@ export interface RelationshipDef {
   pollWhileStatus?: string;
   /** Poll interval in ms (default 4000) */
   pollInterval?: number;
+  /** Enable checkbox selection and side-by-side comparison modal for JSON data */
+  compareAction?: CompareActionDef;
+  /** Display mode: "table" (default), "chips" (compact pill widgets), or "cards" (reuses list page card components) */
+  displayMode?: "table" | "chips" | "cards";
 }
 
 export interface SectionDef {
@@ -132,6 +143,13 @@ export interface SortPresetDef {
   label: string;
   field: string;
   order: "asc" | "desc";
+}
+
+export interface ShowLayoutDef {
+  /** Group sections into a compact grid. Each inner array is a column.
+   *  "details" = main fields card. Use relationship subResource names for relationship cards.
+   *  Sections not listed render full-width below the grid. */
+  compactGrid: string[][];
 }
 
 export interface EntityDef {
@@ -164,6 +182,8 @@ export interface EntityDef {
   pollWhileStatus?: string[];
   /** Poll interval in ms (default 4000) */
   pollInterval?: number;
+  /** Layout configuration for the show page compact grid */
+  showLayout?: ShowLayoutDef;
 }
 
 export interface ExtensionDef {
@@ -255,6 +275,7 @@ const songRelationships: RelationshipDef[] = [
     columns: [
       { key: "name", label: "Name", type: "text" },
     ],
+    displayMode: "cards",
   },
   {
     type: "many-to-many",
@@ -267,6 +288,7 @@ const songRelationships: RelationshipDef[] = [
       { key: "name", label: "Name", type: "text" },
       { key: "release_date", label: "Release Date", type: "date" },
     ],
+    displayMode: "cards",
   },
   {
     type: "one-to-many",
@@ -285,6 +307,7 @@ const songRelationships: RelationshipDef[] = [
     archiveEndpoint: "/api/profiles",
     pollWhileStatus: "processing",
     pollInterval: 4000,
+    compareAction: { viewField: "value", labelFields: ["created_at", "model"] },
     generateAction: {
       label: "Generate",
       endpoint: "/api/profile-generator/generate",
@@ -326,6 +349,7 @@ const artistRelationships: RelationshipDef[] = [
     columns: [
       { key: "name", label: "Name", type: "text" },
     ],
+    displayMode: "chips",
   },
 ];
 
@@ -340,6 +364,7 @@ const albumRelationships: RelationshipDef[] = [
       { key: "name", label: "Name", type: "text" },
     ],
     readOnly: true,
+    displayMode: "chips",
   },
   {
     type: "many-to-many",
@@ -351,6 +376,7 @@ const albumRelationships: RelationshipDef[] = [
     columns: [
       { key: "name", label: "Name", type: "text" },
     ],
+    displayMode: "chips",
   },
 ];
 
@@ -485,6 +511,12 @@ export const entityRegistry: EntityDef[] = [
     sortPresets: songSortPresets,
     listLayout: "song-row",
     enableLikes: true,
+    showLayout: {
+      compactGrid: [
+        ["details"],
+        ["artists", "albums"],
+      ],
+    },
   },
 
   // =========================================================================
@@ -576,6 +608,12 @@ export const entityRegistry: EntityDef[] = [
     sortPresets: songSortPresets,
     listLayout: "song-row",
     enableLikes: true,
+    showLayout: {
+      compactGrid: [
+        ["details"],
+        ["artists", "albums"],
+      ],
+    },
   },
 
   // =========================================================================
