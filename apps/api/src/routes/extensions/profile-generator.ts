@@ -7,10 +7,10 @@ import {
   songs,
   artists,
   artistSongs,
-  vibes,
   profiles,
   aiQueue,
 } from "../../db/schema/index.js";
+import { getActiveVibes, type Vibe } from "../../config/vibes.js";
 import { processNextJob, getOpenRouterModels } from "../../services/ai-queue/index.js";
 import { getEnv } from "../../env.js";
 
@@ -39,14 +39,7 @@ function getAllowedModels(): string[] {
 function buildPrompt(
   song: { name: string; release_date?: string | null },
   artistNames: string[],
-  activeVibes: Array<{
-    id: number;
-    name: string;
-    vibe_category: string;
-    description: string | null;
-    instructions: string | null;
-    examples: string | null;
-  }>,
+  activeVibes: Vibe[],
 ): string {
   const songTitle = song.name;
   const songArtist =
@@ -56,10 +49,10 @@ function buildPrompt(
   const vibeEntries = activeVibes
     .map(
       (v) =>
-        `### ${v.name}\nId: ${v.id}\nCategory: ${v.vibe_category}` +
-        `\nDescription: ${v.description ?? ""}` +
-        `\nInstruction: ${v.instructions ?? ""}` +
-        `\nExamples: ${v.examples ?? ""}` +
+        `### ${v.name} [${v.slug}]\nCategory: ${v.category}` +
+        `\nDescription: ${v.description}` +
+        `\nInstruction: ${v.instruction}` +
+        `\nExamples: ${v.example}` +
         `\nAttribute Value:\n`,
     )
     .join("\n");
@@ -85,11 +78,11 @@ Your job is to profile the song "${songTitle}" by "${songArtist}", released on o
 You will then loop through each Attribute in the \`## Attributes\` section, and answer the Attribute Value for each attribute.
 The point of this exercise is to capture every detail that makes this song different. Every squeak, every unique element. And every element and emotion that captures this song in great detail. The more specific terms you use, the better.
 
-Our final output should be in JSON format. It should not contain attribute categories, only attribute values. The format should be as follows:
+Our final output should be in JSON format. It should not contain attribute categories, only attribute values. Use the slug (shown in brackets after each attribute name) as the JSON key. The format should be as follows:
 \`\`\`
 {
-  "[id]": "[Attribute Value]",
-  "[id]": "[Attribute Value]"
+  "[slug]": "[Attribute Value]",
+  "[slug]": "[Attribute Value]"
 }
 \`\`\`
 
@@ -163,11 +156,8 @@ profileGenerator.post(
 
     const artistNames = songArtists.map((a) => a.name);
 
-    // 4. Fetch all active vibes
-    const activeVibes = await db
-      .select()
-      .from(vibes)
-      .where(eq(vibes.archived, false));
+    // 4. Get all active vibes from static config
+    const activeVibes = getActiveVibes();
 
     if (activeVibes.length === 0) {
       return c.json({ error: "No active vibes found" }, 400);

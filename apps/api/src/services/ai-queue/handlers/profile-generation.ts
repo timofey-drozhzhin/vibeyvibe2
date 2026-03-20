@@ -1,19 +1,17 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../db/index.js";
-import {
-  vibes,
-  profiles,
-} from "../../../db/schema/index.js";
+import { profiles } from "../../../db/schema/index.js";
+import { getActiveVibes, type Vibe } from "../../../config/vibes.js";
 import { chatCompletion } from "../../openrouter/index.js";
 import type { QueueJobHandler } from "../processor.js";
 
 /**
- * Parse the raw AI response into profile entries by mapping vibe IDs
- * to their metadata (name, category) and the AI-provided values.
+ * Parse the raw AI response into profile entries by mapping vibe names
+ * to their metadata (category) and the AI-provided values.
  */
 function parseProfileResponse(
   rawResponse: string,
-  activeVibes: Array<{ id: number; name: string; vibe_category: string }>,
+  activeVibes: Vibe[],
 ): Array<{ name: string; category: string; value: string }> {
   let cleaned = rawResponse.trim();
   if (cleaned.startsWith("```")) {
@@ -23,19 +21,17 @@ function parseProfileResponse(
   }
   const parsed: Record<string, string> = JSON.parse(cleaned);
 
-  const vibeIdSet = new Set(activeVibes.map((v) => v.id));
-  const vibeMap = new Map(activeVibes.map((v) => [v.id, v]));
+  const vibeBySlug = new Map(activeVibes.map((v) => [v.slug, v]));
 
   const entries: Array<{ name: string; category: string; value: string }> = [];
-  for (const [vibeIdStr, value] of Object.entries(parsed)) {
-    const vibeId = Number(vibeIdStr);
-    if (!vibeIdSet.has(vibeId) || typeof value !== "string" || !value.trim()) {
+  for (const [slug, value] of Object.entries(parsed)) {
+    const vibe = vibeBySlug.get(slug);
+    if (!vibe || typeof value !== "string" || !value.trim()) {
       continue;
     }
-    const vibe = vibeMap.get(vibeId)!;
     entries.push({
       name: vibe.name,
-      category: vibe.vibe_category,
+      category: vibe.category,
       value: value.trim(),
     });
   }
@@ -57,11 +53,8 @@ export const profileGenerationHandler: QueueJobHandler = {
       throw new Error(`No profile found for queue item ${queueItemId}`);
     }
 
-    // Fetch active vibes for response mapping
-    const activeVibes = await db
-      .select({ id: vibes.id, name: vibes.name, vibe_category: vibes.vibe_category })
-      .from(vibes)
-      .where(eq(vibes.archived, false));
+    // Get active vibes from static config for response mapping
+    const activeVibes = getActiveVibes();
 
     // Parse and map the response
     const profileEntries = parseProfileResponse(rawResponse, activeVibes);

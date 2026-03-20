@@ -10,7 +10,7 @@ Refine v5 (headless) + Mantine UI v8 single-page application for the vibeyvibe m
 
 The web app is a React 19 SPA built with Refine (headless CRUD framework) and Mantine (component library). It communicates with the API backend through a REST data provider. Authentication is handled via Better Auth session cookies. The app uses Vite for development and production builds, and deploys as static files to Bunny CDN.
 
-The UI is entirely **registry-driven**. A single entity registry (`config/entity-registry.ts`) defines all 13 entities across 4 sections. Two generic page components (`GenericEntityList`, `GenericEntityDetail`) handle every entity -- there are no per-entity page files.
+The UI is entirely **registry-driven**. A single entity registry (`config/entity-registry.ts`) defines all 12 entities across 4 sections. Two generic page components (`GenericEntityList`, `GenericEntityDetail`) handle every entity -- there are no per-entity page files.
 
 ## Directory Structure
 
@@ -20,7 +20,7 @@ src/
 ├── App.tsx               # Refine config: dynamic resources + routes from entity registry
 ├── theme.ts              # Mantine theme overrides: Poppins font, violet primary color
 ├── config/
-│   └── entity-registry.ts  # Entity definitions driving all UI (13 entities, 4 sections)
+│   └── entity-registry.ts  # Entity definitions driving all UI (12 entities, 4 sections)
 ├── providers/
 │   ├── auth-provider.ts  # Refine AuthProvider: login, logout, check, getIdentity, onError
 │   └── data-provider.ts  # Refine DataProvider: @refinedev/simple-rest wrapping /api
@@ -104,7 +104,7 @@ interface RelationshipDef {
 }
 
 interface EntityDef {
-  slug: string;              // URL slug (e.g. "songs", "vibes")
+  slug: string;              // URL slug (e.g. "songs", "prompts")
   tableName: string;         // DB table name (without section prefix)
   name: string;              // Singular display name
   pluralName: string;        // Plural display name
@@ -120,7 +120,7 @@ interface EntityDef {
 }
 ```
 
-### 13 Entity Definitions
+### 12 Entity Definitions
 
 | # | Resource Name | Entity Name | Context |
 |---|---------------|-------------|---------|
@@ -130,7 +130,6 @@ interface EntityDef {
 | 4 | `lab/songs` | Song | lab |
 | 5 | `lab/artists` | Artist | lab |
 | 6 | `lab/albums` | Album | lab |
-| 7 | `lab/vibes` | Vibe | lab |
 | 8 | `bin/sources` | Source | bin |
 | 9 | `bin/songs` | Song | bin |
 | 10 | `suno/prompt-collections` | Prompt Collection | suno |

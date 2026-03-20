@@ -677,44 +677,7 @@ export const entityRegistry: EntityDef[] = [
   },
 
   // =========================================================================
-  // 7. lab/vibes
-  // =========================================================================
-  {
-    slug: "vibes",
-    tableName: "vibes",
-    name: "Vibe",
-    pluralName: "Vibes",
-    context: "lab",
-    fields: [
-      {
-        key: "vibe_category",
-        label: "Category",
-        type: "text",
-        placeholder: "e.g. genre, structure, mood...",
-      },
-      {
-        key: "description",
-        label: "Description",
-        type: "textarea",
-      },
-      {
-        key: "instructions",
-        label: "Instructions",
-        type: "textarea",
-      },
-      {
-        key: "examples",
-        label: "Examples",
-        type: "textarea",
-      },
-    ],
-    relationships: [],
-    listColumns: ["name", "vibe_category", "created_at"],
-    asideFields: [],
-  },
-
-  // =========================================================================
-  // 7b. admin/queue (AI Queue)
+  // 7. admin/queue (AI Queue)
   // =========================================================================
   {
     slug: "queue",

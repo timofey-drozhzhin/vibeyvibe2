@@ -9,6 +9,7 @@ import uploadRoutes from "./extensions/upload.js";
 import storageRoutes from "./extensions/storage.js";
 import aiQueueRoutes from "./extensions/ai-queue.js";
 import likeRoutes from "./extensions/likes.js";
+import { getVibeCount } from "../config/vibes.js";
 
 const routes = new Hono();
 
@@ -35,7 +36,6 @@ routes.get("/dashboard/stats", async (c) => {
     songs,
     artists,
     albums,
-    vibes,
     binSources,
     binSongs,
     sunoPrompts,
@@ -52,7 +52,6 @@ routes.get("/dashboard/stats", async (c) => {
     labSongs,
     labArtists,
     labAlbums,
-    attrCount,
     binSrcCount,
     binSongCount,
     promptCount,
@@ -65,7 +64,6 @@ routes.get("/dashboard/stats", async (c) => {
     db.select({ count: sql<number>`count(*)` }).from(songs).where(eq(songs.context, "lab")),
     db.select({ count: sql<number>`count(*)` }).from(artists).where(eq(artists.context, "lab")),
     db.select({ count: sql<number>`count(*)` }).from(albums).where(eq(albums.context, "lab")),
-    db.select({ count: sql<number>`count(*)` }).from(vibes),
     db.select({ count: sql<number>`count(*)` }).from(binSources),
     db.select({ count: sql<number>`count(*)` }).from(binSongs),
     db.select({ count: sql<number>`count(*)` }).from(sunoPrompts),
@@ -83,7 +81,7 @@ routes.get("/dashboard/stats", async (c) => {
       songs: labSongs[0].count,
       artists: labArtists[0].count,
       albums: labAlbums[0].count,
-      vibes: attrCount[0].count,
+      vibes: getVibeCount(),
     },
     bin: {
       sources: binSrcCount[0].count,

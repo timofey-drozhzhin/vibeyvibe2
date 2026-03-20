@@ -6,7 +6,6 @@ import {
   albums,
   artistSongs,
   albumSongs,
-  vibes,
   profiles,
   aiQueue,
   binSources,
@@ -65,19 +64,6 @@ const createAlbumSchema = z.object({
 });
 
 const updateAlbumSchema = createAlbumSchema.partial().extend({
-  archived: z.boolean().optional(),
-});
-
-// Vibes
-const createVibeSchema = z.object({
-  name: z.string().min(1).max(100),
-  vibe_category: z.string().min(1),
-  description: z.string().nullable().optional(),
-  instructions: z.string().nullable().optional(),
-  examples: z.string().nullable().optional(),
-});
-
-const updateVibeSchema = createVibeSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
@@ -701,35 +687,7 @@ export const registry: EntityRouteConfig[] = [
   },
 
   // =========================================================================
-  // 7. lab/vibes
-  // =========================================================================
-  {
-    context: "lab",
-    slug: "vibes",
-    table: vibes,
-    entityName: "Vibe",
-    createSchema: createVibeSchema,
-    updateSchema: updateVibeSchema,
-    defaultSort: vibes.created_at,
-    defaultOrder: "desc",
-    sortableColumns: {
-      name: vibes.name,
-      vibe_category: vibes.vibe_category,
-      created_at: vibes.created_at,
-    },
-    contextColumnValue: "lab",
-    extraFilters: [
-      {
-        param: "category",
-        column: vibes.vibe_category,
-        schema: z.string().optional(),
-        mode: "eq",
-      },
-    ],
-  },
-
-  // =========================================================================
-  // 7b. admin/queue (AI Queue)
+  // 7. admin/queue (AI Queue)
   // =========================================================================
   {
     context: "admin",

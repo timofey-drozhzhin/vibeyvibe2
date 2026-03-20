@@ -35,12 +35,15 @@ The API serves all data through a `/api` prefix. The web app proxies `/api` requ
 ├── .env.prod-example     # Production environment template
 └── .gitignore            # Global ignore rules
 
+apps/api/src/config/
+  vibes.ts                # Static vibes config (59 song analysis attributes, version-controlled)
+
 apps/api/src/db/
   schema.ts               # Unified Drizzle schema (all tables)
   schema/
     index.ts              # Re-exports schema.ts + auth.ts
     auth.ts               # Better Auth tables (unchanged)
-  seed.ts                 # Database seeding (sample data + all 59 vibes)
+  seed.ts                 # Database seeding (sample data)
 
 apps/api/src/routes/
   factory/
@@ -117,7 +120,6 @@ Tables are now unified. Shared entity tables (`songs`, `artists`, `albums`) use 
 - Shared tables: `songs`, `artists`, `albums` (with `context` column)
 - Pivot tables: `artist_songs`, `album_songs`
 - 1:N relational: `profiles` (song_id FK, stores AI-generated vibes as JSON)
-- Lab-specific: `vibes`
 - Bin: `bin_sources`, `bin_songs`
 - Suno: `suno_prompts`, `suno_song_playlists`, `suno_songs`
 - User state: `likes` (polymorphic per-user likes, composite PK: `user_id` + `entity` + `entity_id`)
@@ -205,11 +207,11 @@ All env variable names and validation rules are defined in `apps/api/src/env.ts`
 
 ### Seeding
 
-- `pnpm db:seed` -- Seeds the database with sample data and all 59 vibes (runs `apps/api/src/db/seed.ts`). Vibes are upserted — existing ones are updated if changed, new ones are inserted.
+- `pnpm db:seed` -- Seeds the database with sample data (runs `apps/api/src/db/seed.ts`).
 
-### Notable Schema Details
+### Vibes (Static Config)
 
-- **vibes** includes a `vibe_category` column (text, not null) for grouping vibes (e.g., "genre", "structure", "composition", "rhythm", "instrumentation", "vocals", "lyrics", "production", "mood", "energy", "signature").
+Vibes are the 59 song analysis attributes used by the AI profile generator. They are defined in a static TypeScript config file at `apps/api/src/config/vibes.ts` (not in the database). Each vibe has: `name`, `archived`, `category`, `description`, `instruction`, `example`. Categories: genre, structure, composition, rhythm, instrumentation, vocals, lyrics, production, mood, energy, signature. Set `archived: true` to exclude a vibe from profile generation.
 
 ## Storage
 
@@ -309,7 +311,7 @@ Accepts an array of tracks (from the preview step) and creates `songs`, `artists
 
 ## Profile Generator
 
-AI-powered generation of song profiles. Uses the AI queue system to call an LLM that analyzes a song and all active vibes, producing a JSON array of `{ name, category, value }` entries stored in the `profiles` table (1:N from songs). Supports OpenRouter, Anthropic (Claude), and Google (Gemini) models.
+AI-powered generation of song profiles. Uses the AI queue system to call an LLM that analyzes a song using the active vibes from the static config (`apps/api/src/config/vibes.ts`), producing a JSON array of `{ name, category, value }` entries stored in the `profiles` table (1:N from songs). Supports OpenRouter, Anthropic (Claude), and Google (Gemini) models.
 
 ### Configuration
 Required environment variables:
@@ -317,7 +319,7 @@ Required environment variables:
 - Provider API key or CLI auth for the chosen model: `OPENROUTER_API_KEY` for OpenRouter models, or authenticated `claude`/`gemini` CLI for native models
 
 ### POST /api/profile-generator/generate
-Generates a profile for a song. Fetches the song, its artists, and all active vibes, builds a prompt, queues an AI job, and creates a `profiles` record linked to the queue item. The queue processor (embedded or CLI worker) picks up the job and calls the appropriate AI provider based on the model prefix.
+Generates a profile for a song. Fetches the song, its artists, and active vibes from static config, builds a prompt, queues an AI job, and creates a `profiles` record linked to the queue item. The queue processor (embedded or CLI worker) picks up the job and calls the appropriate AI provider based on the model prefix.
 
 **Schema**: `{ songId: number, model: string }`
 **Returns**: `{ data: { id, songId, queueId, status } }`
