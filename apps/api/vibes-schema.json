@@ -1,0 +1,124 @@
+{
+  "type": "object",
+  "title": "Song Vibes Profile",
+  "description": "AI-generated hierarchical song analysis profile",
+  "properties": {
+    "genre": {
+      "type": "object",
+      "title": "Genre",
+      "description": "Musical genre classification, era influences, and cultural roots",
+      "properties": {
+        "genre": {
+          "type": "string",
+          "title": "Genre",
+          "description": "Detailed genres from primary to least, ordered by greatest influence",
+          "x-instruction": "Start with a general genre, but then list genre specifics that makes this song different within its own genre",
+          "x-example": "Bubblegum Pop, Trap Metal, East Coast Boom-Bap, Street Rap"
+        },
+        "era_influence": {
+          "type": "string",
+          "title": "Era Influence",
+          "description": "Decade or period the sound draws from",
+          "x-instruction": "What era of music is this being influenced by? Start with the year, but list the specific style from that time period that influenced",
+          "x-example": "late 80s synth-pop, 2010s SoundCloud rap, 70s Philly soul"
+        },
+        "cultural_origin": {
+          "type": "string",
+          "title": "Cultural Origin",
+          "description": "Regional or cultural roots and specific stylistic niche",
+          "x-instruction": "What culture and the style within the culture is this song being influenced by?",
+          "x-example": "Korean idol pop, Lagos Afrobeat, European Italo-Disco, Caribbean Dancehall, Polska Polka"
+        }
+      }
+    },
+    "vocals": {
+      "type": "object",
+      "title": "Vocals",
+      "description": "Vocal performance, cast, timbre, style, effects, and backing arrangement",
+      "properties": {
+        "cast": {
+          "type": "array",
+          "title": "Vocal Cast",
+          "description": "Each distinct vocalist on the track and their characteristics",
+          "x-instruction": "Identify all distinct vocalists on the track. Create one entry per voice, describing their role, tone, and style.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "title": "Role",
+                "description": "What sections this voice performs and their part",
+                "x-instruction": "Note their gender/tone and assign which sections of the song they perform.",
+                "x-example": "solo male rapper on verses, female soul singer on hook/chorus; lead on all sections"
+              },
+              "timbre": {
+                "type": "string",
+                "title": "Timbre",
+                "description": "Physical texture and tonal quality of this voice",
+                "x-instruction": "Describe the unique sonic character of this vocalist's voice. Use physical and textural adjectives.",
+                "x-example": "warm and husky, raspy soul tone with raw grit, bright and nasal, deep resonant baritone"
+              },
+              "range": {
+                "type": "string",
+                "title": "Range",
+                "description": "Pitch range and register used",
+                "x-instruction": "Identify how high or low this vocalist sings, and note what vocal register (chest, head, falsetto) they utilize.",
+                "x-example": "alto chest voice, tenor with falsetto in chorus, spans 3 octaves from low growl to whistle register"
+              },
+              "style": {
+                "type": "string",
+                "title": "Style",
+                "description": "Delivery technique",
+                "x-instruction": "Describe how this vocalist delivers the performance. Is it sung, rapped, spoken, or something else?",
+                "x-example": "belting, whisper-singing, rapid-fire rap, spoken-word, yodeling between registers, melodic sing-rap"
+              },
+              "sync": {
+                "type": "string",
+                "title": "Sync",
+                "description": "How this voice rides and locks with the beat",
+                "x-instruction": "Analyze the rhythmic timing of this vocalist relative to the instrumental track.",
+                "x-example": "tight rhythmic phrasing locked to grid, lazy dragging behind the beat, staccato machine-gun syllables"
+              },
+              "emotion": {
+                "type": "string",
+                "title": "Emotion",
+                "description": "Emotional intensity and character of delivery",
+                "x-instruction": "Determine the feeling or attitude this vocalist is projecting through their performance.",
+                "x-example": "vulnerable and pleading, aggressive and confrontational, detached and deadpan, joyful and carefree"
+              },
+              "accent": {
+                "type": "string",
+                "title": "Accent",
+                "description": "Cultural, regional, or dialectal inflection",
+                "x-instruction": "Listen for any specific regional accents or cultural dialects present in the pronunciation of the words.",
+                "x-example": "Southern US drawl, heavy New York street inflection, Caribbean Patois flavor, neutral/no notable accent"
+              },
+              "languages": {
+                "type": "array",
+                "title": "Languages",
+                "description": "Languages sung by this vocalist",
+                "x-instruction": "List all languages this vocalist sings in, even if only a single phrase.",
+                "x-example": "English, Spanish (bridge only), French (spoken word intro)",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "vocal_effects": {
+          "type": "string",
+          "title": "Vocal Effects",
+          "description": "Processing and effects on the voice",
+          "x-instruction": "Detail any obvious studio effects applied to the lead vocals.",
+          "x-example": "heavy autotune, dry with no reverb, vocoder harmonies, telephone EQ filter on verse, heavy slapback delay"
+        },
+        "backing_vocals": {
+          "type": "string",
+          "title": "Backing Vocals",
+          "description": "Backing vocal style, placement, role, and where they appear",
+          "x-instruction": "Identify any secondary vocals supporting the lead. Describe what they are doing (harmonies, ad-libs) and where they occur.",
+          "x-example": "lush choir harmonies on chorus only, call-and-response ad-libs throughout, gang vocal shouts on hook, layered self-harmonies stacked 6 deep, none"
+        }
+      }
+    }
+  }
+}

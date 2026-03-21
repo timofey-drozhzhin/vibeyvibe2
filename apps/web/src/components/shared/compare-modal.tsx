@@ -1,14 +1,18 @@
 import { useMemo } from "react";
 import {
+  Badge,
+  Group,
   Modal,
   ScrollArea,
   Table,
   Text,
   Title,
+  Tooltip,
   Stack,
 } from "@mantine/core";
 import { formatDate } from "../../utils/format-date.js";
 import type { CompareActionDef } from "../../config/entity-registry.js";
+import type { VibesMetadata } from "../../hooks/use-vibes-metadata.js";
 
 interface CompareModalProps {
   opened: boolean;
@@ -16,6 +20,7 @@ interface CompareModalProps {
   items: any[];
   compareAction: CompareActionDef;
   title: string;
+  vibesMeta?: VibesMetadata;
 }
 
 interface ParsedEntry {
@@ -24,12 +29,19 @@ interface ParsedEntry {
   value: string;
 }
 
+interface DisplayEntry {
+  name: string;
+  category: string;
+  archived: boolean;
+}
+
 export const CompareModal = ({
   opened,
   onClose,
   items,
   compareAction,
   title,
+  vibesMeta,
 }: CompareModalProps) => {
   // Parse each item's JSON data
   const columns = useMemo(() => {
@@ -67,24 +79,52 @@ export const CompareModal = ({
     });
   }, [items, compareAction]);
 
-  // Build ordered list of all unique entries across all profiles
+  // Build the set of vibe names that have values in any column
+  const vibesWithValues = useMemo(() => {
+    const names = new Set<string>();
+    for (const col of columns) {
+      for (const entry of col.entries) {
+        if (entry.value?.trim()) names.add(entry.name);
+      }
+    }
+    return names;
+  }, [columns]);
+
+  // Build ordered list of display entries using vibes metadata order
+  // Active vibes: always shown. Archived vibes: only if any profile has a value.
   const allEntries = useMemo(() => {
+    if (vibesMeta && vibesMeta.orderedVibes.length > 0) {
+      const result: DisplayEntry[] = [];
+      for (const v of vibesMeta.orderedVibes) {
+        if (v.archived && !vibesWithValues.has(v.name)) continue;
+        result.push({ name: v.name, category: v.category, archived: v.archived });
+      }
+      // Include any profile entries not in the config (legacy/unknown vibes)
+      for (const name of vibesWithValues) {
+        if (!result.some((r) => r.name === name)) {
+          const sample = columns.find((c) => c.byName.has(name))?.byName.get(name);
+          result.push({ name, category: sample?.category ?? "", archived: false });
+        }
+      }
+      return result;
+    }
+    // Fallback: no metadata available, show only entries from profiles
     const seen = new Set<string>();
-    const result: { name: string; category: string }[] = [];
+    const result: DisplayEntry[] = [];
     for (const col of columns) {
       for (const entry of col.entries) {
         if (!seen.has(entry.name)) {
           seen.add(entry.name);
-          result.push({ name: entry.name, category: entry.category });
+          result.push({ name: entry.name, category: entry.category, archived: false });
         }
       }
     }
     return result;
-  }, [columns]);
+  }, [columns, vibesMeta, vibesWithValues]);
 
   // Group entries by category
   const groupedEntries = useMemo(() => {
-    const groups: { category: string; entries: { name: string; category: string }[] }[] = [];
+    const groups: { category: string; entries: DisplayEntry[] }[] = [];
     let currentCategory = "";
     for (const entry of allEntries) {
       if (entry.category !== currentCategory) {
@@ -110,9 +150,11 @@ export const CompareModal = ({
         <Stack gap="lg">
           {groupedEntries.map((group) => (
             <div key={group.category}>
-              <Title order={5} fw={600} c="dark.1" tt="capitalize" mb="xs">
-                {group.category}
-              </Title>
+              <Tooltip label={vibesMeta?.categoryDescription.get(group.category)} disabled={!vibesMeta?.categoryDescription.has(group.category)}>
+                <Title order={5} fw={600} c="dark.1" mb="xs" style={{ cursor: "default", width: "fit-content" }}>
+                  {vibesMeta?.categoryName.get(group.category) ?? group.category}
+                </Title>
+              </Tooltip>
               <Table>
                 <Table.Thead>
                   <Table.Tr>
@@ -124,11 +166,16 @@ export const CompareModal = ({
                 </Table.Thead>
                 <Table.Tbody>
                   {group.entries.map((entry) => (
-                    <Table.Tr key={entry.name}>
+                    <Table.Tr key={entry.name} style={entry.archived ? { opacity: 0.6 } : undefined}>
                       <Table.Td style={{ verticalAlign: "top" }}>
-                        <Text size="sm" fw={500} c="dimmed">
-                          {entry.name}
-                        </Text>
+                        <Tooltip label={vibesMeta?.vibeDescription.get(entry.name)} disabled={!vibesMeta?.vibeDescription.has(entry.name)}>
+                          <Group gap={6} wrap="nowrap">
+                            <Text size="sm" fw={500} c="dimmed" td={entry.archived ? "line-through" : undefined}>
+                              {entry.name}
+                            </Text>
+                            {entry.archived && <Badge size="xs" color="red" variant="light">Archived</Badge>}
+                          </Group>
+                        </Tooltip>
                       </Table.Td>
                       {columns.map((col) => {
                         const value = col.byName.get(entry.name)?.value;

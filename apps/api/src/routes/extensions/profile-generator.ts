@@ -10,7 +10,7 @@ import {
   profiles,
   aiQueue,
 } from "../../db/schema/index.js";
-import { getActiveVibes, type Vibe } from "../../config/vibes.js";
+import { vibesSchema, getActiveSchema, getSchemaNodeCount, schemaToPrompt } from "../../features/vibes/index.js";
 import { processNextJob, getOpenRouterModels } from "../../services/ai-queue/index.js";
 import { getEnv } from "../../env.js";
 
@@ -39,62 +39,63 @@ function getAllowedModels(): string[] {
 function buildPrompt(
   song: { name: string; release_date?: string | null },
   artistNames: string[],
-  activeVibes: Vibe[],
 ): string {
   const songTitle = song.name;
   const songArtist =
     artistNames.length > 0 ? artistNames.join(", ") : "Unknown Artist";
   const releaseDate = song.release_date || "Unknown";
 
-  const vibeEntries = activeVibes
-    .map(
-      (v) =>
-        `### ${v.name} [${v.slug}]\nCategory: ${v.category}` +
-        `\nDescription: ${v.description}` +
-        `\nInstruction: ${v.instruction}` +
-        `\nExamples: ${v.example}` +
-        `\nAttribute Value:\n`,
-    )
-    .join("\n");
+  const activeSchema = getActiveSchema(vibesSchema);
+  const typeDefinitions = schemaToPrompt(activeSchema);
 
   return `**Role:** You are an expert music producer and lyricist.
-**About your job:** Your job is to describe the song in detail using the provided attributes.
+**About your job:** Your job is to describe the song in detail using the provided type definitions.
 
 ## Context
 **Song Title:** ${songTitle}
 **Song Author:** ${songArtist}
 **Release Date:** ${releaseDate}
 
-## Attributes
-Below is a list of song attributes and their descriptions, separated by categories. You must fully familiarize yourself with every attribute, before describing the song.
+## Type Definitions
+Below is the structure you must fill in. Each field has an instruction (after //) describing what to listen for and an example value. Array fields (marked with []) mean you should produce one or more entries.
 
-*******
-${vibeEntries}
-*******
+\`\`\`
+${typeDefinitions}
+\`\`\`
 
 ## Your Job
-Your job is to profile the song "${songTitle}" by "${songArtist}", released on or about ${releaseDate} using the attributes provided below. You will first research the song, locate and examine the lyrics, and understand all details describing style of the song.
+Profile the song "${songTitle}" by "${songArtist}", released on or about ${releaseDate}. Research the song, locate and examine the lyrics, and understand all details describing the style of the song.
 
-You will then loop through each Attribute in the \`## Attributes\` section, and answer the Attribute Value for each attribute.
-The point of this exercise is to capture every detail that makes this song different. Every squeak, every unique element. And every element and emotion that captures this song in great detail. The more specific terms you use, the better.
+Fill in every field in the type definitions above. The point of this exercise is to capture every detail that makes this song different. Every squeak, every unique element. Every element and emotion in great detail. The more specific terms you use, the better.
 
-Our final output should be in JSON format. It should not contain attribute categories, only attribute values. Use the slug (shown in brackets after each attribute name) as the JSON key. The format should be as follows:
-\`\`\`
+Return your output as a JSON object matching the type definitions above. For example:
+\`\`\`json
 {
-  "[slug]": "[Attribute Value]",
-  "[slug]": "[Attribute Value]"
+  "genre": {
+    "genre": "Bubblegum Pop, Trap Metal",
+    "era_influence": "late 80s synth-pop"
+  },
+  "vocals": {
+    "cast": [
+      {
+        "role": "solo male rapper on verses",
+        "timbre": "warm and husky",
+        "languages": ["English"]
+      }
+    ],
+    "vocal_effects": "heavy autotune"
+  }
 }
 \`\`\`
 
 ## Checks before finalizing your output
-Before you finalize your output, make sure to check the following:
-- Did you answer every attribute? If not, go back and answer it.
-- Did you include every single attribute in JSON output? If not, include all attributes, even if the value is empty.
-- Did you make up new attributes in the JSON output? If so, remove them. Only include the attributes that were provided.
-- Were you specific in your descriptions, not generic? E.g. Instead of describing the instrument of a "flute", say "a wooden flute with a warm tone".
+- Did you fill in every field? If not, go back and fill it in.
+- For array fields (like vocal cast), did you create an entry for each distinct item? E.g. one entry per vocalist.
+- Did you add fields not in the type definitions? If so, remove them.
+- Were you specific, not generic? E.g. "a wooden flute with a warm tone" instead of just "flute".
 
 ## Rules
-- Your final product must not mention any music authors, copy/paste any original work, or use any copyrighted work. This means that you can describe the song style, but you cannot say copy Some-Author-Name.
+- Your final product must not mention any music authors, copy/paste any original work, or use any copyrighted work. You can describe the song style but cannot name-drop specific artists.
 - Be clear and descriptive, using selective words instead of long sentences. E.g. instead of "The song has an intense feeling of excitement", say "euphoric".`;
 }
 
@@ -156,15 +157,16 @@ profileGenerator.post(
 
     const artistNames = songArtists.map((a) => a.name);
 
-    // 4. Get all active vibes from static config
-    const activeVibes = getActiveVibes();
+    // 4. Check that vibes schema has active nodes
+    const activeSchema = getActiveSchema(vibesSchema);
+    const nodeCount = getSchemaNodeCount(activeSchema);
 
-    if (activeVibes.length === 0) {
-      return c.json({ error: "No active vibes found" }, 400);
+    if (nodeCount === 0) {
+      return c.json({ error: "No active vibes found in schema" }, 400);
     }
 
     // 5. Build the prompt
-    const prompt = buildPrompt(song, artistNames, activeVibes);
+    const prompt = buildPrompt(song, artistNames);
 
     // 6. Create queue job
     const now = new Date().toISOString();

@@ -12,6 +12,7 @@ import {
 } from "../../db/schema/index.js";
 import { chatCompletion } from "../../services/openrouter/index.js";
 import { getEnv } from "../../env.js";
+import { getProfileVersion, flattenProfile } from "../../features/vibes/index.js";
 
 const sunoPromptGenerator = new Hono();
 
@@ -155,10 +156,19 @@ sunoPromptGenerator.post(
       return c.json({ error: "Profile is still processing. Please wait." }, 400);
     }
 
-    // 2. Parse the profile's JSON value
+    // 2. Parse the profile's JSON value (supports v1 flat and v2 nested formats)
     let profileVibes: Array<{ name: string; category: string; value: string }>;
     try {
-      profileVibes = JSON.parse(profile.value);
+      const parsed = JSON.parse(profile.value);
+      const version = getProfileVersion(parsed);
+
+      if (version >= 2) {
+        // v2 nested format — flatten for the prompt builder
+        profileVibes = flattenProfile(parsed);
+      } else {
+        // v1 flat format — use as-is
+        profileVibes = parsed;
+      }
     } catch {
       return c.json({ error: "Profile contains invalid JSON data" }, 422);
     }

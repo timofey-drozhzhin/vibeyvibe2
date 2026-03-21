@@ -15,8 +15,13 @@ src/
 ├── index.ts              # Entry point: loads .env, starts @hono/node-server on port 3001
 ├── app.ts                # Hono app setup: middleware stack, auth handler, route mounting
 ├── env.ts                # Zod-validated environment variable schema and getEnv() singleton
-├── config/
-│   └── vibes.ts          # Static vibes config (59 song analysis attributes, version-controlled)
+├── features/             # Self-contained domain modules with barrel index.ts exports
+│   └── vibes/            # Vibes feature: schema, prompt serializer, validator, compat layer
+│       ├── schema.ts           # Loads ../../vibes-schema.json, exports schema + version + helpers
+│       ├── schema-to-prompt.ts # Converts schema to BAML-style AI prompt text
+│       ├── validator.ts        # Validates AI responses against schema (ajv)
+│       ├── profile-compat.ts   # v1/v2 profile format compatibility
+│       └── index.ts            # Barrel export (public API)
 ├── auth/
 │   └── index.ts          # Better Auth configuration (Drizzle adapter, Google OAuth, email/password)
 ├── db/
@@ -533,7 +538,7 @@ Extension route at `routes/extensions/profile-generator.ts`. Mounted at `/api/pr
 
 **POST `/api/profile-generator/generate`**
 - Accepts `{ songId: number }`
-- Fetches the song, its artists, and active vibes from static config (`config/vibes.ts`)
+- Fetches the song, its artists, and active vibes from the vibes feature (`features/vibes/`)
 - Builds a detailed prompt instructing the AI to analyze the song and produce vibe values
 - Calls the AI provider using the model from `PROFILE_GENERATION_MODELS`
 - Maps the AI response (vibe ID -> value) into a JSON array of `{ name, category, value }` objects using vibe metadata

@@ -48,6 +48,7 @@ import {
   resolveRelationshipTarget,
   getResourceName,
 } from "../../config/entity-registry.js";
+import { useVibesMetadata, type VibesMetadata } from "../../hooks/use-vibes-metadata.js";
 
 interface RelationshipSectionProps {
   relationship: RelationshipDef;
@@ -77,6 +78,7 @@ export const RelationshipSection = ({
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
   const [compareOpened, { open: openCompare, close: closeCompare }] = useDisclosure(false);
   const { mutateAsync } = useCustomMutation();
+  const vibesMeta = useVibesMetadata();
 
   // Normalize generateAction to always be an array
   const generateActions: GenerateActionDef[] = useMemo(() => {
@@ -707,74 +709,23 @@ export const RelationshipSection = ({
       )}
 
       {/* View JSON Modal */}
-      <Modal
-        opened={viewModalData !== null}
+      <ViewJsonModal
+        data={viewModalData}
         onClose={() => setViewModalData(null)}
-        title={`${relationship.label} Details`}
-        size="lg"
-      >
-        {viewModalData && (
-          <ScrollArea h={400}>
-            <Stack gap="xs">
-              {viewModalData.map((entry: any, idx: number) => (
-                <div key={idx} style={{ borderBottom: idx < viewModalData.length - 1 ? '1px solid var(--mantine-color-dark-7)' : undefined, paddingBottom: 8 }}>
-                  <Group gap="xs" mb={4}>
-                    <Text size="sm" fw={600}>{entry.name || `Entry ${idx + 1}`}</Text>
-                    {entry.category && <Badge size="xs">{entry.category}</Badge>}
-                  </Group>
-                  <Text size="sm" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
-                    {entry.value || "—"}
-                  </Text>
-                </div>
-              ))}
-            </Stack>
-          </ScrollArea>
-        )}
-      </Modal>
+        title={relationship.label}
+        vibesMeta={vibesMeta}
+      />
 
       {/* Edit JSON Modal */}
-      <Modal
-        opened={editModalData !== null}
+      <EditJsonModal
+        data={editModalData}
         onClose={() => setEditModalData(null)}
         title={`Edit ${relationship.label}`}
-        size="lg"
-      >
-        {editModalData && (
-          <>
-            <ScrollArea h={400}>
-              <Stack gap="sm">
-                {editModalData.entries.map((entry: any, idx: number) => (
-                  <div key={idx} style={{ borderBottom: idx < editModalData.entries.length - 1 ? '1px solid var(--mantine-color-dark-7)' : undefined, paddingBottom: 8 }}>
-                    <Group gap="xs" mb={4}>
-                      <Text size="sm" fw={600}>{entry.name || `Entry ${idx + 1}`}</Text>
-                      {entry.category && <Badge size="xs">{entry.category}</Badge>}
-                    </Group>
-                    <Textarea
-                      size="sm"
-                      autosize
-                      minRows={1}
-                      maxRows={6}
-                      value={entry.value ?? ""}
-                      onChange={(e) => {
-                        setEditModalData((prev) => {
-                          if (!prev) return prev;
-                          const updated = [...prev.entries];
-                          updated[idx] = { ...updated[idx], value: e.currentTarget.value };
-                          return { ...prev, entries: updated };
-                        });
-                      }}
-                    />
-                  </div>
-                ))}
-              </Stack>
-            </ScrollArea>
-            <Group justify="flex-end" mt="md">
-              <Button variant="default" onClick={() => setEditModalData(null)}>Cancel</Button>
-              <Button loading={editSaving} onClick={handleEditSave}>Save</Button>
-            </Group>
-          </>
-        )}
-      </Modal>
+        vibesMeta={vibesMeta}
+        saving={editSaving}
+        onSave={handleEditSave}
+        onChange={setEditModalData}
+      />
 
       {/* Compare Modal (multi-select) */}
       {hasCompareAction && (
@@ -787,6 +738,7 @@ export const RelationshipSection = ({
           items={selectedItems}
           compareAction={relationship.compareAction!}
           title={`Compare ${relationship.label}`}
+          vibesMeta={vibesMeta}
         />
       )}
 
@@ -797,7 +749,8 @@ export const RelationshipSection = ({
           onClose={() => setViewModalItem(null)}
           items={[viewModalItem]}
           compareAction={relationship.compareAction!}
-          title={`${relationship.label} Details`}
+          title={relationship.label}
+          vibesMeta={vibesMeta}
         />
       )}
     </>
@@ -849,4 +802,165 @@ function renderColumnText(
   value: any,
 ): string {
   return value != null ? String(value) : "";
+}
+
+// ---------------------------------------------------------------------------
+// View JSON Modal
+// ---------------------------------------------------------------------------
+
+interface ViewJsonModalProps {
+  data: any[] | null;
+  onClose: () => void;
+  title: string;
+  vibesMeta: VibesMetadata;
+}
+
+function ViewJsonModal({ data, onClose, title, vibesMeta }: ViewJsonModalProps) {
+  // Build display entries: all active vibes + archived vibes that have values
+  const displayEntries = useMemo(() => {
+    if (!data) return [];
+
+    const valueByName = new Map<string, string>();
+    const categoryByName = new Map<string, string>();
+    for (const entry of data) {
+      if (entry.value?.trim()) valueByName.set(entry.name, entry.value);
+      if (entry.category) categoryByName.set(entry.name, entry.category);
+    }
+
+    if (vibesMeta.orderedVibes.length > 0) {
+      const result: Array<{ name: string; category: string; value: string; archived: boolean }> = [];
+      for (const v of vibesMeta.orderedVibes) {
+        if (v.archived && !valueByName.has(v.name)) continue;
+        result.push({ name: v.name, category: v.category, value: valueByName.get(v.name) ?? "", archived: v.archived });
+      }
+      // Include any entries not in config
+      for (const entry of data) {
+        if (!result.some((r) => r.name === entry.name)) {
+          result.push({ name: entry.name, category: entry.category ?? "", value: entry.value ?? "", archived: false });
+        }
+      }
+      return result;
+    }
+
+    // Fallback: no metadata, show profile entries as-is
+    return data.map((entry: any) => ({
+      name: entry.name ?? "",
+      category: entry.category ?? "",
+      value: entry.value ?? "",
+      archived: false,
+    }));
+  }, [data, vibesMeta]);
+
+  return (
+    <Modal opened={data !== null} onClose={onClose} title={title} size="lg">
+      {data && (
+        <ScrollArea h={400}>
+          <Stack gap="xs">
+            {displayEntries.map((entry, idx) => (
+              <div
+                key={idx}
+                style={{
+                  borderBottom: idx < displayEntries.length - 1 ? '1px solid var(--mantine-color-dark-7)' : undefined,
+                  paddingBottom: 8,
+                  opacity: entry.archived ? 0.6 : undefined,
+                }}
+              >
+                <Group gap="xs" mb={4}>
+                  <Tooltip label={vibesMeta.vibeDescription.get(entry.name)} disabled={!vibesMeta.vibeDescription.has(entry.name)}>
+                    <Text size="sm" fw={600} td={entry.archived ? "line-through" : undefined}>
+                      {entry.name || `Entry ${idx + 1}`}
+                    </Text>
+                  </Tooltip>
+                  {entry.category && (
+                    <Tooltip label={vibesMeta.categoryDescription.get(entry.category)} disabled={!vibesMeta.categoryDescription.has(entry.category)}>
+                      <Badge size="xs">{vibesMeta.categoryName.get(entry.category) ?? entry.category}</Badge>
+                    </Tooltip>
+                  )}
+                  {entry.archived && <Badge size="xs" color="red" variant="light">Archived</Badge>}
+                </Group>
+                <Text size="sm" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
+                  {entry.value || "—"}
+                </Text>
+              </div>
+            ))}
+          </Stack>
+        </ScrollArea>
+      )}
+    </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Edit JSON Modal
+// ---------------------------------------------------------------------------
+
+interface EditJsonModalProps {
+  data: { entries: any[]; itemId: string | number; endpoint: string } | null;
+  onClose: () => void;
+  title: string;
+  vibesMeta: VibesMetadata;
+  saving: boolean;
+  onSave: () => void;
+  onChange: React.Dispatch<React.SetStateAction<{ entries: any[]; itemId: string | number; endpoint: string } | null>>;
+}
+
+function EditJsonModal({ data, onClose, title, vibesMeta, saving, onSave, onChange }: EditJsonModalProps) {
+  return (
+    <Modal opened={data !== null} onClose={onClose} title={title} size="lg">
+      {data && (
+        <>
+          <ScrollArea h={400}>
+            <Stack gap="sm">
+              {data.entries.map((entry: any, idx: number) => {
+                const isArchived = vibesMeta.vibeArchived.get(entry.name) === true;
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      borderBottom: idx < data.entries.length - 1 ? '1px solid var(--mantine-color-dark-7)' : undefined,
+                      paddingBottom: 8,
+                      opacity: isArchived ? 0.6 : undefined,
+                    }}
+                  >
+                    <Group gap="xs" mb={4}>
+                      <Tooltip label={vibesMeta.vibeDescription.get(entry.name)} disabled={!vibesMeta.vibeDescription.has(entry.name)}>
+                        <Text size="sm" fw={600} td={isArchived ? "line-through" : undefined}>
+                          {entry.name || `Entry ${idx + 1}`}
+                        </Text>
+                      </Tooltip>
+                      {entry.category && (
+                        <Tooltip label={vibesMeta.categoryDescription.get(entry.category)} disabled={!vibesMeta.categoryDescription.has(entry.category)}>
+                          <Badge size="xs">{vibesMeta.categoryName.get(entry.category) ?? entry.category}</Badge>
+                        </Tooltip>
+                      )}
+                      {isArchived && <Badge size="xs" color="red" variant="light">Archived</Badge>}
+                    </Group>
+                    <Textarea
+                      size="sm"
+                      autosize
+                      minRows={1}
+                      maxRows={6}
+                      value={entry.value ?? ""}
+                      onChange={(e) => {
+                        onChange((prev) => {
+                          if (!prev) return prev;
+                          const updated = [...prev.entries];
+                          updated[idx] = { ...updated[idx], value: e.currentTarget.value };
+                          return { ...prev, entries: updated };
+                        });
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </Stack>
+          </ScrollArea>
+          <Group justify="flex-end" mt="md">
+            <Button variant="default" onClick={onClose}>Cancel</Button>
+            <Button loading={saving} onClick={onSave}>Save</Button>
+          </Group>
+        </>
+      )}
+    </Modal>
+  );
 }

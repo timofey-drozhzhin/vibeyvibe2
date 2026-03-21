@@ -9,7 +9,7 @@ import uploadRoutes from "./extensions/upload.js";
 import storageRoutes from "./extensions/storage.js";
 import aiQueueRoutes from "./extensions/ai-queue.js";
 import likeRoutes from "./extensions/likes.js";
-import { getVibeCount } from "../config/vibes.js";
+import { vibesSchema, getSchemaNodeCount, getSchemaNodes, VIBES_SCHEMA_VERSION } from "../features/vibes/index.js";
 
 const routes = new Hono();
 
@@ -28,6 +28,39 @@ routes.route("/upload", uploadRoutes);
 routes.route("/storage", storageRoutes);
 routes.route("/admin/ai-queue", aiQueueRoutes);
 routes.route("/likes", likeRoutes);
+
+// Vibes metadata (static config)
+routes.get("/vibes", (c) => {
+  const nodes = getSchemaNodes(vibesSchema);
+
+  // Build backward-compatible categories list from top-level schema properties
+  const categories: Array<{ slug: string; name: string; description: string }> = [];
+  const seenCats = new Set<string>();
+  for (const node of nodes) {
+    if (!seenCats.has(node.category)) {
+      seenCats.add(node.category);
+      categories.push({
+        slug: node.category,
+        name: node.categoryTitle,
+        description: (vibesSchema.properties as any)[node.category]?.description ?? "",
+      });
+    }
+  }
+
+  return c.json({
+    version: VIBES_SCHEMA_VERSION,
+    schema: vibesSchema,
+    categories,
+    // Backward-compatible flat node list (same shape as old vibes array)
+    nodes: nodes.map((n) => ({
+      path: n.path,
+      name: n.title,
+      category: n.category,
+      description: n.description ?? "",
+      archived: n.archived,
+    })),
+  });
+});
 
 // Dashboard stats
 routes.get("/dashboard/stats", async (c) => {
@@ -81,7 +114,7 @@ routes.get("/dashboard/stats", async (c) => {
       songs: labSongs[0].count,
       artists: labArtists[0].count,
       albums: labAlbums[0].count,
-      vibes: getVibeCount(),
+      vibes: getSchemaNodeCount(vibesSchema),
     },
     bin: {
       sources: binSrcCount[0].count,

@@ -35,8 +35,14 @@ The API serves all data through a `/api` prefix. The web app proxies `/api` requ
 ├── .env.prod-example     # Production environment template
 └── .gitignore            # Global ignore rules
 
-apps/api/src/config/
-  vibes.ts                # Static vibes config (59 song analysis attributes, version-controlled)
+apps/api/vibes-schema.json  # Vibes schema config (pure JSON, editable independently)
+
+apps/api/src/features/vibes/
+  schema.ts               # Loads vibes-schema.json, exports helpers (getActiveSchema, getSchemaNodes, etc.)
+  schema-to-prompt.ts     # Converts schema to BAML-style prompt text for AI
+  validator.ts            # Validates AI responses against schema (ajv)
+  profile-compat.ts       # v1/v2 profile format compatibility layer
+  index.ts                # Barrel export (public API for vibes feature)
 
 apps/api/src/db/
   schema.ts               # Unified Drizzle schema (all tables)
@@ -209,9 +215,13 @@ All env variable names and validation rules are defined in `apps/api/src/env.ts`
 
 - `pnpm db:seed` -- Seeds the database with sample data (runs `apps/api/src/db/seed.ts`).
 
-### Vibes (Static Config)
+### Features (`apps/api/src/features/`)
 
-Vibes are the 59 song analysis attributes used by the AI profile generator. They are defined in a static TypeScript config file at `apps/api/src/config/vibes.ts` (not in the database). Each vibe has: `name`, `archived`, `category`, `description`, `instruction`, `example`. Categories: genre, structure, composition, rhythm, instrumentation, vocals, lyrics, production, mood, energy, signature. Set `archived: true` to exclude a vibe from profile generation.
+Self-contained domain modules separated from the core app. Each feature folder owns its domain logic (config, helpers, validation) and exposes a public API through a barrel `index.ts`. Routes and handlers that integrate a feature with the core app (db, auth, queue) stay in `routes/extensions/` and `services/` — they import from the feature barrel. Config files that are edited independently (like JSON schemas) live at the API root (`apps/api/`), not inside `src/`.
+
+### Vibes Feature (`apps/api/src/features/vibes/`)
+
+Vibes are the song analysis attributes used by the AI profile generator. The feature is self-contained in `apps/api/src/features/vibes/` with a barrel export at `index.ts`. The schema is defined in `vibes-schema.json` (pure JSON config, editable independently of app code). It uses JSON Schema with custom `x-instruction`, `x-example`, and `x-archived` extensions. Set `"x-archived": true` on any node to exclude it from profile generation. The schema supports unlimited nesting depth and arrays (e.g., `vocals.cast[]` for multiple vocalists). Currently contains 2 categories (genre, vocals) with 13 leaf nodes; remaining categories will be added incrementally.
 
 ## Storage
 
@@ -311,7 +321,7 @@ Accepts an array of tracks (from the preview step) and creates `songs`, `artists
 
 ## Profile Generator
 
-AI-powered generation of song profiles. Uses the AI queue system to call an LLM that analyzes a song using the active vibes from the static config (`apps/api/src/config/vibes.ts`), producing a JSON array of `{ name, category, value }` entries stored in the `profiles` table (1:N from songs). Supports OpenRouter, Anthropic (Claude), and Google (Gemini) models.
+AI-powered generation of song profiles. Uses the AI queue system to call an LLM that analyzes a song using the vibes schema (`apps/api/vibes-schema.json`), producing a nested JSON object matching the schema structure, stored in the `profiles` table (1:N from songs). Supports OpenRouter, Anthropic (Claude), and Google (Gemini) models.
 
 ### Configuration
 Required environment variables:
