@@ -1,7 +1,7 @@
 // Loads the vibes JSON Schema and provides helper functions for querying it.
-// The schema data lives in vibes-schema.json (pure config, editable independently).
+// The schema data lives in vibes.schema.json (pure config, editable independently).
 
-import vibesSchema from "../../../vibes-schema.json";
+import vibesSchema from "../../../vibes.schema.json";
 
 export { vibesSchema };
 

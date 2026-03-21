@@ -17,7 +17,7 @@ src/
 ├── env.ts                # Zod-validated environment variable schema and getEnv() singleton
 ├── features/             # Self-contained domain modules with barrel index.ts exports
 │   └── vibes/            # Vibes feature: schema, prompt serializer, validator, compat layer
-│       ├── schema.ts           # Loads ../../vibes-schema.json, exports schema + version + helpers
+│       ├── schema.ts           # Loads ../../vibes.schema.json, exports schema + version + helpers
 │       ├── schema-to-prompt.ts # Converts schema to BAML-style AI prompt text
 │       ├── validator.ts        # Validates AI responses against schema (ajv)
 │       ├── profile-compat.ts   # v1/v2 profile format compatibility
