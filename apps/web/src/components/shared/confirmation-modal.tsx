@@ -22,7 +22,7 @@ export const ConfirmationModal = ({
   confirmColor,
   confirmVariant = "filled",
 }: ConfirmationModalProps) => (
-  <Modal opened={opened} onClose={onClose} title={title} centered>
+  <Modal opened={opened} onClose={onClose} title={title}>
     <Text size="sm" mb="lg">
       {message}
     </Text>

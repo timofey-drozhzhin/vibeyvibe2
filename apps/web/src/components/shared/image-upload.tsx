@@ -153,11 +153,6 @@ export const ImageUpload = ({
           </Box>
         )}
       </Box>
-      <style>{`
-        .image-upload-overlay:hover {
-          opacity: 1 !important;
-        }
-      `}</style>
     </>
   );
 };

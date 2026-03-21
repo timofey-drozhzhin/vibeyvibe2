@@ -75,7 +75,7 @@ export const AlbumCardList = ({
                   />
                 ) : (
                   <Center w={THUMB} h={THUMB}>
-                    <Text fz={10} c="dimmed">
+                    <Text fz="xs" c="dimmed">
                       No img
                     </Text>
                   </Center>

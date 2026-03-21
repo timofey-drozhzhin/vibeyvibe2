@@ -782,12 +782,12 @@ function renderColumnValue(
         );
       }
       if (value === "failed") {
-        return <Badge size="sm" color="red">Failed</Badge>;
+        return <Badge size="sm" color="red" variant="light">Failed</Badge>;
       }
       if (value === "completed") {
-        return <Badge size="sm" color="green">Completed</Badge>;
+        return <Badge size="sm" color="green" variant="light">Completed</Badge>;
       }
-      return value ? <Badge size="sm">{String(value)}</Badge> : null;
+      return value ? <Badge size="sm" variant="light">{String(value)}</Badge> : null;
     case "date":
       return <Text size="sm">{formatDate(value)}</Text>;
     case "text":
@@ -933,7 +933,7 @@ function EditJsonModal({ data, onClose, title, vibesMeta, saving, onSave, onChan
                           <Badge size="xs">{vibesMeta.categoryName.get(entry.category) ?? entry.category}</Badge>
                         </Tooltip>
                       )}
-                      {isArchived && <Badge size="xs" color="red" variant="light">Archived</Badge>}
+                      {isArchived && <Badge size="xs" color="yellow" variant="light">Archived</Badge>}
                     </Group>
                     <Textarea
                       size="sm"

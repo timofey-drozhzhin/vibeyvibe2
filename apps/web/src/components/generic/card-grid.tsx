@@ -69,7 +69,7 @@ export const CardGrid = ({
                     justifyContent: "center",
                   }}
                 >
-                  <Text size="10px" c="dimmed">
+                  <Text fz="xs" c="dimmed">
                     No img
                   </Text>
                 </Box>
@@ -79,7 +79,7 @@ export const CardGrid = ({
 
           {/* Text content */}
           <Box style={{ flex: 1, minWidth: 0 }}>
-            <Text fw={600} size="sm" truncate>
+            <Text fw={500} size="sm" truncate>
               {record.name || ""}
             </Text>
             <Group gap={6} mt={2}>

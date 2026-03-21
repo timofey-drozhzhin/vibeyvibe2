@@ -655,7 +655,7 @@ export const GenericEntityList = ({ entity }: GenericEntityListProps) => {
             />
           ))}
           <Group justify="flex-end">
-            <Button variant="subtle" onClick={closeCreate}>
+            <Button variant="default" onClick={closeCreate}>
               Cancel
             </Button>
             <Button
