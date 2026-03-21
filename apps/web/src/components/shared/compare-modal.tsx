@@ -173,7 +173,7 @@ export const CompareModal = ({
                             <Text size="sm" fw={500} c="dimmed" td={entry.archived ? "line-through" : undefined}>
                               {entry.name}
                             </Text>
-                            {entry.archived && <Badge size="xs" color="red" variant="light">Archived</Badge>}
+                            {entry.archived && <Badge size="xs" color="yellow" variant="light">Archived</Badge>}
                           </Group>
                         </Tooltip>
                       </Table.Td>

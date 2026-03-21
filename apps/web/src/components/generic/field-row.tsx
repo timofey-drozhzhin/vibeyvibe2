@@ -8,7 +8,6 @@ import {
   ActionIcon,
   Box,
   Textarea,
-  Button,
   Tooltip,
   Stack,
 } from "@mantine/core";
@@ -16,6 +15,7 @@ import { useList, useNavigation } from "@refinedev/core";
 import { notifications } from "@mantine/notifications";
 import { IconEdit, IconCopy } from "@tabler/icons-react";
 import { EditableField } from "../shared/editable-field.js";
+import { SaveCancelActions } from "../shared/save-cancel-actions.js";
 import { RatingField } from "../shared/rating-field.js";
 import { ImageUpload } from "../shared/image-upload.js";
 import { AudioUpload } from "../shared/audio-upload.js";
@@ -218,14 +218,7 @@ const TextareaField = ({ field, value, onSave }: TextareaFieldProps) => {
           autoFocus
           disabled={saving}
         />
-        <Group gap="xs">
-          <Button size="xs" onClick={handleSave} loading={saving}>
-            Save
-          </Button>
-          <Button size="xs" variant="subtle" onClick={handleCancel} disabled={saving}>
-            Cancel
-          </Button>
-        </Group>
+        <SaveCancelActions saving={saving} onSave={handleSave} onCancel={handleCancel} />
       </Stack>
     );
   }

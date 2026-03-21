@@ -284,7 +284,7 @@ const EditableTitle = ({
         color="gray"
         onClick={startEdit}
       >
-        <IconEdit size={16} />
+        <IconEdit size={14} />
       </ActionIcon>
     </Group>
   );

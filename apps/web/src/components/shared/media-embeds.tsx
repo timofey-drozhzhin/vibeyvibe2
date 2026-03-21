@@ -209,7 +209,7 @@ const PlatformEmbed = ({
               onClick={startEdit}
               title={`Edit ${label} ID`}
             >
-              <IconEdit size={12} />
+              <IconEdit size={14} />
             </ActionIcon>
           </Group>
         )}

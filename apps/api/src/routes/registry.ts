@@ -222,11 +222,15 @@ async function songDetailEnricher(db: any, entity: any) {
         songCount: sql<number>`COUNT(*)`,
       })
       .from(artistSongs)
+      .innerJoin(songs, eq(artistSongs.song_id, songs.id))
       .where(
-        sql`${artistSongs.artist_id} IN (${sql.join(
-          artistIds.map((id: number) => sql`${id}`),
-          sql`, `
-        )})`
+        and(
+          sql`${artistSongs.artist_id} IN (${sql.join(
+            artistIds.map((id: number) => sql`${id}`),
+            sql`, `
+          )})`,
+          eq(songs.context, entity.context)
+        )
       )
       .groupBy(artistSongs.artist_id);
     for (const row of countRows) {
@@ -263,18 +267,22 @@ async function songDetailEnricher(db: any, entity: any) {
         existing.push({ id: row.artistId, name: row.artistName });
       }
     }
-    // Song count per album
+    // Song count per album (filtered by same context)
     const albumCountRows = await db
       .select({
         albumId: albumSongs.album_id,
         songCount: sql<number>`COUNT(*)`,
       })
       .from(albumSongs)
+      .innerJoin(songs, eq(albumSongs.song_id, songs.id))
       .where(
-        sql`${albumSongs.album_id} IN (${sql.join(
-          albumIds.map((id: number) => sql`${id}`),
-          sql`, `
-        )})`
+        and(
+          sql`${albumSongs.album_id} IN (${sql.join(
+            albumIds.map((id: number) => sql`${id}`),
+            sql`, `
+          )})`,
+          eq(songs.context, entity.context)
+        )
       )
       .groupBy(albumSongs.album_id);
     for (const row of albumCountRows) {

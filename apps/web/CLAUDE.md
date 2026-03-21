@@ -100,6 +100,10 @@ interface RelationshipDef {
     label: string;           // Button label (e.g. "Generate")
     endpoint: string;        // API endpoint to POST to
     bodyField: string;       // Field name for record ID in POST body
+    color?: string;          // Button color (Mantine color)
+    icon?: "sparkles" | "music";  // Button icon
+    successNavigate?: string;     // Resource to navigate to on success
+    modelsEndpoint?: string;      // API endpoint for model selector
   };
 }
 

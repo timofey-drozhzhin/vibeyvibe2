@@ -36,6 +36,8 @@ export const songs = sqliteTable(
   },
   (table) => [
     index("songs_context_idx").on(table.context),
+    index("songs_archived_idx").on(table.archived),
+    index("songs_context_archived_idx").on(table.context, table.archived),
     index("songs_isrc_idx").on(table.isrc),
     index("songs_spotify_uid_idx").on(table.spotify_uid),
   ]
@@ -62,6 +64,8 @@ export const artists = sqliteTable(
   },
   (table) => [
     index("artists_context_idx").on(table.context),
+    index("artists_archived_idx").on(table.archived),
+    index("artists_context_archived_idx").on(table.context, table.archived),
     index("artists_spotify_uid_idx").on(table.spotify_uid),
   ]
 );
@@ -84,7 +88,11 @@ export const albums = sqliteTable(
     apple_music_uid: text("apple_music_uid"),
     youtube_uid: text("youtube_uid"),
   },
-  (table) => [index("albums_context_idx").on(table.context)]
+  (table) => [
+    index("albums_context_idx").on(table.context),
+    index("albums_archived_idx").on(table.archived),
+    index("albums_context_archived_idx").on(table.context, table.archived),
+  ]
 );
 
 export const albumsRelations = relations(albums, ({ many }) => ({
@@ -193,6 +201,7 @@ export const profiles = sqliteTable(
   },
   (table) => [
     index("profiles_song_id_idx").on(table.song_id),
+    index("profiles_archived_idx").on(table.archived),
     index("profiles_ai_queue_id_idx").on(table.ai_queue_id),
   ]
 );

@@ -876,7 +876,7 @@ function ViewJsonModal({ data, onClose, title, vibesMeta }: ViewJsonModalProps) 
                       <Badge size="xs">{vibesMeta.categoryName.get(entry.category) ?? entry.category}</Badge>
                     </Tooltip>
                   )}
-                  {entry.archived && <Badge size="xs" color="red" variant="light">Archived</Badge>}
+                  {entry.archived && <Badge size="xs" color="yellow" variant="light">Archived</Badge>}
                 </Group>
                 <Text size="sm" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
                   {entry.value || "—"}

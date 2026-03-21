@@ -133,7 +133,7 @@ Domain tables use `text` columns with SQL `CURRENT_TIMESTAMP` defaults. Auth tab
 
 ### Rating Scale
 
-All rating fields use `real("rating")` with a **0-1 real scale** (0 = unrated, values between 0 and 1 represent the rating). Zod schemas in the registry currently validate `z.number().min(0).max(5)`. Present on: `songs`, `artists`, `albums`, `bin_songs`.
+All rating fields use `real("rating")` with a **0-1 real scale** (0 = unrated, values between 0 and 1 represent the rating). Zod schemas in the registry validate `z.number().min(0).max(1).nullable().optional()` via a shared `ratingField` constant. Present on: `songs`, `artists`, `albums`, `bin_songs`.
 
 ### Archive Flag
 

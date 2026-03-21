@@ -16,6 +16,11 @@ storageRoutes.get("/*", async (c) => {
     return c.json({ error: "No file path specified" }, 400);
   }
 
+  // Prevent path traversal attacks
+  if (path.includes("..") || path.startsWith("/")) {
+    return c.json({ error: "Invalid file path" }, 400);
+  }
+
   const storage = createStorageClient();
 
   const exists = await storage.exists(path);

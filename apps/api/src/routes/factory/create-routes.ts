@@ -309,10 +309,15 @@ export function createEntityRoutes(config: EntityRouteConfig): Hono {
     const existing = await db.select().from(config.table).where(and(...conditions)).get();
     if (!existing) return c.json({ error: `${config.entityName} not found` }, 404);
 
+    const updateConditions = [eq(config.table.id, id)];
+    if (config.contextColumnValue && config.table.context) {
+      updateConditions.push(eq(config.table.context, config.contextColumnValue));
+    }
+
     const updateResult = await db
       .update(config.table)
       .set({ ...body, updated_at: new Date().toISOString() })
-      .where(eq(config.table.id, id))
+      .where(and(...updateConditions))
       .returning();
     const updated = (updateResult as any[])[0];
 
@@ -393,6 +398,7 @@ function registerRelationshipRoutes(router: Hono, config: EntityRouteConfig, rel
     }
     const parent = await db.select().from(config.table).where(and(...parentConditions)).get();
     if (!parent) return c.json({ error: `${config.entityName} not found` }, 404);
+    if (parent.archived) return c.json({ error: "Cannot modify archived entity" }, 400);
 
     // Verify related (with context check if parent has context filtering)
     const relatedConditions: any[] = [eq(rel.relatedTable.id, relatedId)];
@@ -432,6 +438,14 @@ function registerRelationshipRoutes(router: Hono, config: EntityRouteConfig, rel
     const relatedId = Number(c.req.param("relatedId"));
     if (isNaN(parentId) || isNaN(relatedId)) return c.json({ error: "Invalid ID" }, 400);
     const db = getDb();
+
+    // Verify parent exists in correct context
+    const parentConditions = [eq(config.table.id, parentId)];
+    if (config.contextColumnValue && config.table.context) {
+      parentConditions.push(eq(config.table.context, config.contextColumnValue));
+    }
+    const parent = await db.select().from(config.table).where(and(...parentConditions)).get();
+    if (!parent) return c.json({ error: `${config.entityName} not found` }, 404);
 
     const existing = await db.select().from(rel.pivotTable)
       .where(and(eq(rel.parentFk, parentId), eq(rel.relatedFk, relatedId))).get();
